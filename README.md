@@ -1,15 +1,13 @@
 # sokos-oppgjorsrapporter
 
-Kan brukes som utgangspunkt for å opprette nye Ktor-backend applikasjoner for Team Motta og Beregne
+Backend-applikasjon for å
 
-## Tilpass repo-et
+1. motta grunnlag for oppgjørsrapportene K27, T14 og T12,
+2. generere dem i forskjellige formater,
+3. varsle når nye rapporter ligger tilgjengelig, og
+4. tilgjengeliggjøre dem for nedlasting (via API)
 
-1. Gi rettighet for å kjøre scriptet `chmod 755 setupTemplate.sh`
-2. Kjør scriptet:
-   ```
-   ./setupTemplate.sh
-   ```
-3. Fyll inn prosjektnavn (sokos-foo-bar) og artifaktnavn (foo.bar)
+APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening](https://github.com/navikt/sokos-oppgjorsrapporter-selvbetjening).
 
 ## Workflows
 
@@ -27,8 +25,6 @@ Kan brukes som utgangspunkt for å opprette nye Ktor-backend applikasjoner for T
 1. Bygg prosjektet ved å kjøre `./gradlew clean build shadowJar`
 2. Start appen lokalt ved å kjøre main metoden i ***Application.kt***
 3. For å kjøre tester i IntelliJ IDEA trenger du [Kotest IntelliJ Plugin](https://plugins.jetbrains.com/plugin/14080-kotest)
-
-# NB!! Kommer du på noe lurt vi bør ha med i template som default så opprett gjerne en PR
 
 ## Henvendelser
 
