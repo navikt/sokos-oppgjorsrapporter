@@ -1,4 +1,4 @@
-package no.nav.sokos.prosjektnavn.config
+package no.nav.sokos.oppgjorsrapporter.config
 
 import java.io.File
 
@@ -13,7 +13,7 @@ object PropertiesConfig {
     private val defaultProperties =
         ConfigurationMap(
             mapOf(
-                "NAIS_APP_NAME" to "sokos-ktor-template",
+                "NAIS_APP_NAME" to "sokos-oppgjorsrapporter",
                 "NAIS_NAMESPACE" to "okonomi",
                 "USE_AUTHENTICATION" to "true",
             ),

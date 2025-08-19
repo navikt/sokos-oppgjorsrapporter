@@ -1,4 +1,4 @@
-package no.nav.sokos.prosjektnavn.api
+package no.nav.sokos.oppgjorsrapporter.api
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -7,7 +7,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 
-import no.nav.sokos.prosjektnavn.service.DummyService
+import no.nav.sokos.oppgjorsrapporter.service.DummyService
 
 fun Route.dummyApi(dummyService: DummyService = DummyService()) {
     route("/api/v1/") {

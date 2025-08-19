@@ -1,4 +1,4 @@
-package no.nav.sokos.prosjektnavn
+package no.nav.sokos.oppgjorsrapporter
 
 internal const val API_BASE_PATH = "/api/v1"
 

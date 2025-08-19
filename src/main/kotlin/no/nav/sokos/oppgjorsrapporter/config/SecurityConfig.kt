@@ -1,4 +1,4 @@
-package no.nav.sokos.prosjektnavn.config
+package no.nav.sokos.oppgjorsrapporter.config
 
 import java.net.URI
 import java.util.concurrent.TimeUnit

@@ -1,11 +1,11 @@
-package no.nav.sokos.prosjektnavn.config
+package no.nav.sokos.oppgjorsrapporter.config
 
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.routing
 
-import no.nav.sokos.prosjektnavn.api.dummyApi
+import no.nav.sokos.oppgjorsrapporter.api.dummyApi
 
 fun Application.routingConfig(
     useAuthentication: Boolean,

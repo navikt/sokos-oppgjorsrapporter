@@ -1,4 +1,4 @@
-package no.nav.sokos.prosjektnavn.config
+package no.nav.sokos.oppgjorsrapporter.config
 
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStarted

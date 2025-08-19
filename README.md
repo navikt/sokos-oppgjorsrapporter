@@ -1,4 +1,4 @@
-# sokos-ktor-template
+# sokos-oppgjorsrapporter
 
 Kan brukes som utgangspunkt for å opprette nye Ktor-backend applikasjoner for Team Motta og Beregne
 
@@ -81,7 +81,7 @@ Legg ved skissediagram for hvordan arkitekturen er bygget
 # 4. Deployment
 
 Distribusjon av tjenesten er gjort med bruk av Github Actions.
-[sokos-ktor-template CI / CD](https://github.com/navikt/sokos-ktor-template/actions)
+[sokos-oppgjorsrapporter CI / CD](https://github.com/navikt/sokos-oppgjorsrapporter/actions)
 
 Push/merge til main branche vil teste, bygge og deploye til produksjonsmiljø og testmiljø.
 
@@ -104,16 +104,16 @@ For dev-gcp:
 
 ```shell script
 kubectl config use-context dev-gcp
-kubectl get pods -n okonomi | grep sokos-ktor-template
-kubectl logs -f sokos-ktor-template-<POD-ID> --namespace okonomi -c sokos-ktor-template
+kubectl get pods -n okonomi | grep sokos-oppgjorsrapporter
+kubectl logs -f sokos-oppgjorsrapporter-<POD-ID> --namespace okonomi -c sokos-oppgjorsrapporter
 ```
 
 For prod-gcp:
 
 ```shell script
 kubectl config use-context prod-gcp
-kubectl get pods -n okonomi | grep sokos-ktor-template
-kubectl logs -f sokos-ktor-template-<POD-ID> --namespace okonomi -c sokos-ktor-template
+kubectl get pods -n okonomi | grep sokos-oppgjorsrapporter
+kubectl logs -f sokos-oppgjorsrapporter-<POD-ID> --namespace okonomi -c sokos-oppgjorsrapporter
 ```
 
 ### Alarmer
@@ -139,4 +139,3 @@ Hva er url til Lokal, dev og prod?
 
 Spørsmål knyttet til koden eller prosjektet kan stilles som issues her på Github.
 Interne henvendelser kan sendes via Slack i kanalen [#utbetaling](https://nav-it.slack.com/archives/CKZADNFBP)
-

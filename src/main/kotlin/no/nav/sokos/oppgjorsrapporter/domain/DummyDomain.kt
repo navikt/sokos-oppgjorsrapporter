@@ -1,4 +1,4 @@
-package no.nav.sokos.prosjektnavn.domain
+package no.nav.sokos.oppgjorsrapporter.domain
 
 import kotlinx.serialization.Serializable
 
