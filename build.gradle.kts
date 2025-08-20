@@ -7,7 +7,7 @@ plugins {
     kotlin("jvm") version "2.2.10"
     kotlin("plugin.serialization") version "2.2.10"
     id("com.gradleup.shadow") version "9.0.2"
-    id("org.jlleitschuh.gradle.ktlint") version "13.0.0"
+    id("com.diffplug.spotless") version "7.2.1"
     id("org.jetbrains.kotlinx.kover") version "0.9.1"
 }
 
@@ -22,8 +22,8 @@ val logbackVersion = "1.5.18"
 val logstashVersion = "8.1"
 val micrometerVersion = "1.15.3"
 val kotlinLoggingVersion = "3.0.5"
-val janionVersion = "3.1.12"
-val natpryceVersion = "1.6.10.0"
+val janinoVersion = "3.1.12"
+val konfigVersion = "1.6.10.0"
 val kotestVersion = "5.9.1"
 val kotlinxSerializationVersion = "1.9.0"
 val mockOAuth2ServerVersion = "2.2.1"
@@ -55,12 +55,12 @@ dependencies {
 
     // Logging
     implementation("io.github.microutils:kotlin-logging-jvm:$kotlinLoggingVersion")
-    runtimeOnly("org.codehaus.janino:janino:$janionVersion")
+    runtimeOnly("org.codehaus.janino:janino:$janinoVersion")
     runtimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
     runtimeOnly("net.logstash.logback:logstash-logback-encoder:$logstashVersion")
 
     // Config
-    implementation("com.natpryce:konfig:$natpryceVersion")
+    implementation("com.natpryce:konfig:$konfigVersion")
 
     // Test
     testImplementation("io.ktor:ktor-server-test-host-jvm:$ktorVersion")
@@ -68,11 +68,6 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
-}
-
-// Vulnerability fix because of id("org.jlleitschuh.gradle.ktlint") uses ch.qos.logback:logback-classic:1.3.5
-configurations.ktlint {
-    resolutionStrategy.force("ch.qos.logback:logback-classic:$logbackVersion")
 }
 
 sourceSets {
@@ -90,10 +85,6 @@ kotlin {
 }
 
 tasks {
-
-    withType<KotlinCompile>().configureEach {
-        dependsOn("ktlintFormat")
-    }
 
     withType<ShadowJar>().configureEach {
         enabled = true
@@ -149,5 +140,17 @@ tasks {
         description = "Copy pre-commit hook to .git/hooks"
         group = "git hooks"
         outputs.upToDateWhen { false }
+    }
+}
+
+spotless {
+    kotlin {
+        targetExclude("src/main/java/**/*")
+        targetExclude("build/generated/**/*")
+        ktfmt().kotlinlangStyle().configure {
+            it.setMaxWidth(140)
+            it.setRemoveUnusedImports(true)
+            it.setManageTrailingCommas(true)
+        }
     }
 }

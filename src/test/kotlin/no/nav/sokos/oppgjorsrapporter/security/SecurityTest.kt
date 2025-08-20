@@ -1,7 +1,5 @@
 package no.nav.sokos.oppgjorsrapporter.security
 
-import kotlinx.serialization.json.Json
-
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -16,7 +14,7 @@ import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import io.mockk.every
 import io.mockk.mockk
-
+import kotlinx.serialization.json.Json
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
@@ -33,17 +31,12 @@ val dummyService: DummyService = mockk()
 
 class SecurityTest :
     FunSpec({
-
         test("test http GET endepunkt uten token bør returnere 401") {
             withMockOAuth2Server {
                 testApplication {
                     application {
                         securityConfig(authConfig())
-                        routing {
-                            authenticate(AUTHENTICATION_NAME) {
-                                dummyApi(dummyService)
-                            }
-                        }
+                        routing { authenticate(AUTHENTICATION_NAME) { dummyApi(dummyService) } }
                     }
                     val response = client.get("$API_BASE_PATH/hello")
                     response.status shouldBe HttpStatusCode.Unauthorized
@@ -55,27 +48,22 @@ class SecurityTest :
             withMockOAuth2Server {
                 val mockOAuth2Server = this
                 testApplication {
-                    val client =
-                        createClient {
-                            install(ContentNegotiation) {
-                                json(
-                                    Json {
-                                        prettyPrint = true
-                                        ignoreUnknownKeys = true
-                                        encodeDefaults = true
-                                        explicitNulls = false
-                                    },
-                                )
-                            }
+                    val client = createClient {
+                        install(ContentNegotiation) {
+                            json(
+                                Json {
+                                    prettyPrint = true
+                                    ignoreUnknownKeys = true
+                                    encodeDefaults = true
+                                    explicitNulls = false
+                                }
+                            )
                         }
+                    }
                     application {
                         commonConfig()
                         securityConfig(authConfig())
-                        routing {
-                            authenticate(AUTHENTICATION_NAME) {
-                                dummyApi(dummyService)
-                            }
-                        }
+                        routing { authenticate(AUTHENTICATION_NAME) { dummyApi(dummyService) } }
                     }
 
                     every { dummyService.sayHello() } returns DummyDomain("Hello")
@@ -93,14 +81,7 @@ class SecurityTest :
     })
 
 private fun MockOAuth2Server.authConfig() =
-    PropertiesConfig.AzureAdProperties(
-        wellKnownUrl = wellKnownUrl("default").toString(),
-        clientId = "default",
-    )
+    PropertiesConfig.AzureAdProperties(wellKnownUrl = wellKnownUrl("default").toString(), clientId = "default")
 
 private fun MockOAuth2Server.tokenFromDefaultProvider() =
-    issueToken(
-        issuerId = "default",
-        clientId = "default",
-        tokenCallback = DefaultOAuth2TokenCallback(),
-    ).serialize()
+    issueToken(issuerId = "default", clientId = "default", tokenCallback = DefaultOAuth2TokenCallback()).serialize()

@@ -1,7 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.service
 
 import mu.KotlinLogging
-
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.domain.DummyDomain
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
