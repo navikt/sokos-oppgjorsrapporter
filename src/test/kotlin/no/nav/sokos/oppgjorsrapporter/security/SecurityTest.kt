@@ -11,6 +11,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.auth.authenticate
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import io.mockk.every
@@ -23,7 +24,6 @@ import no.nav.sokos.oppgjorsrapporter.API_BASE_PATH
 import no.nav.sokos.oppgjorsrapporter.api.dummyApi
 import no.nav.sokos.oppgjorsrapporter.config.AUTHENTICATION_NAME
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
-import no.nav.sokos.oppgjorsrapporter.config.authenticate
 import no.nav.sokos.oppgjorsrapporter.config.commonConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
 import no.nav.sokos.oppgjorsrapporter.domain.DummyDomain
@@ -38,9 +38,9 @@ class SecurityTest :
             withMockOAuth2Server {
                 testApplication {
                     application {
-                        securityConfig(true, authConfig())
+                        securityConfig(authConfig())
                         routing {
-                            authenticate(true, AUTHENTICATION_NAME) {
+                            authenticate(AUTHENTICATION_NAME) {
                                 dummyApi(dummyService)
                             }
                         }
@@ -70,9 +70,9 @@ class SecurityTest :
                         }
                     application {
                         commonConfig()
-                        securityConfig(true, authConfig())
+                        securityConfig(authConfig())
                         routing {
-                            authenticate(true, AUTHENTICATION_NAME) {
+                            authenticate(AUTHENTICATION_NAME) {
                                 dummyApi(dummyService)
                             }
                         }

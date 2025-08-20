@@ -5,7 +5,6 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
-import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.applicationLifecycleConfig
 import no.nav.sokos.oppgjorsrapporter.config.commonConfig
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
@@ -16,11 +15,10 @@ fun main() {
 }
 
 fun Application.module() {
-    val useAuthentication = PropertiesConfig.Configuration().useAuthentication
     val applicationState = ApplicationState()
 
     commonConfig()
     applicationLifecycleConfig(applicationState)
-    securityConfig(useAuthentication)
-    routingConfig(useAuthentication, applicationState)
+    securityConfig()
+    routingConfig(applicationState)
 }
