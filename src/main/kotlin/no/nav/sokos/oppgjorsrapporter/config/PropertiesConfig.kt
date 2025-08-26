@@ -6,7 +6,33 @@ import com.natpryce.konfig.EnvironmentVariables
 import com.natpryce.konfig.Key
 import com.natpryce.konfig.overriding
 import com.natpryce.konfig.stringType
+import io.ktor.server.config.ApplicationConfig
+import io.ktor.server.config.ApplicationConfigValue
 import java.io.File
+
+fun configFrom(config: ApplicationConfig): PropertiesConfig.Configuration {
+    val configSource = configSourceFrom(config)
+    return PropertiesConfig.Configuration(configSource)
+}
+
+class CompositeApplicationConfig(private val primary: ApplicationConfig, private vararg val fallbacks: ApplicationConfig) :
+    ApplicationConfig {
+    override fun property(path: String): ApplicationConfigValue = propertyOrNull(path) ?: primary.property(path)
+
+    override fun propertyOrNull(path: String): ApplicationConfigValue? =
+        primary.propertyOrNull(path) ?: fallbacks.firstNotNullOfOrNull { it.propertyOrNull(path) }
+
+    override fun config(path: String): ApplicationConfig =
+        CompositeApplicationConfig(primary.config(path), *fallbacks.map { it.config(path) }.toTypedArray())
+
+    override fun configList(path: String): List<ApplicationConfig> =
+        primary.configList(path).ifEmpty { fallbacks.firstNotNullOf { it.configList(path).ifEmpty { null } } }
+
+    override fun keys(): Set<String> = primary.keys() + fallbacks.flatMap { it.keys() }
+
+    override fun toMap(): Map<String, Any> =
+        (listOf(primary) + fallbacks).foldRight(emptyMap()) { fallback, config -> config + fallback.toMap().mapValues { it.value as Any } }
+}
 
 object PropertiesConfig {
     private val defaultProperties = ConfigurationMap(mapOf("NAIS_APP_NAME" to "sokos-oppgjorsrapporter", "NAIS_NAMESPACE" to "okonomi"))
@@ -41,15 +67,65 @@ object PropertiesConfig {
     fun getOrEmpty(key: String): String = config.getOrElse(Key(key, stringType), "")
 
     data class Configuration(
+        val applicationProperties: ApplicationProperties,
+        val securityProperties: SecurityProperties,
+        val postgresProperties: PostgresProperties,
+    ) {
+        constructor(
+            source: ConfigSource
+        ) : this(
+            applicationProperties = ApplicationProperties(source),
+            securityProperties = SecurityProperties(source),
+            postgresProperties = PostgresProperties(source),
+        )
+    }
+
+    data class ApplicationProperties(
         val naisAppName: String = get("NAIS_APP_NAME"),
         val profile: Profile = Profile.valueOf(get("APPLICATION_PROFILE")),
-        val azureAdProperties: AzureAdProperties = AzureAdProperties(),
-    )
+    ) {
+        constructor(
+            source: ConfigSource
+        ) : this(naisAppName = source.get("APP_NAME"), profile = Profile.valueOf(source.get("APPLICATION_PROFILE")))
+    }
 
-    class AzureAdProperties(
-        val clientId: String = getOrEmpty("AZURE_APP_CLIENT_ID"),
-        val wellKnownUrl: String = getOrEmpty("AZURE_APP_WELL_KNOWN_URL"),
-    )
+    data class PostgresProperties(
+        val name: String,
+        val host: String,
+        val port: String,
+        val username: String,
+        val password: String,
+        val adminUsername: String,
+        val adminPassword: String,
+        val adminRole: String,
+        val userRole: String,
+        val vaultMountPath: String,
+    ) {
+        constructor(
+            source: ConfigSource
+        ) : this(
+            name = source.get("POSTGRES_NAME"),
+            host = source.get("POSTGRES_HOST"),
+            port = source.get("POSTGRES_PORT"),
+            username = source.get("POSTGRES_USER_USERNAME").trim(),
+            password = source.get("POSTGRES_USER_PASSWORD").trim(),
+            adminUsername = source.get("POSTGRES_ADMIN_USERNAME").trim(),
+            adminPassword = source.get("POSTGRES_ADMIN_PASSWORD").trim(),
+            adminRole = "${source.get("POSTGRES_NAME")}-admin",
+            userRole = "${source.get("POSTGRES_NAME")}-user",
+            vaultMountPath = source.get("VAULT_MOUNTPATH"),
+        )
+    }
+
+    data class SecurityProperties(val azureAdProperties: AzureAdProperties) {
+        constructor(source: ConfigSource) : this(azureAdProperties = AzureAdProperties(source))
+    }
+
+    class AzureAdProperties(val clientId: String, val wellKnownUrl: String) {
+        constructor(
+            source: ConfigSource
+        ) : this(clientId = source.get("AZURE_APP_CLIENT_ID"), wellKnownUrl = source.get("AZURE_APP_WELL_KNOWN_URL"))
+    }
 
     enum class Profile {
         LOCAL,

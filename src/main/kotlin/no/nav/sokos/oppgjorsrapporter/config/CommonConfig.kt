@@ -62,7 +62,8 @@ fun Routing.internalNaisRoutes(
         get("isReady") {
             when (readynessCheck()) {
                 true -> call.respondText { "I'm ready! :)" }
-                else -> call.respondText(text = "Wait! I'm not ready yet! :O", status = HttpStatusCode.InternalServerError)
+                else ->
+                    call.respondText(text = applicationState.readyErrors().joinToString("\n"), status = HttpStatusCode.InternalServerError)
             }
         }
         get("metrics") { call.respondText(Metrics.prometheusMeterRegistry.scrape()) }

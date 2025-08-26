@@ -1,7 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "2.2.10"
@@ -24,10 +23,16 @@ val micrometerVersion = "1.15.3"
 val kotlinLoggingVersion = "3.0.5"
 val janinoVersion = "3.1.12"
 val konfigVersion = "1.6.10.0"
-val kotestVersion = "5.9.1"
+val kotestVersion = "6.0.0"
 val kotlinxSerializationVersion = "1.9.0"
 val mockOAuth2ServerVersion = "2.2.1"
 val mockkVersion = "1.14.5"
+val hikariVersion = "6.3.0"
+val postgresVersion = "42.7.7"
+val kotliqueryVersion = "1.9.1"
+val flywayVersion = "11.10.0"
+val vaultVersion = "1.3.10"
+val testcontainersVersion = "1.21.3"
 
 dependencies {
 
@@ -36,10 +41,17 @@ dependencies {
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-swagger:$ktorVersion")
+    implementation("io.ktor:ktor-server-di:$ktorVersion")
 
     // Ktor client
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-client-apache-jvm:$ktorVersion")
+
+    // Database
+    implementation("com.zaxxer:HikariCP:$hikariVersion")
+    implementation("org.postgresql:postgresql:$postgresVersion")
+    implementation("com.github.seratch:kotliquery:$kotliqueryVersion")
+    implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
 
     // Security
     implementation("io.ktor:ktor-server-auth-jvm:$ktorVersion")
@@ -61,13 +73,16 @@ dependencies {
 
     // Config
     implementation("com.natpryce:konfig:$konfigVersion")
+    implementation("no.nav:vault-jdbc:$vaultVersion")
 
     // Test
     testImplementation("io.ktor:ktor-server-test-host-jvm:$ktorVersion")
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
+    testImplementation("io.kotest:kotest-extensions-testcontainers:$kotestVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
+    testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
 }
 
 sourceSets {
@@ -104,7 +119,7 @@ tasks {
         testLogging {
             showExceptions = true
             showStackTraces = true
-            exceptionFormat = FULL
+            exceptionFormat = TestExceptionFormat.FULL
             events = setOf(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
         }
 

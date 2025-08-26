@@ -24,7 +24,26 @@ APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening](https://github.com
 
 1. Bygg prosjektet ved å kjøre `./gradlew clean build shadowJar`
 2. Start appen lokalt ved å kjøre main metoden i ***Application.kt***
-3. For å kjøre tester i IntelliJ IDEA trenger du [Kotest IntelliJ Plugin](https://plugins.jetbrains.com/plugin/14080-kotest)
+3. Siden en del av testene benytter [testcontainers](https://testcontainers.com/), trenger man et fungerende Docker-kompatibelt "container runtime" på maskinen man skal kjøre på; se
+   [under](#oppsett-av-container-runtime-på-utviklingsmaskin).
+4. For å kjøre tester i IntelliJ IDEA trenger du [Kotest IntelliJ Plugin](https://plugins.jetbrains.com/plugin/14080-kotest)
+
+### Oppsett av container runtime på utviklingsmaskin
+
+Det finnes flere alternativer til [testcontainer-kompatible container runtimes](https://java.testcontainers.org/supported_docker_environment/).
+På en Mac kan man nokså kjapt få et Docker-oppsett som er testcontainers-kompatibelt slik:
+
+1. `brew install podman-desktop`
+2. Start "Podman Desktop"-appen
+3. Gå til "Settings", velg "Preferences", og skru på "Docker Compatibility"-knappen
+4. Gå til "Dashboard"
+5. Trykk på knappen for å installere Podman, og gjennomfør installasjonen
+
+   Forhåpentligvis vil `brew install podman` også virke etterhvert, men det har vært issues i f.eks. 5.6.0 med at brew-varianten er pakket uten noen ting den trenger, så som `krunkit`...
+6. Hvis det er et spørsmål om du ønsker "Mac helper"-dingsen på Dashboard-siden, så må du takke ja til det
+7. Hvis det er en "Podman needs to be set up"-boks der, trykker du "Set up" og følger instruksjonene
+8. Nå skal det stå "Podman vX.y.z RUNNING" nederst på Dashboardet, og ting bør virke
+9. Du kan evt. også dobbeltsjekke i Settings -> Docker Compatibility at "System socket status" viser "podman is listening"
 
 ## Henvendelser
 
@@ -46,7 +65,7 @@ Alt under her skal beholdes som en standard dokumentasjon som må fylles ut av u
 * [5. Autentisering](#5-autentisering)
 * [6. Drift og støtte](#6-drift-og-støtte)
 * [7. Swagger](#7-swagger)
-* [8. Henvendelser](#8-henvendelser)
+* [8. Henvendelser](#8-henvendelser-og-tilgang)
 
 ---
 
@@ -81,7 +100,7 @@ Distribusjon av tjenesten er gjort med bruk av Github Actions.
 
 Push/merge til main branche vil teste, bygge og deploye til produksjonsmiljø og testmiljø.
 
-# 7. Autentisering
+# 5. Autentisering
 
 Applikasjonen bruker [AzureAD](https://docs.nais.io/security/auth/azure-ad/) autentisering
 

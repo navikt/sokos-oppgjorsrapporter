@@ -18,13 +18,14 @@ import mu.KotlinLogging
 private val logger = KotlinLogging.logger {}
 const val AUTHENTICATION_NAME = "azureAd"
 
-fun Application.securityConfig(azureAdProperties: PropertiesConfig.AzureAdProperties = PropertiesConfig.AzureAdProperties()) {
-    val openIdMetadata: OpenIdMetadata = wellKnowConfig(azureAdProperties.wellKnownUrl)
+fun Application.securityConfig(config: PropertiesConfig.Configuration) {
+
+    val openIdMetadata: OpenIdMetadata = wellKnowConfig(config.securityProperties.azureAdProperties.wellKnownUrl)
     val jwkProvider = cachedJwkProvider(openIdMetadata.jwksUri)
 
     authentication {
         jwt(AUTHENTICATION_NAME) {
-            realm = PropertiesConfig.Configuration().naisAppName
+            realm = config.applicationProperties.naisAppName
             verifier(jwkProvider = jwkProvider, issuer = openIdMetadata.issuer) { acceptLeeway(1) }
             validate { credential ->
                 try {
@@ -32,7 +33,7 @@ fun Application.securityConfig(azureAdProperties: PropertiesConfig.AzureAdProper
                         logger.info("Auth: Missing audience in token")
                         "Auth: Missing audience in token"
                     }
-                    require(credential.payload.audience.contains(azureAdProperties.clientId)) {
+                    require(credential.payload.audience.contains(config.securityProperties.azureAdProperties.clientId)) {
                         logger.info("Auth: Valid audience not found in claims")
                         "Auth: Valid audience not found in claims"
                     }
