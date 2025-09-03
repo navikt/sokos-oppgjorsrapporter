@@ -1,9 +1,11 @@
 package no.nav.sokos.oppgjorsrapporter
 
 import io.ktor.server.application.Application
+import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.di.DI
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.util.AttributeKey
 import javax.sql.DataSource
@@ -16,6 +18,7 @@ import no.nav.sokos.oppgjorsrapporter.config.commonConfig
 import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 
 fun main() {
     embeddedServer(Netty, port = 8080, module = Application::module).start(true)
@@ -28,7 +31,21 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
     val applicationState = ApplicationState()
     DatabaseMigrator(DatabaseConfig.adminDataSource, config.postgresProperties.adminRole, applicationState)
 
-    dependencies { provide<DataSource> { DatabaseConfig.dataSource } }
+    install(DI) {
+        onShutdown = { dependencyKey, instance ->
+            when (instance) {
+                // Vi ønsker bare en DataSource i bruk for en hel test-kjøring, selv om flere tester start/stopper applikasjonen;
+                // dette er en opt-out av auto-close-greiene til Kotlins DI-extension:
+                is DataSource -> {}
+                is AutoCloseable -> instance.close()
+            }
+        }
+    }
+
+    dependencies {
+        provide<DataSource> { DatabaseConfig.dataSource }
+        provide(RapportService::class)
+    }
 
     commonConfig()
     applicationLifecycleConfig(applicationState)

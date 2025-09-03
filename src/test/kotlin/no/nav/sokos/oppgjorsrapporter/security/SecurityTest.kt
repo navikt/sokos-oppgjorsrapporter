@@ -31,7 +31,7 @@ val dummyService: DummyService = mockk()
 class SecurityTest :
     FunSpec({
         context("test-container") {
-            val container = TestContainer.container
+            val container = TestContainer.postgres
 
             test("test http GET endepunkt uten token bør returnere 401") {
                 withMockOAuth2Server {
@@ -92,7 +92,7 @@ class SecurityTest :
         }
     })
 
-private fun MockOAuth2Server.authConfigOverrides() =
+fun MockOAuth2Server.authConfigOverrides() =
     MapApplicationConfig().apply {
         put("AZURE_APP_CLIENT_ID", "default")
         put("AZURE_APP_WELL_KNOWN_URL", wellKnownUrl("default").toString())

@@ -19,6 +19,8 @@ APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening](https://github.com
     1. Denne kjøres når [Deploy application](.github/workflows/deploy.yaml) har kjørt ferdig
 4. [Deploy application manual](.github/workflows/manual-deploy.yaml) -> For å deploye applikasjonen manuelt til ulike miljøer
     1. Denne workflow trigges manuelt basert på branch og miljø
+5. [DB migration lint check](.github/workflows/db-migrationcheck.yml) -> Bruker [squawk](https://squawkhq.com/) til å gi tips om feil/forbedringer i nye database-migreringer
+    1. Trigges ved opprettelse/oppdatering av pull requests med target-branch `main`
 
 ## Bygge og kjøre prosjekt
 
