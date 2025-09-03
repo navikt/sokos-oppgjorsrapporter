@@ -7,6 +7,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.di.DI
 import io.ktor.server.plugins.di.dependencies
+import io.ktor.server.resources.Resources
 import io.ktor.util.AttributeKey
 import javax.sql.DataSource
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
@@ -41,6 +42,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
             }
         }
     }
+    install(Resources)
 
     dependencies {
         provide<DataSource> { DatabaseConfig.dataSource }

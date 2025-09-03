@@ -9,7 +9,6 @@ import mu.KotlinLogging
 import org.testcontainers.containers.PostgreSQLContainer
 
 private val logger = KotlinLogging.logger {}
-internal const val API_BASE_PATH = "/api/v1"
 
 object TestUtil {
     fun getOverrides(container: PostgreSQLContainer<Nothing>): MapApplicationConfig =

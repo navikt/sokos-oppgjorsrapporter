@@ -8,7 +8,7 @@ import kotliquery.queryOf
 import kotliquery.sessionOf
 import kotliquery.using
 
-class RapportService(val dataSource: DataSource) {
+class RapportService(private val dataSource: DataSource) {
     fun insert(rapport: UlagretRapport): Rapport? =
         using(sessionOf(dataSource)) { session ->
             val query =
