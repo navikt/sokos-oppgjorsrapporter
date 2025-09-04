@@ -24,7 +24,7 @@ APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening](https://github.com
 
 ## Bygge og kjøre prosjekt
 
-1. Bygg prosjektet ved å kjøre `./gradlew clean build shadowJar`
+1. Bygg prosjektet ved å kjøre `./gradlew installDist`
 2. Start appen lokalt ved å kjøre main metoden i ***Application.kt***
 3. Siden en del av testene benytter [testcontainers](https://testcontainers.com/), trenger man et fungerende Docker-kompatibelt "container runtime" på maskinen man skal kjøre på; se
    [under](#oppsett-av-container-runtime-på-utviklingsmaskin).
@@ -80,7 +80,7 @@ Hva er oppgaven til denne applikasjonen
 ### Forutsetninger
 
 * Java 21
-* [Gradle >= 8.9](https://gradle.org/)
+* [Gradle >= 9.0](https://gradle.org/)
 * [Kotest IntelliJ Plugin](https://plugins.jetbrains.com/plugin/14080-kotest)
 
 ### Bygge prosjekt
@@ -104,13 +104,11 @@ Push/merge til main branche vil teste, bygge og deploye til produksjonsmiljø og
 
 # 5. Autentisering
 
-Applikasjonen bruker [AzureAD](https://docs.nais.io/security/auth/azure-ad/) autentisering
+Applikasjonen bruker [AzureAD](https://docs.nais.io/security/auth/azure-ad/) for autentisering av interne brukere, og MaskinPorten/MinID for autentisering av eksterne brukere.
 
 # 6. Drift og støtte
 
 ### Logging
-
-https://logs.adeo.no.
 
 Feilmeldinger og infomeldinger som ikke innheholder sensitive data logges til [Grafana Loki](https://docs.nais.io/observability/logging/#grafana-loki).  
 Sensitive meldinger logges til [Team Logs](https://doc.nais.io/observability/logging/how-to/team-logs/).
