@@ -24,6 +24,7 @@ jobs:
     secrets: inherit
     with:
       image-tag: snapshot
+      gradle-task: './gradlew installDist'
 
   deploy-dev:
     needs: build
