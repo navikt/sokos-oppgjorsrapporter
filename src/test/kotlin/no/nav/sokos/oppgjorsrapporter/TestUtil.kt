@@ -1,27 +1,44 @@
 package no.nav.sokos.oppgjorsrapporter
 
-import io.ktor.server.config.MapApplicationConfig
+import io.ktor.server.config.*
 import java.sql.Connection.TRANSACTION_SERIALIZABLE
 import java.sql.DatabaseMetaData
 import javax.sql.DataSource
-import kotlin.use
 import mu.KotlinLogging
+import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
 import org.testcontainers.containers.PostgreSQLContainer
 
 private val logger = KotlinLogging.logger {}
 
 object TestUtil {
     fun getOverrides(container: PostgreSQLContainer<Nothing>): MapApplicationConfig =
-        MapApplicationConfig().apply {
-            put("POSTGRES_USER_USERNAME", container.username)
-            put("POSTGRES_USER_PASSWORD", container.password)
-            put("POSTGRES_ADMIN_USERNAME", container.username)
-            put("POSTGRES_ADMIN_PASSWORD", container.password)
-            put("POSTGRES_NAME", container.databaseName)
-            put("POSTGRES_PORT", container.firstMappedPort.toString())
-            put("POSTGRES_HOST", container.host)
-            put("APPLICATION_PROFILE", "LOCAL")
-        }
+        MapApplicationConfig()
+            .apply {
+                val url = container.jdbcUrl
+                val prefix = if (url.contains('?')) '&' else '?'
+                val jdbcUrl = "${url}${prefix}user=${container.username}&password=${container.password}"
+                put("NAIS_DATABASE_SOKOS_OPPGJORSRAPPORTER_SOKOS_OPPGJORSRAPPORTER_DB_JDBC_URL", jdbcUrl)
+                put("NAIS_DATABASE_SOKOS_OPPGJORSRAPPORTER_SOKOS_OPPGJORSRAPPORTER_DB_APPBRUKER_JDBC_URL", jdbcUrl)
+                put("APPLICATION_PROFILE", "LOCAL")
+            }
+            .also {
+                // Sørg for at lokal database har en egen 'appbruker'-bruker på samme måte som spesifisert i Nais-specen - slik at
+                // Flyway-migreringene kan gi rettigheter til denne brukeren
+                DatabaseConfig.migrationInitSql =
+                    $$"""
+                        DO
+                        $do$
+                        BEGIN
+                           IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE  rolname = 'appbruker') THEN
+                              RAISE NOTICE 'Role "appbruker" already exists. Skipping.';
+                           ELSE
+                              CREATE ROLE appbruker LOGIN PASSWORD 'test';
+                           END IF;
+                        END
+                        $do$;
+                    """
+                        .trimIndent()
+            }
 
     fun readFile(fileName: String): String =
         this::class.java.classLoader.getResourceAsStream(fileName)?.bufferedReader()?.readLines()?.joinToString(separator = "\n")!!

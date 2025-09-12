@@ -6,7 +6,7 @@ import org.flywaydb.core.api.output.MigrateOutput
 
 private val logger = KotlinLogging.logger {}
 
-class DatabaseMigrator(dataSource: DataSource, adminRole: String, applicationState: ApplicationState) {
+class DatabaseMigrator(dataSource: DataSource, applicationState: ApplicationState) {
     var errors: MutableList<String> = mutableListOf()
 
     init {
@@ -14,8 +14,8 @@ class DatabaseMigrator(dataSource: DataSource, adminRole: String, applicationSta
 
         val migrationsResult =
             org.flywaydb.core.Flyway.configure()
+                .initSql(DatabaseConfig.migrationInitSql)
                 .dataSource(dataSource)
-                .initSql("""SET ROLE "$adminRole"""")
                 .lockRetryCount(-1)
                 .validateMigrationNaming(true)
                 .sqlMigrationSeparator("__")

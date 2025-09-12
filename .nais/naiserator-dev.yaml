@@ -47,6 +47,8 @@ spec:
         tier: db-f1-micro
         databases:
           - name: sokos-oppgjorsrapporter-db
+            users:
+              - name: appbruker
   accessPolicy:
     inbound:
       rules:

@@ -3,12 +3,14 @@ package no.nav.sokos.oppgjorsrapporter
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
+import io.ktor.server.engine.addShutdownHook
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.di.DI
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.resources.Resources
 import io.ktor.util.AttributeKey
+import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
@@ -17,20 +19,24 @@ import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.applicationLifecycleConfig
 import no.nav.sokos.oppgjorsrapporter.config.commonConfig
 import no.nav.sokos.oppgjorsrapporter.config.configFrom
+import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 
 fun main() {
-    embeddedServer(Netty, port = 8080, module = Application::module).start(true)
+    embeddedServer(Netty, port = 8080, module = Application::module)
+        .also { it.addShutdownHook { it.stop(shutdownGracePeriod = 3, shutdownTimeout = 5, timeUnit = TimeUnit.SECONDS) } }
+        .start(true)
 }
 
 fun Application.module(appConfig: ApplicationConfig = environment.config) {
     val config = resolveConfig(appConfig)
-    DatabaseConfig.init(config, isLocal = config.applicationProperties.profile == PropertiesConfig.Profile.LOCAL)
 
     val applicationState = ApplicationState()
-    DatabaseMigrator(DatabaseConfig.adminDataSource, config.postgresProperties.adminRole, applicationState)
+    DatabaseMigrator(createDataSource(config.postgresProperties.adminJdbcUrl), applicationState)
+
+    DatabaseConfig.init(config)
 
     install(DI) {
         onShutdown = { dependencyKey, instance ->

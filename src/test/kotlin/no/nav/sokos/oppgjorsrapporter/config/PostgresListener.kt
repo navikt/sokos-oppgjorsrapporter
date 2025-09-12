@@ -12,6 +12,6 @@ object PostgresListener : TestListener {
     override suspend fun beforeSpec(spec: Spec) {
         super.beforeSpec(spec)
         if (!container.isRunning) container.start()
-        DatabaseMigrator(dataSource, container.username, ApplicationState())
+        DatabaseMigrator(dataSource, ApplicationState())
     }
 }

@@ -15,7 +15,6 @@ val hikariVersion = "6.3.0"
 val postgresVersion = "42.7.7"
 val kotliqueryVersion = "1.9.1"
 val flywayVersion = "11.10.0"
-val vaultVersion = "1.3.10"
 val testcontainersVersion = "1.21.3"
 
 plugins {
@@ -74,7 +73,6 @@ dependencies {
 
     // Config
     implementation("com.natpryce:konfig:$konfigVersion")
-    implementation("no.nav:vault-jdbc:$vaultVersion")
 
     // Test
     testImplementation("io.ktor:ktor-server-test-host-jvm:$ktorVersion")
@@ -141,7 +139,13 @@ spotless {
     kotlin {
         targetExclude("src/main/java/**/*")
         targetExclude("build/generated/**/*")
-        ktfmt().kotlinlangStyle().configure {
+        // Det hadde vært fint om `ktfmt()` uten å angi noen spesifikk versjon hadde virket, men den versjonen av ktfmt som pr. default dras inn av spotless tåler f.eks. ikke
+        // [multi-dollar string interpolation](https://kotlinlang.org/docs/strings.html#multi-dollar-string-interpolation) - som sluttet å være en eksperimentell feature i Kotlin 2.2, og er nyttig
+        // hvis man f.eks. skal bruke [PostgreSQL sine "dollar-quoted string constants"](https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING) i Kotlin-strings.
+        //
+        // Dette er fikset fra 0.56, så da ber vi om den. Nyere ktfmt-versjoner enn det igjen krever endringer i Spotless.
+        // OBS: Husk å (forsøke å) fjerne denne versjon-overriden neste gang vi oppgraderer Spotless.
+        ktfmt("0.56").kotlinlangStyle().configure {
             it.setMaxWidth(140)
             it.setRemoveUnusedImports(true)
             it.setManageTrailingCommas(true)

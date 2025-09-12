@@ -89,32 +89,16 @@ object PropertiesConfig {
         ) : this(naisAppName = source.get("APP_NAME"), profile = Profile.valueOf(source.get("APPLICATION_PROFILE")))
     }
 
-    data class PostgresProperties(
-        val name: String,
-        val host: String,
-        val port: String,
-        val username: String,
-        val password: String,
-        val adminUsername: String,
-        val adminPassword: String,
-        val adminRole: String,
-        val userRole: String,
-        val vaultMountPath: String,
-    ) {
+    data class PostgresProperties(val adminJdbcUrl: String, val queryJdbcUrl: String) {
         constructor(
             source: ConfigSource
-        ) : this(
-            name = source.get("POSTGRES_NAME"),
-            host = source.get("POSTGRES_HOST"),
-            port = source.get("POSTGRES_PORT"),
-            username = source.get("POSTGRES_USER_USERNAME").trim(),
-            password = source.get("POSTGRES_USER_PASSWORD").trim(),
-            adminUsername = source.get("POSTGRES_ADMIN_USERNAME").trim(),
-            adminPassword = source.get("POSTGRES_ADMIN_PASSWORD").trim(),
-            adminRole = "${source.get("POSTGRES_NAME")}-admin",
-            userRole = "${source.get("POSTGRES_NAME")}-user",
-            vaultMountPath = source.get("VAULT_MOUNTPATH"),
-        )
+        ) : this(adminJdbcUrl = source.get("${envPrefix}_JDBC_URL"), queryJdbcUrl = source.get("${envPrefix}_APPBRUKER_JDBC_URL"))
+
+        companion object {
+            private val appPrefix = "SOKOS_OPPGJORSRAPPORTER"
+            private val dbPrefix = "SOKOS_OPPGJORSRAPPORTER_DB"
+            private val envPrefix = "NAIS_DATABASE_${appPrefix}_$dbPrefix"
+        }
     }
 
     data class SecurityProperties(val azureAdProperties: AzureAdProperties) {
