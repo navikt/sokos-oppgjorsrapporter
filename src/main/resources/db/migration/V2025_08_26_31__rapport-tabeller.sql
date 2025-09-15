@@ -5,9 +5,6 @@ SET lock_timeout = '5s';
 CREATE SCHEMA IF NOT EXISTS rapport;
 SET SEARCH_PATH TO rapport;
 
-GRANT pg_read_all_data TO appbruker;
-GRANT pg_write_all_data TO appbruker;
-
 CREATE TYPE rapport_type AS ENUM ('K27', 'T12', 'T14');
 
 CREATE TABLE IF NOT EXISTS rapport
