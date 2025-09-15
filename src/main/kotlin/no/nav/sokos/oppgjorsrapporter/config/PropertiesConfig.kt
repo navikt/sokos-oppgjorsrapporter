@@ -93,15 +93,14 @@ object PropertiesConfig {
         constructor(
             source: ConfigSource
         ) : this(
-            adminJdbcUrl = source.get("${appPrefix}_${dbPrefix}_JDBC_URL"),
-            // Av en eller annen grunn lager Nais disse env-var-navnene med database-brukernavn klemt mellom app- og
-            // database-navn - med mindre man har satt `envVarPrefix` i nais-specen.
-            queryJdbcUrl = source.get("${appPrefix}_APPBRUKER_${dbPrefix}_JDBC_URL"),
+            adminJdbcUrl = source.get("${naisPrefix}_${defaultUser}_${dbName}_JDBC_URL"),
+            queryJdbcUrl = source.get("${naisPrefix}_APPBRUKER_${dbName}_JDBC_URL"),
         )
 
         companion object {
-            private val appPrefix = "NAIS_DATABASE_SOKOS_OPPGJORSRAPPORTER"
-            private val dbPrefix = "SOKOS_OPPGJORSRAPPORTER_DB"
+            private val naisPrefix = "NAIS_DATABASE"
+            private val defaultUser = "SOKOS_OPPGJORSRAPPORTER"
+            private val dbName = "SOKOS_OPPGJORSRAPPORTER_DB"
         }
     }
 

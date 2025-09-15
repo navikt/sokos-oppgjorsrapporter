@@ -18,7 +18,7 @@ object TestUtil {
                 val prefix = if (url.contains('?')) '&' else '?'
                 val jdbcUrl = "${url}${prefix}user=${container.username}&password=${container.password}"
                 put("NAIS_DATABASE_SOKOS_OPPGJORSRAPPORTER_SOKOS_OPPGJORSRAPPORTER_DB_JDBC_URL", jdbcUrl)
-                put("NAIS_DATABASE_SOKOS_OPPGJORSRAPPORTER_APPBRUKER_SOKOS_OPPGJORSRAPPORTER_DB_JDBC_URL", jdbcUrl)
+                put("NAIS_DATABASE_APPBRUKER_SOKOS_OPPGJORSRAPPORTER_DB_JDBC_URL", jdbcUrl)
                 put("APPLICATION_PROFILE", "LOCAL")
             }
             .also {
