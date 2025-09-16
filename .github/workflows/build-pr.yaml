@@ -20,4 +20,4 @@ jobs:
     name: Build and test
     uses: navikt/mob-gha-workflows/.github/workflows/gradle-build-pr.yaml@main
     with:
-      gradle-task: './gradlew installDist'
+      gradle-task: './gradlew build installDist'
