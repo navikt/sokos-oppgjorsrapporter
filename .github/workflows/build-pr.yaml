@@ -18,6 +18,6 @@ on:
 jobs:
   build-pr:
     name: Build and test
-    uses: navikt/mob-gha-workflows/.github/workflows/gradle-build-pr.yaml@main
+    uses: navikt/pengeflyt-gha-workflows/.github/workflows/gradle-build-pr.yaml@main
     with:
       gradle-task: './gradlew build installDist'
