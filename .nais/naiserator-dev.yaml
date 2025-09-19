@@ -1,7 +1,7 @@
 apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
-  name: sokos-ktor-template
+  name: sokos-oppgjorsrapporter
   namespace: okonomi
   labels:
     team: okonomi
@@ -30,7 +30,7 @@ spec:
       cpu: 100m
       memory: 512Mi
   ingresses:
-    - https://sokos-ktor-template.intern.dev.nav.no
+    - https://sokos-oppgjorsrapporter.intern.dev.nav.no
   prometheus:
     enabled: true
     path: /internal/metrics
@@ -41,6 +41,14 @@ spec:
   azure:
     application:
       enabled: true
+  gcp:
+    sqlInstances:
+      - type: POSTGRES_17
+        tier: db-f1-micro
+        databases:
+          - name: sokos-oppgjorsrapporter-db
+            users:
+              - name: appbruker
   accessPolicy:
     inbound:
       rules:
@@ -53,5 +61,3 @@ spec:
           namespace: nais-system
 
   env:
-    - name: USE_AUTHENTICATION
-      value: "true"

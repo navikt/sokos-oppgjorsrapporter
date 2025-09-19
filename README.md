@@ -1,15 +1,13 @@
-# sokos-ktor-template
+# sokos-oppgjorsrapporter
 
-Kan brukes som utgangspunkt for å opprette nye Ktor-backend applikasjoner for Team Motta og Beregne
+Backend-applikasjon for å
 
-## Tilpass repo-et
+1. motta grunnlag for oppgjørsrapportene K27, T14 og T12,
+2. generere dem i forskjellige formater,
+3. varsle når nye rapporter ligger tilgjengelig, og
+4. tilgjengeliggjøre dem for nedlasting (via API)
 
-1. Gi rettighet for å kjøre scriptet `chmod 755 setupTemplate.sh`
-2. Kjør scriptet:
-   ```
-   ./setupTemplate.sh
-   ```
-3. Fyll inn prosjektnavn (sokos-foo-bar) og artifaktnavn (foo.bar)
+APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening](https://github.com/navikt/sokos-oppgjorsrapporter-selvbetjening).
 
 ## Workflows
 
@@ -21,14 +19,33 @@ Kan brukes som utgangspunkt for å opprette nye Ktor-backend applikasjoner for T
     1. Denne kjøres når [Deploy application](.github/workflows/deploy.yaml) har kjørt ferdig
 4. [Deploy application manual](.github/workflows/manual-deploy.yaml) -> For å deploye applikasjonen manuelt til ulike miljøer
     1. Denne workflow trigges manuelt basert på branch og miljø
+5. [DB migration lint check](.github/workflows/db-migrationcheck.yml) -> Bruker [squawk](https://squawkhq.com/) til å gi tips om feil/forbedringer i nye database-migreringer
+    1. Trigges ved opprettelse/oppdatering av pull requests med target-branch `main`
 
 ## Bygge og kjøre prosjekt
 
-1. Bygg prosjektet ved å kjøre `./gradlew clean build shadowJar`
+1. Bygg prosjektet ved å kjøre `./gradlew installDist`
 2. Start appen lokalt ved å kjøre main metoden i ***Application.kt***
-3. For å kjøre tester i IntelliJ IDEA trenger du [Kotest IntelliJ Plugin](https://plugins.jetbrains.com/plugin/14080-kotest)
+3. Siden en del av testene benytter [testcontainers](https://testcontainers.com/), trenger man et fungerende Docker-kompatibelt "container runtime" på maskinen man skal kjøre på; se
+   [under](#oppsett-av-container-runtime-på-utviklingsmaskin).
+4. For å kjøre tester i IntelliJ IDEA trenger du [Kotest IntelliJ Plugin](https://plugins.jetbrains.com/plugin/14080-kotest)
 
-# NB!! Kommer du på noe lurt vi bør ha med i template som default så opprett gjerne en PR
+### Oppsett av container runtime på utviklingsmaskin
+
+Det finnes flere alternativer til [testcontainer-kompatible container runtimes](https://java.testcontainers.org/supported_docker_environment/).
+På en Mac kan man nokså kjapt få et Docker-oppsett som er testcontainers-kompatibelt slik:
+
+1. `brew install podman-desktop`
+2. Start "Podman Desktop"-appen
+3. Gå til "Settings", velg "Preferences", og skru på "Docker Compatibility"-knappen
+4. Gå til "Dashboard"
+5. Trykk på knappen for å installere Podman, og gjennomfør installasjonen
+
+   Forhåpentligvis vil `brew install podman` også virke etterhvert, men det har vært issues i f.eks. 5.6.0 med at brew-varianten er pakket uten noen ting den trenger, så som `krunkit`...
+6. Hvis det er et spørsmål om du ønsker "Mac helper"-dingsen på Dashboard-siden, så må du takke ja til det
+7. Hvis det er en "Podman needs to be set up"-boks der, trykker du "Set up" og følger instruksjonene
+8. Nå skal det stå "Podman vX.y.z RUNNING" nederst på Dashboardet, og ting bør virke
+9. Du kan evt. også dobbeltsjekke i Settings -> Docker Compatibility at "System socket status" viser "podman is listening"
 
 ## Henvendelser
 
@@ -50,7 +67,7 @@ Alt under her skal beholdes som en standard dokumentasjon som må fylles ut av u
 * [5. Autentisering](#5-autentisering)
 * [6. Drift og støtte](#6-drift-og-støtte)
 * [7. Swagger](#7-swagger)
-* [8. Henvendelser](#8-henvendelser)
+* [8. Henvendelser](#8-henvendelser-og-tilgang)
 
 ---
 
@@ -63,7 +80,7 @@ Hva er oppgaven til denne applikasjonen
 ### Forutsetninger
 
 * Java 21
-* [Gradle >= 8.9](https://gradle.org/)
+* [Gradle >= 9.0](https://gradle.org/)
 * [Kotest IntelliJ Plugin](https://plugins.jetbrains.com/plugin/14080-kotest)
 
 ### Bygge prosjekt
@@ -81,19 +98,17 @@ Legg ved skissediagram for hvordan arkitekturen er bygget
 # 4. Deployment
 
 Distribusjon av tjenesten er gjort med bruk av Github Actions.
-[sokos-ktor-template CI / CD](https://github.com/navikt/sokos-ktor-template/actions)
+[sokos-oppgjorsrapporter CI / CD](https://github.com/navikt/sokos-oppgjorsrapporter/actions)
 
 Push/merge til main branche vil teste, bygge og deploye til produksjonsmiljø og testmiljø.
 
-# 7. Autentisering
+# 5. Autentisering
 
-Applikasjonen bruker [AzureAD](https://docs.nais.io/security/auth/azure-ad/) autentisering
+Applikasjonen bruker [AzureAD](https://docs.nais.io/security/auth/azure-ad/) for autentisering av interne brukere, og MaskinPorten/MinID for autentisering av eksterne brukere.
 
 # 6. Drift og støtte
 
 ### Logging
-
-https://logs.adeo.no.
 
 Feilmeldinger og infomeldinger som ikke innheholder sensitive data logges til [Grafana Loki](https://docs.nais.io/observability/logging/#grafana-loki).  
 Sensitive meldinger logges til [Team Logs](https://doc.nais.io/observability/logging/how-to/team-logs/).
@@ -104,16 +119,16 @@ For dev-gcp:
 
 ```shell script
 kubectl config use-context dev-gcp
-kubectl get pods -n okonomi | grep sokos-ktor-template
-kubectl logs -f sokos-ktor-template-<POD-ID> --namespace okonomi -c sokos-ktor-template
+kubectl get pods -n okonomi | grep sokos-oppgjorsrapporter
+kubectl logs -f sokos-oppgjorsrapporter-<POD-ID> --namespace okonomi -c sokos-oppgjorsrapporter
 ```
 
 For prod-gcp:
 
 ```shell script
 kubectl config use-context prod-gcp
-kubectl get pods -n okonomi | grep sokos-ktor-template
-kubectl logs -f sokos-ktor-template-<POD-ID> --namespace okonomi -c sokos-ktor-template
+kubectl get pods -n okonomi | grep sokos-oppgjorsrapporter
+kubectl logs -f sokos-oppgjorsrapporter-<POD-ID> --namespace okonomi -c sokos-oppgjorsrapporter
 ```
 
 ### Alarmer
@@ -139,4 +154,3 @@ Hva er url til Lokal, dev og prod?
 
 Spørsmål knyttet til koden eller prosjektet kan stilles som issues her på Github.
 Interne henvendelser kan sendes via Slack i kanalen [#utbetaling](https://nav-it.slack.com/archives/CKZADNFBP)
-
