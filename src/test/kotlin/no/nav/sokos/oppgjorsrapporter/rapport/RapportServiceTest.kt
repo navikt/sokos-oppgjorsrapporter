@@ -46,8 +46,7 @@ class RapportServiceTest :
                         val ulagret =
                             UlagretRapport(OrgNr("39487569"), RapportType.K27, "K27 for Ulende Gås 2023-07-14", LocalDate.of(2023, 7, 14))
                         val rapport = sut.insert(ulagret)
-                        rapport shouldNotBe null
-                        rapport!!.id shouldBe Rapport.Id(2)
+                        rapport.id shouldBe Rapport.Id(2)
                         rapport.orgNr shouldBe ulagret.orgNr
                         rapport.type shouldBe ulagret.type
                     }
@@ -182,11 +181,10 @@ class RapportServiceTest :
                         val rapport = sut.insert(ulagretRapport)
 
                         val innhold = UUID.randomUUID().toString().encodeToByteString()
-                        val ulagretVariant = UlagretVariant(rapport!!.id, VariantFormat.Pdf, rapport.filnavn(VariantFormat.Pdf), innhold)
+                        val ulagretVariant = UlagretVariant(rapport.id, VariantFormat.Pdf, rapport.filnavn(VariantFormat.Pdf), innhold)
 
                         val variant = sut.insertVariant(ulagretVariant)
-                        variant shouldNotBe null
-                        variant!!.id shouldBe Variant.Id(3)
+                        variant.id shouldBe Variant.Id(3)
                         variant.rapportId shouldBe rapport.id
                         variant.format shouldBe VariantFormat.Pdf
                         variant.filnavn shouldBe "39487569_K27_2023-07-14.pdf"

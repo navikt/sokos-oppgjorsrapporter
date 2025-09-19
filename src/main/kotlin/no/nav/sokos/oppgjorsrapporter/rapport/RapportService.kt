@@ -9,7 +9,7 @@ import kotliquery.sessionOf
 import kotliquery.using
 
 class RapportService(private val dataSource: DataSource) {
-    fun insert(rapport: UlagretRapport): Rapport? =
+    fun insert(rapport: UlagretRapport): Rapport =
         using(sessionOf(dataSource)) { session ->
             val query =
                 queryOf(
@@ -29,7 +29,7 @@ class RapportService(private val dataSource: DataSource) {
                     .map { row -> Rapport(row) }
                     .asSingle
             session.transaction { tx ->
-                tx.run(query)?.also {
+                tx.run(query)!!.also {
                     audit(
                         tx,
                         RapportAudit(
@@ -80,7 +80,7 @@ class RapportService(private val dataSource: DataSource) {
             session.transaction { tx -> tx.run(query) }
         }
 
-    fun insertVariant(variant: UlagretVariant): Variant? =
+    fun insertVariant(variant: UlagretVariant): Variant =
         using(sessionOf(dataSource)) { session ->
             val query =
                 queryOf(
@@ -100,7 +100,7 @@ class RapportService(private val dataSource: DataSource) {
                     .map { row -> Variant(row) }
                     .asSingle
             session.transaction { tx ->
-                tx.run(query)?.also {
+                tx.run(query)!!.also {
                     audit(
                         tx,
                         RapportAudit(
