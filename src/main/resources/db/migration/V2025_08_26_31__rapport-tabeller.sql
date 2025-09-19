@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS rapport_variant
     rapport_id BIGINT         NOT NULL REFERENCES rapport (id) DEFERRABLE INITIALLY DEFERRED,
     format     rapport_format NOT NULL,
     filnavn    TEXT           NOT NULL UNIQUE,
-    innhold    BYTEA          NOT NULL
+    innhold    BYTEA          NOT NULL,
+    CONSTRAINT format_unique_per_rapport UNIQUE (rapport_id, format)
 );
 
 CREATE TABLE IF NOT EXISTS rapport_audit
