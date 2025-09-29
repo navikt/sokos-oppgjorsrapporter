@@ -14,14 +14,14 @@ val mockkVersion = "1.14.5"
 val hikariVersion = "7.0.2"
 val postgresVersion = "42.7.8"
 val kotliqueryVersion = "1.9.1"
-val flywayVersion = "11.13.1"
+val flywayVersion = "11.13.2"
 val testcontainersVersion = "1.21.3"
 
 plugins {
     application
     kotlin("jvm") version "2.2.20"
     kotlin("plugin.serialization") version "2.2.20"
-    id("com.diffplug.spotless") version "7.2.1"
+    id("com.diffplug.spotless") version "8.0.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.2"
 }
 
