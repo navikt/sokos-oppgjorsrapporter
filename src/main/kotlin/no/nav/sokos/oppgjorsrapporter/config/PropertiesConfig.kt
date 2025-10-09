@@ -104,14 +104,22 @@ object PropertiesConfig {
         }
     }
 
-    data class SecurityProperties(val azureAdProperties: AzureAdProperties) {
-        constructor(source: ConfigSource) : this(azureAdProperties = AzureAdProperties(source))
-    }
-
-    class AzureAdProperties(val clientId: String, val wellKnownUrl: String) {
+    data class SecurityProperties(val azureAdProperties: AzureAdProperties, val maskinportenProperties: MaskinportenProperties) {
         constructor(
             source: ConfigSource
-        ) : this(clientId = source.get("AZURE_APP_CLIENT_ID"), wellKnownUrl = source.get("AZURE_APP_WELL_KNOWN_URL"))
+        ) : this(azureAdProperties = AzureAdProperties(source), maskinportenProperties = MaskinportenProperties(source))
+    }
+
+    class AzureAdProperties(val clientId: String, val wellknownUrl: String) {
+        constructor(
+            source: ConfigSource
+        ) : this(clientId = source.get("AZURE_APP_CLIENT_ID"), wellknownUrl = source.get("AZURE_APP_WELL_KNOWN_URL"))
+    }
+
+    class MaskinportenProperties(val wellknownUrl: String, val eksponertScope: String) {
+        constructor(
+            source: ConfigSource
+        ) : this(wellknownUrl = source.get("maskinporten.wellknownUrl"), eksponertScope = source.get("maskinporten.eksponert_scope"))
     }
 
     enum class Profile {

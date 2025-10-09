@@ -1,0 +1,239 @@
+openapi: "3.1.0"
+tags:
+  - name: "Oppgjørsrapport"
+
+info:
+  title: "Oppgjørsrapporter API"
+  description: "API for oppgjørsrapporter: Refusjon arbeidsgiver (K27), Trekkoppgjør kreditor (T14), Trekkhendelser (T12)"
+  version: "1.0.0"
+
+servers:
+  - url: https://sokos-oppgjorsrapporter.ekstern.dev.nav-no/
+    description: dev
+  - url: https://sokos-oppgjorsrapporter.ekstern.nav-no/
+    description: prod
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/rapport/v1/rapport:
+    get:
+      description: ""
+      parameters:
+        - name: "inkluderArkiverte"
+          in: "query"
+          required: false
+          schema:
+            type: "boolean"
+        - name: "orgnr"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Rapport"
+        "400":
+          description: "Bad Request <br> TODO: Finne orgnr brukeren har rettigheter\
+            \ til fra MinID-token, liste for alle dem"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Mangler orgnr"
+  /api/rapport/v1/rapport/{id}:
+    get:
+      description: ""
+      parameters:
+        - name: "inkluderArkiverte"
+          in: "query"
+          required: false
+          schema:
+            type: "boolean"
+        - name: "orgnr"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+  /api/rapport/v1/rapport/{id}/arkiver:
+    put:
+      description: ""
+      parameters:
+        - name: "inkluderArkiverte"
+          in: "query"
+          required: false
+          schema:
+            type: "boolean"
+        - name: "orgnr"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "arkivert"
+          in: "query"
+          required: false
+          schema:
+            type: "boolean"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+  /api/rapport/v1/rapport/{id}/innhold:
+    get:
+      description: ""
+      parameters:
+        - name: "inkluderArkiverte"
+          in: "query"
+          required: false
+          schema:
+            type: "boolean"
+        - name: "orgnr"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+  /internal/isAlive:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+        "500":
+          description: "Internal Server Error"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "I'm dead x_x"
+  /internal/isReady:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+        "500":
+          description: "Internal Server Error"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+  /internal/metrics:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+components:
+  schemas:
+    Instant:
+      type: "object"
+      properties: { }
+    Rapport:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        orgNr:
+          type: "string"
+        type:
+          type: "string"
+          enum:
+            - "K27"
+            - "T12"
+            - "T14"
+        tittel:
+          type: "string"
+        datoValutert:
+          type: "string"
+          format: "date"
+        opprettet:
+          $ref: "#/components/schemas/Instant"
+        arkivert:
+          nullable: true
+          $ref: "#/components/schemas/Instant"
+      required:
+        - "id"
+        - "orgNr"
+        - "type"
+        - "tittel"
+        - "datoValutert"
+        - "opprettet"
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Kan bruke [Altinn systembruker](https://docs.altinn.studio/nb/authorization/guides/system-vendor/system-user/), eller [Entra ID](https://docs.nais.io/auth/entra-id/) til autentisering.
+        Token må ha `audience` satt til `[cluster]:okonomi:sokos-oppgjorsrapporter`.
+        
+        For å teste APIet kan du lage et gyldig OBO-token ved å bruke wonderwall:
+        - [dev-gcp](https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp:okonomi:sokos-oppgjorsrapporter)

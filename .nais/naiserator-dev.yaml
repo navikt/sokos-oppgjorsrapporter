@@ -48,6 +48,20 @@ spec:
           - azp_name
         #groups:
          # - id: 138d21fb-4e96-46d6-91e4-e3926aa349e5 # 0000-CA-SOKOS-MF-UTBETALING
+  maskinporten:
+    enabled: true
+    scopes:
+      exposes:
+        - accessibleForAll: true
+          atMaxAge: 600 # OK med lang token-levetid i dev
+          enabled: true
+          product: utbetaling
+          separator: "/"
+          name: oppgjorsrapporter
+      consumes:
+        - name: "altinn:authorization/authorize"
+  tokenx:
+    enabled: true
   gcp:
     sqlInstances:
       - type: POSTGRES_17
@@ -66,16 +80,4 @@ spec:
       rules:
         - application: logging
           namespace: nais-system
-  maskinporten:
-    enabled: true
-    scopes:
-      exposes:
-        - accessibleForAll: true
-          atMaxAge: 600
-          enabled: true
-          product: utbetaling
-          separator: "/"
-          name: oppgjorsrapporter
-      consumes:
-        - name: "altinn:authorization/authorize"
   env:
