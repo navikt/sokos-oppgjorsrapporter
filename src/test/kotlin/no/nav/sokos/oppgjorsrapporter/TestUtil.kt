@@ -1,16 +1,29 @@
 package no.nav.sokos.oppgjorsrapporter
 
 import io.ktor.server.config.*
+import io.ktor.server.plugins.di.DI
+import io.ktor.server.testing.ApplicationTestBuilder
+import io.ktor.server.testing.testApplication
 import java.sql.Connection.TRANSACTION_SERIALIZABLE
 import java.sql.DatabaseMetaData
 import javax.sql.DataSource
+import kotlinx.coroutines.test.TestResult
 import mu.KotlinLogging
+import no.nav.security.mock.oauth2.MockOAuth2Server
+import no.nav.security.mock.oauth2.withMockOAuth2Server
+import no.nav.sokos.oppgjorsrapporter.TestUtil.getOverrides
+import no.nav.sokos.oppgjorsrapporter.config.CompositeApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
 import org.testcontainers.containers.PostgreSQLContainer
 
 private val logger = KotlinLogging.logger {}
 
 object TestUtil {
+    fun withFullApplication(container: PostgreSQLContainer<Nothing>, thunk: suspend ApplicationTestBuilder.() -> Unit): TestResult =
+        withMockOAuth2Server {
+            withTestApplication(container, thunk)
+        }
+
     fun getOverrides(container: PostgreSQLContainer<Nothing>): MapApplicationConfig =
         MapApplicationConfig()
             .apply {
@@ -122,4 +135,34 @@ object TestUtil {
                 }
             }
         }
+}
+
+fun MockOAuth2Server.authConfigOverrides() =
+    MapApplicationConfig().apply {
+        put("AZURE_APP_CLIENT_ID", "default")
+        put("AZURE_APP_WELL_KNOWN_URL", wellKnownUrl("default").toString())
+    }
+
+fun MockOAuth2Server.withTestApplication(container: PostgreSQLContainer<Nothing>, thunk: suspend ApplicationTestBuilder.() -> Unit) {
+    testApplication {
+        environment {
+            config = CompositeApplicationConfig(getOverrides(container), authConfigOverrides(), ApplicationConfig("application.conf"))
+        }
+        install(DI) {
+            onShutdown = { dependencyKey, instance ->
+                when (instance) {
+                    // Vi ønsker bare en DataSource i bruk for en hel test-kjøring, selv om flere tester start/stopper
+                    // applikasjonen;
+                    // dette er en opt-out av auto-close-greiene til Kotlins DI-extension:
+                    is DataSource -> {}
+                    is AutoCloseable -> instance.close()
+                }
+            }
+        }
+
+        application { module() }
+        startApplication()
+
+        thunk()
+    }
 }

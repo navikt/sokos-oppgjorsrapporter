@@ -6,7 +6,6 @@ import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.addShutdownHook
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.di.DI
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.resources.Resources
 import io.ktor.util.AttributeKey
@@ -38,16 +37,6 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
 
     DatabaseConfig.init(config)
 
-    install(DI) {
-        onShutdown = { dependencyKey, instance ->
-            when (instance) {
-                // Vi ønsker bare en DataSource i bruk for en hel test-kjøring, selv om flere tester start/stopper applikasjonen;
-                // dette er en opt-out av auto-close-greiene til Kotlins DI-extension:
-                is DataSource -> {}
-                is AutoCloseable -> instance.close()
-            }
-        }
-    }
     install(Resources)
 
     dependencies {
