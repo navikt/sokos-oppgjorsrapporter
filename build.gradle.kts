@@ -139,16 +139,10 @@ spotless {
     kotlin {
         targetExclude("src/main/java/**/*")
         targetExclude("build/generated/**/*")
-        // Det hadde vært fint om `ktfmt()` uten å angi noen spesifikk versjon hadde virket, men den versjonen av ktfmt som pr. default dras inn av spotless tåler f.eks. ikke
-        // [multi-dollar string interpolation](https://kotlinlang.org/docs/strings.html#multi-dollar-string-interpolation) - som sluttet å være en eksperimentell feature i Kotlin 2.2, og er nyttig
-        // hvis man f.eks. skal bruke [PostgreSQL sine "dollar-quoted string constants"](https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING) i Kotlin-strings.
-        //
-        // Dette er fikset fra 0.56, så da ber vi om den. Nyere ktfmt-versjoner enn det igjen krever endringer i Spotless.
-        // OBS: Husk å (forsøke å) fjerne denne versjon-overriden neste gang vi oppgraderer Spotless.
-        ktfmt("0.56").kotlinlangStyle().configure {
+        ktfmt().kotlinlangStyle().configure {
             it.setMaxWidth(140)
             it.setRemoveUnusedImports(true)
-            it.setManageTrailingCommas(true)
+            it.setTrailingCommaManagementStrategy(com.diffplug.spotless.kotlin.KtfmtStep.TrailingCommaManagementStrategy.COMPLETE)
         }
     }
 }
