@@ -172,7 +172,7 @@ class RapportService(private val dataSource: DataSource) {
                 """
                     INSERT INTO rapport.rapport_audit (rapport_id, variant_id, tidspunkt, hendelse, brukernavn, tekst)
                     VALUES (:rapportId, :variantId, :tidspunkt, :hendelse, :brukernavn, :tekst)
-               """
+                """
                     .trimIndent(),
                 mapOf(
                     "rapportId" to data.rapportId.raw,

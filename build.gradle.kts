@@ -1,7 +1,7 @@
 group = "no.nav.sokos"
 
 val ktorVersion = "3.3.0"
-val logbackVersion = "1.5.18"
+val logbackVersion = "1.5.19"
 val logstashVersion = "8.1"
 val micrometerVersion = "1.15.4"
 val kotlinLoggingVersion = "3.0.5"
@@ -10,18 +10,18 @@ val konfigVersion = "1.6.10.0"
 val kotestVersion = "6.0.3"
 val kotlinxSerializationVersion = "1.9.0"
 val mockOAuth2ServerVersion = "3.0.0"
-val mockkVersion = "1.14.5"
+val mockkVersion = "1.14.6"
 val hikariVersion = "7.0.2"
 val postgresVersion = "42.7.8"
 val kotliqueryVersion = "1.9.1"
-val flywayVersion = "11.13.1"
+val flywayVersion = "11.13.2"
 val testcontainersVersion = "1.21.3"
 
 plugins {
     application
     kotlin("jvm") version "2.2.20"
     kotlin("plugin.serialization") version "2.2.20"
-    id("com.diffplug.spotless") version "7.2.1"
+    id("com.diffplug.spotless") version "8.0.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.2"
 }
 
@@ -139,16 +139,10 @@ spotless {
     kotlin {
         targetExclude("src/main/java/**/*")
         targetExclude("build/generated/**/*")
-        // Det hadde vært fint om `ktfmt()` uten å angi noen spesifikk versjon hadde virket, men den versjonen av ktfmt som pr. default dras inn av spotless tåler f.eks. ikke
-        // [multi-dollar string interpolation](https://kotlinlang.org/docs/strings.html#multi-dollar-string-interpolation) - som sluttet å være en eksperimentell feature i Kotlin 2.2, og er nyttig
-        // hvis man f.eks. skal bruke [PostgreSQL sine "dollar-quoted string constants"](https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING) i Kotlin-strings.
-        //
-        // Dette er fikset fra 0.56, så da ber vi om den. Nyere ktfmt-versjoner enn det igjen krever endringer i Spotless.
-        // OBS: Husk å (forsøke å) fjerne denne versjon-overriden neste gang vi oppgraderer Spotless.
-        ktfmt("0.56").kotlinlangStyle().configure {
+        ktfmt().kotlinlangStyle().configure {
             it.setMaxWidth(140)
             it.setRemoveUnusedImports(true)
-            it.setManageTrailingCommas(true)
+            it.setTrailingCommaManagementStrategy(com.diffplug.spotless.kotlin.KtfmtStep.TrailingCommaManagementStrategy.COMPLETE)
         }
     }
 }
