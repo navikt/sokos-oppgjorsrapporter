@@ -30,7 +30,7 @@ fun Application.securityConfig(config: PropertiesConfig.Configuration) {
                 TokenSupportConfig(
                     IssuerConfig(
                         name = "azureAd",
-                        discoveryUrl = config.securityProperties.azureAdProperties.wellknownUrl,
+                        discoveryUrl = config.securityProperties.azureAdProperties.wellKnownUrl,
                         acceptedAudience = listOf(config.securityProperties.azureAdProperties.clientId),
                     )
                 ),
@@ -41,7 +41,7 @@ fun Application.securityConfig(config: PropertiesConfig.Configuration) {
                 TokenSupportConfig(
                     IssuerConfig(
                         name = "maskinporten",
-                        discoveryUrl = config.securityProperties.maskinportenProperties.wellknownUrl,
+                        discoveryUrl = config.securityProperties.maskinportenProperties.wellKnownUrl,
                         acceptedAudience = listOf(config.securityProperties.maskinportenProperties.eksponertScope),
                         optionalClaims = listOf("aud", "sub"),
                     )
