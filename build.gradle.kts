@@ -1,6 +1,6 @@
 group = "no.nav.sokos"
 
-val ktorVersion = "3.3.0"
+val ktorVersion = "3.3.1"
 val logbackVersion = "1.5.19"
 val logstashVersion = "8.1"
 val micrometerVersion = "1.15.4"
@@ -14,7 +14,7 @@ val mockkVersion = "1.14.6"
 val hikariVersion = "7.0.2"
 val postgresVersion = "42.7.8"
 val kotliqueryVersion = "1.9.1"
-val flywayVersion = "11.13.2"
+val flywayVersion = "11.14.0"
 val testcontainersVersion = "1.21.3"
 
 plugins {
