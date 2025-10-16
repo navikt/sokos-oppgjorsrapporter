@@ -21,6 +21,8 @@ import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
+import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
+import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 
 fun main() {
@@ -42,6 +44,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
     dependencies {
         provide<DataSource> { DatabaseConfig.dataSource }
         provide(RapportService::class)
+        provide<PdpService>(AltinnPdpService::class)
     }
 
     commonConfig()

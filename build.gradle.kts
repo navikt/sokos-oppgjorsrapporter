@@ -17,6 +17,8 @@ val mockkVersion = "1.14.6"
 val postgresVersion = "42.7.8"
 val testcontainersVersion = "1.21.3"
 val tokenSupportVersion = "5.0.24"
+val utilsVersion = "0.10.1"
+val pdpClientVersion = "1.0.0"
 
 plugins {
     application
@@ -31,7 +33,15 @@ application {
 }
 
 repositories {
+    val githubPassword: String by project
     mavenCentral()
+    maven {
+        setUrl("https://maven.pkg.github.com/navikt/*")
+        credentials {
+            username = "x-access-token"
+            password = githubPassword
+        }
+    }
 }
 
 dependencies {
@@ -46,7 +56,7 @@ dependencies {
 
     // Ktor client
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-client-apache-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-apache5-jvm:$ktorVersion")
 
     // Database
     implementation("com.zaxxer:HikariCP:$hikariVersion")
@@ -73,6 +83,11 @@ dependencies {
 
     // Config
     implementation("com.natpryce:konfig:$konfigVersion")
+
+    // Inntil vi får tenkt gjennom om vi vil gjøre serialization etc. annerledes så henter vi inn Team HAG sine utils
+    implementation("no.nav.helsearbeidsgiver:utils:${utilsVersion}")
+    implementation("no.nav.helsearbeidsgiver:altinn-pdp-client:${pdpClientVersion}")
+    testImplementation(testFixtures("no.nav.helsearbeidsgiver:utils:$utilsVersion"))
 
     // Test
     testImplementation("io.ktor:ktor-server-test-host-jvm:$ktorVersion")

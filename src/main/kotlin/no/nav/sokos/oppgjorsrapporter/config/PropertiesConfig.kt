@@ -9,6 +9,7 @@ import com.natpryce.konfig.stringType
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.config.ApplicationConfigValue
 import java.io.File
+import java.net.URI
 
 fun configFrom(config: ApplicationConfig): PropertiesConfig.Configuration {
     val configSource = configSourceFrom(config)
@@ -116,10 +117,16 @@ object PropertiesConfig {
         ) : this(clientId = source.get("AZURE_APP_CLIENT_ID"), wellKnownUrl = source.get("AZURE_APP_WELL_KNOWN_URL"))
     }
 
-    class MaskinportenProperties(val wellKnownUrl: String, val eksponertScope: String) {
+    class MaskinportenProperties(val wellKnownUrl: String, val eksponertScope: String, val pdpScope: String, val altinn3BaseUrl: URI, val subscriptionKey: String) {
         constructor(
             source: ConfigSource
-        ) : this(wellKnownUrl = source.get("maskinporten.wellKnownUrl"), eksponertScope = source.get("maskinporten.eksponert_scope"))
+        ) : this(
+            wellKnownUrl = source.get("maskinporten.wellKnownUrl"),
+            eksponertScope = source.get("maskinporten.eksponert_scope"),
+            pdpScope = source.get("maskinporten.pdp_scope"),
+            altinn3BaseUrl = URI.create(source.get("maskinporten.altinn_base_url")),
+            subscriptionKey = source.get("ALTINN_SUBSCRIPTION_KEY"),
+        )
     }
 
     enum class Profile {
