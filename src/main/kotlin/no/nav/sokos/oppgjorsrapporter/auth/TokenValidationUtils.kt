@@ -14,19 +14,20 @@ fun String.gyldigOrgnr(): Boolean = this.matches(Regex("\\d{9}"))
 
 fun TokenValidationContext.getSystembrukerOrgnr(): String {
     val authorizationDetails = this.getAuthDetails()
-    val systemBrukerOrgMap = authorizationDetails.first().get("systemuser_org") as Map<String, String>
-    val systemBrukerOrgnr = systemBrukerOrgMap.extractOrgnummer()
+    val systemBrukerOrgMap = authorizationDetails.first().get("systemuser_org") as? Map<*, *>
+    val systemBrukerOrgnr = systemBrukerOrgMap?.extractOrgnummer()
     require(systemBrukerOrgnr != null)
     return systemBrukerOrgnr
 }
 
 fun TokenValidationContext.getConsumerOrgnr(): String {
-    val consumer = this.getClaims("maskinporten").get("consumer") as Map<String, String>
-    val orgnr = consumer.extractOrgnummer()
+    val consumer = this.getClaims("maskinporten").get("consumer") as? Map<*, *>
+    val orgnr = consumer?.extractOrgnummer()
     require(orgnr != null)
     return orgnr
 }
 
-fun TokenValidationContext.getAuthDetails() = this.getClaims("maskinporten").get("authorization_details") as List<Map<String, String>>
+fun TokenValidationContext.getAuthDetails() =
+    (this.getClaims("maskinporten").get("authorization_details") as? List<*>)?.filterIsInstance<Map<*, *>>() ?: emptyList()
 
-private fun Map<String, String>.extractOrgnummer(): String? = get("ID")?.split(":")?.get(1)
+private fun Map<*, *>.extractOrgnummer(): String? = (get("ID") as? String)?.split(":")?.get(1)

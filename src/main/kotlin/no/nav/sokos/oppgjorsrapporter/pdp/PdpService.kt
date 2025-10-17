@@ -27,7 +27,7 @@ class AltinnPdpService(val securityProperties: PropertiesConfig.SecurityProperti
 }
 
 object LocalhostPdpService : PdpService {
-    override fun harTilgang(systembruker: String, orgnrSet: Set<String>, ressurs: String): Boolean {
+    override fun harTilgang(systembruker: String, orgnumre: Set<String>, ressurs: String): Boolean {
         sikkerLogger().info("Ingen PDP, har tilgang")
         return true
     }

@@ -14,13 +14,13 @@ import no.nav.helsearbeidsgiver.utils.log.sikkerLogger
 interface AuthClient {
     fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): () -> String
 
-    suspend fun altinnExchange(maskinportenTokenGetter: String): String
+    suspend fun altinnExchange(maskinportenToken: String): String
 }
 
 class NoOpAuthClient : AuthClient {
     override fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): () -> String = { "dummy-token" }
 
-    override suspend fun altinnExchange(maskinportenTokenGetter: String): String = "dummy-token"
+    override suspend fun altinnExchange(maskinportenToken: String): String = "dummy-token"
 }
 
 class DefaultAuthClient(
@@ -81,10 +81,10 @@ class DefaultAuthClient(
             )
             .body()
 
-    override suspend fun altinnExchange(token: String): String {
+    override suspend fun altinnExchange(maskinportenToken: String): String {
         val tokenAltinn3ExchangeEndpoint: URI = altinn3BaseUrl.resolve("/authentication/api/v1/exchange/maskinporten")
 
-        return httpClient.get(tokenAltinn3ExchangeEndpoint.toURL()) { bearerAuth(token) }.bodyAsText().replace("\"", "")
+        return httpClient.get(tokenAltinn3ExchangeEndpoint.toURL()) { bearerAuth(maskinportenToken) }.bodyAsText().replace("\"", "")
     }
 
     private suspend fun ResponseException.logAndRethrow(): Nothing {
