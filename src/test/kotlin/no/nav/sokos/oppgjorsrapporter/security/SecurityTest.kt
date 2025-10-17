@@ -21,7 +21,7 @@ class SecurityTest :
             test("test http GET endepunkt uten token bør returnere 401") {
                 withMockOAuth2Server {
                     withTestApplication(container) {
-                        val response = client.get("/api/rapport/v1/rapport")
+                        val response = client.get("/api/rapport/v1")
                         response.status shouldBe HttpStatusCode.Unauthorized
                     }
                 }
@@ -44,7 +44,7 @@ class SecurityTest :
                             }
                         }
                         val response =
-                            client.get("/api/rapport/v1/rapport?orgnr=987654321") {
+                            client.get("/api/rapport/v1?orgnr=987654321") {
                                 header("Authorization", "Bearer ${mockOAuth2Server.tokenFromDefaultProvider()}")
                                 contentType(ContentType.Application.Json)
                             }
