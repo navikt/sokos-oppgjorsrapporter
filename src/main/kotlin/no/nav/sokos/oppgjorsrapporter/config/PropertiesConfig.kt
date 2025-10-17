@@ -120,18 +120,18 @@ object PropertiesConfig {
     class MaskinportenProperties(
         val wellKnownUrl: String,
         val eksponertScope: String,
-        val pdpScope: String,
         val altinn3BaseUrl: URI,
         val subscriptionKey: String,
+        val pdpScope: String,
     ) {
         constructor(
             source: ConfigSource
         ) : this(
             wellKnownUrl = source.get("maskinporten.wellKnownUrl"),
             eksponertScope = source.get("maskinporten.eksponert_scope"),
-            pdpScope = source.get("maskinporten.pdp_scope"),
-            altinn3BaseUrl = URI.create(source.get("maskinporten.altinn_base_url")),
-            subscriptionKey = source.get("ALTINN_SUBSCRIPTION_KEY"),
+            altinn3BaseUrl = URI.create(source.get("altinn.base_url")),
+            subscriptionKey = source.get("altinn.subscription_key"),
+            pdpScope = source.get("altinn.pdp_scope"),
         )
     }
 
