@@ -13,9 +13,7 @@ internal fun createHttpClient(): HttpClient = HttpClient(Apache5) { configure() 
 internal fun HttpClientConfig<*>.configure() {
     expectSuccess = true
 
-    install(ContentNegotiation) {
-        json(jsonConfig)
-    }
+    install(ContentNegotiation) { json(jsonConfig) }
 }
 
 internal fun ParametersBuilder.identityProvider(identityProvider: AuthClientIdentityProvider) {

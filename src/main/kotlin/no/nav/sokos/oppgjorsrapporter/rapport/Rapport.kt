@@ -8,8 +8,8 @@ import java.time.format.DateTimeFormatter
 import kotlinx.io.bytestring.ByteString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -39,36 +39,21 @@ data class UlagretRapport(
     override val datoValutert: LocalDate,
 ) : RapportFelter
 
-abstract class AsStringSerializer<T : Any>(
-    serialName: String,
-    private val parse: (String) -> T,
-) : KSerializer<T> {
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
+abstract class AsStringSerializer<T : Any>(serialName: String, private val parse: (String) -> T) : KSerializer<T> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
 
-    override fun serialize(
-        encoder: Encoder,
-        value: T,
-    ) {
+    override fun serialize(encoder: Encoder, value: T) {
         value.toString().let(encoder::encodeString)
     }
 
-    override fun deserialize(decoder: Decoder): T =
-        decoder
-            .decodeString()
-            .runCatching(parse)
-            .getOrElse { throw SerializationException(it) }
+    override fun deserialize(decoder: Decoder): T = decoder.decodeString().runCatching(parse).getOrElse { throw SerializationException(it) }
 }
 
-object LocalDateSerializer : AsStringSerializer<LocalDate>(
-    serialName = "utbetaling.pengeflyt.kotlinx.LocalDateSerializer",
-    parse = LocalDate::parse,
-)
+object LocalDateSerializer :
+    AsStringSerializer<LocalDate>(serialName = "utbetaling.pengeflyt.kotlinx.LocalDateSerializer", parse = LocalDate::parse)
 
-object InstantSerializer : AsStringSerializer<Instant>(
-    serialName = "utbetaling.pengeflyt.kotlinx.LocalDateSerializer",
-    parse = Instant::parse,
-)
+object InstantSerializer :
+    AsStringSerializer<Instant>(serialName = "utbetaling.pengeflyt.kotlinx.LocalDateSerializer", parse = Instant::parse)
 
 @Serializable
 data class Rapport(

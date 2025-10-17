@@ -117,7 +117,13 @@ object PropertiesConfig {
         ) : this(clientId = source.get("AZURE_APP_CLIENT_ID"), wellKnownUrl = source.get("AZURE_APP_WELL_KNOWN_URL"))
     }
 
-    class MaskinportenProperties(val wellKnownUrl: String, val eksponertScope: String, val pdpScope: String, val altinn3BaseUrl: URI, val subscriptionKey: String) {
+    class MaskinportenProperties(
+        val wellKnownUrl: String,
+        val eksponertScope: String,
+        val pdpScope: String,
+        val altinn3BaseUrl: URI,
+        val subscriptionKey: String,
+    ) {
         constructor(
             source: ConfigSource
         ) : this(
