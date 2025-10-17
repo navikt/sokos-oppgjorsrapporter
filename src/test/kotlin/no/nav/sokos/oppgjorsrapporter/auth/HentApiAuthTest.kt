@@ -28,7 +28,9 @@ import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class ApiTest {
     val orgnrUtenPdpTilgang = Orgnr.genererGyldig().verdi
     val hovedenhetOrgnrMedPdpTilgang = Orgnr.genererGyldig().verdi
@@ -73,6 +75,7 @@ abstract class ApiTest {
     }
 }
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class HentApiAuthTest : ApiTest() {
     @BeforeEach
     fun setup() {

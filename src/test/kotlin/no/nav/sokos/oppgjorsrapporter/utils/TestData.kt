@@ -14,7 +14,7 @@ object TestData {
             type = RapportType.K27,
             tittel = "K27 for Snikende Maur 2024-11-01",
             datoValutert = LocalDate.parse("2024-11-01"),
-            opprettet = Instant.parse("2024-11-01T13:15:02+0100"),
+            opprettet = Instant.parse("2024-11-01T12:15:02Z"),
             arkivert = null,
         )
 }
