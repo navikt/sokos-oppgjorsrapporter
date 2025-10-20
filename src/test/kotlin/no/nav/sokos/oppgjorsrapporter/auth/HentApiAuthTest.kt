@@ -107,7 +107,7 @@ class HentApiAuthTest : ApiTest() {
 
         runBlocking {
             val respons =
-                client.get(urlString = "/api/rapport/v1/$rapportId/innhold") {
+                client.get(urlString = "/api/rapport/v1/$rapportId") {
                     bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(hovedenhetOrgnrMedPdpTilgang))
                 }
 

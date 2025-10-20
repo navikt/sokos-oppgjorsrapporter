@@ -38,16 +38,16 @@ fun Route.rapportApi() {
     }
 
     get<ApiPaths.Rapporter.Id> { rapport ->
-        call.respondText("info om spesifikk rapport: $rapport")
-        TODO()
-    }
-
-    get<ApiPaths.Rapporter.Id.Innhold> { innhold ->
-        val rapport = rapportService.findById(Rapport.Id(innhold.parent.id))
+        val rapport = rapportService.findById(Rapport.Id(rapport.id))
         if (rapport == null) {
             return@get call.respond(HttpStatusCode.NotFound)
         }
         call.respond(rapport)
+    }
+
+    get<ApiPaths.Rapporter.Id.Innhold> { innhold ->
+        call.respondText("innhold fra variant av $innhold")
+        TODO()
     }
 
     put<ApiPaths.Rapporter.Id.Arkiver> { arkiver ->
