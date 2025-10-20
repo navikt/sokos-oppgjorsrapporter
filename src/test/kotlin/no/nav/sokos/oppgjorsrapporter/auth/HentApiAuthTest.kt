@@ -99,7 +99,7 @@ class HentApiAuthTest : ApiTest() {
     }
 
     @Test
-    fun `gir 200 OK ved henting av en spesifikk rapport som systembruker har tilgang til`() {
+    fun `gir 200 OK ved henting av metainfo om en spesifikk rapport som systembruker har tilgang til`() {
         val rapportId = 123L
         val rapport = mockRapport(id = rapportId, orgnr = underenhetOrgnrMedPdpTilgang)
 
@@ -114,6 +114,23 @@ class HentApiAuthTest : ApiTest() {
             respons.status shouldBe HttpStatusCode.OK
             val rapport = respons.bodyAsText().fromJson(Rapport.serializer())
             rapport.orgNr shouldBe underenhetOrgnrMedPdpTilgang
+        }
+    }
+
+    @Test
+    fun `gir 404 Not Found ved henting av metainfo om en spesifikk rapport som systembruker ikke har tilgang til`() {
+        val rapportId = 123L
+        val rapport = mockRapport(id = rapportId, orgnr = underenhetOrgnrMedPdpTilgang)
+
+        mockHentingAvEnkelRapport(rapportId, rapport)
+
+        runBlocking {
+            val respons =
+                client.get(urlString = "/api/rapport/v1/$rapportId") {
+                    bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnrUtenPdpTilgang))
+                }
+
+            respons.status shouldBe HttpStatusCode.NotFound
         }
     }
 }
