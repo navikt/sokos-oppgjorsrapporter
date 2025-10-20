@@ -18,8 +18,11 @@ import no.nav.helsearbeidsgiver.utils.json.fromJson
 import no.nav.helsearbeidsgiver.utils.test.wrapper.genererGyldig
 import no.nav.helsearbeidsgiver.utils.wrapper.Orgnr
 import no.nav.security.mock.oauth2.MockOAuth2Server
+import no.nav.sokos.oppgjorsrapporter.TestContainer
+import no.nav.sokos.oppgjorsrapporter.configureTestApplication
 import no.nav.sokos.oppgjorsrapporter.module
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
+import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.medId
@@ -32,16 +35,18 @@ import org.junit.jupiter.api.TestInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class ApiTest {
-    val orgnrUtenPdpTilgang = Orgnr.genererGyldig().verdi
-    val hovedenhetOrgnrMedPdpTilgang = Orgnr.genererGyldig().verdi
-    val underenhetOrgnrMedPdpTilgang = Orgnr.genererGyldig().verdi
+    val orgnrUtenPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
+    val hovedenhetOrgnrMedPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
+    val underenhetOrgnrMedPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
 
     val mockedRapportService = mockk<RapportService>()
     val mockedPdpService = mockk<PdpService>()
 
-    private val port = 33445
-    val mockOAuth2Server: MockOAuth2Server = MockOAuth2Server().apply { start(port = port) }
+    val mockOAuth2Server: MockOAuth2Server = MockOAuth2Server().apply { start() }
+    val container = TestContainer.postgres
     private val testApplication: TestApplication = TestApplication {
+        configureTestApplication(container, mockOAuth2Server)
+
         application {
             dependencies.provide<RapportService> { mockedRapportService }
             dependencies.provide<PdpService> { mockedPdpService }
@@ -87,7 +92,7 @@ class HentApiAuthTest : ApiTest() {
         unmockkAll()
     }
 
-    fun mockRapport(id: Long, orgnr: String): Rapport = TestData.rapportMock.medId(id).medOrgNr(orgnr)
+    fun mockRapport(id: Long, orgnr: OrgNr): Rapport = TestData.rapportMock.medId(id).medOrgNr(orgnr)
 
     fun mockHentingAvEnkelRapport(id: Long, resultat: Rapport) {
         every { mockedRapportService.findById(Rapport.Id(id)) } returns resultat
@@ -102,7 +107,7 @@ class HentApiAuthTest : ApiTest() {
 
         runBlocking {
             val respons =
-                client.get(urlString = "/api/rapport/v1/$rapportId") {
+                client.get(urlString = "/api/rapport/v1/$rapportId/innhold") {
                     bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(hovedenhetOrgnrMedPdpTilgang))
                 }
 

@@ -63,7 +63,7 @@ data class Rapport(
     override val tittel: String,
     override val datoValutert: LocalDate,
     val opprettet: Instant,
-    val arkivert: Instant?,
+    val arkivert: Instant? = null,
 ) : RapportFelter {
     fun filnavn(format: VariantFormat): String =
         "${orgNr.raw}_${type.name}_${DateTimeFormatter.ISO_LOCAL_DATE.format(datoValutert)}.${format.extension()}"

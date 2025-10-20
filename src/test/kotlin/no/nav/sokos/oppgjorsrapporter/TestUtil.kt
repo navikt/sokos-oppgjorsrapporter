@@ -3,6 +3,7 @@ package no.nav.sokos.oppgjorsrapporter
 import io.ktor.server.config.*
 import io.ktor.server.plugins.di.DI
 import io.ktor.server.testing.ApplicationTestBuilder
+import io.ktor.server.testing.TestApplicationBuilder
 import io.ktor.server.testing.testApplication
 import java.sql.Connection.TRANSACTION_SERIALIZABLE
 import java.sql.DatabaseMetaData
@@ -141,28 +142,33 @@ fun MockOAuth2Server.authConfigOverrides() =
     MapApplicationConfig().apply {
         put("AZURE_APP_CLIENT_ID", "default")
         put("AZURE_APP_WELL_KNOWN_URL", wellKnownUrl("default").toString())
+        put("maskinporten.wellKnownUrl", wellKnownUrl("maskinporten").toString())
     }
 
 fun MockOAuth2Server.withTestApplication(container: PostgreSQLContainer<Nothing>, thunk: suspend ApplicationTestBuilder.() -> Unit) {
     testApplication {
-        environment {
-            config = CompositeApplicationConfig(getOverrides(container), authConfigOverrides(), ApplicationConfig("application.conf"))
-        }
-        install(DI) {
-            onShutdown = { dependencyKey, instance ->
-                when (instance) {
-                    // Vi ønsker bare en DataSource i bruk for en hel test-kjøring, selv om flere tester start/stopper
-                    // applikasjonen;
-                    // dette er en opt-out av auto-close-greiene til Kotlins DI-extension:
-                    is DataSource -> {}
-                    is AutoCloseable -> instance.close()
-                }
-            }
-        }
+        configureTestApplication(container, this@withTestApplication)
 
         application { module() }
         startApplication()
 
         thunk()
+    }
+}
+
+fun TestApplicationBuilder.configureTestApplication(container: PostgreSQLContainer<Nothing>, server: MockOAuth2Server) {
+    environment {
+        config = CompositeApplicationConfig(getOverrides(container), server.authConfigOverrides(), ApplicationConfig("application.conf"))
+    }
+    install(DI) {
+        onShutdown = { dependencyKey, instance ->
+            when (instance) {
+                // Vi ønsker bare en DataSource i bruk for en hel test-kjøring, selv om flere tester start/stopper
+                // applikasjonen;
+                // dette er en opt-out av auto-close-greiene til Kotlins DI-extension:
+                is DataSource -> {}
+                is AutoCloseable -> instance.close()
+            }
+        }
     }
 }
