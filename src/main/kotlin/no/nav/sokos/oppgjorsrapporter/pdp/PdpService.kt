@@ -4,12 +4,13 @@ import kotlinx.coroutines.runBlocking
 import no.nav.helsearbeidsgiver.altinn.pdp.PdpClient
 import no.nav.helsearbeidsgiver.utils.log.sikkerLogger
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
+import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.auth.pdpTokenGetter
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 
 interface PdpService {
-    fun harTilgang(systembruker: String, orgnumre: Set<OrgNr>, ressurs: String): Boolean
+    fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean
 }
 
 class AltinnPdpService(val securityProperties: PropertiesConfig.SecurityProperties, val authClient: AuthClient) : PdpService {
@@ -20,11 +21,11 @@ class AltinnPdpService(val securityProperties: PropertiesConfig.SecurityProperti
             authClient.pdpTokenGetter(securityProperties.maskinportenProperties.pdpScope),
         )
 
-    override fun harTilgang(systembruker: String, orgnumre: Set<OrgNr>, ressurs: String): Boolean = runBlocking {
+    override fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean = runBlocking {
         sikkerLogger().info("PDP orgnr: $orgnumre, systembruker: $systembruker, ressurs: $ressurs")
         runCatching {
                 pdpClient.systemHarRettighetForOrganisasjoner(
-                    systembrukerId = systembruker,
+                    systembrukerId = systembruker.id,
                     orgnumre = orgnumre.map { it.raw }.toSet(),
                     ressurs = ressurs,
                 )
@@ -34,7 +35,7 @@ class AltinnPdpService(val securityProperties: PropertiesConfig.SecurityProperti
 }
 
 object LocalhostPdpService : PdpService {
-    override fun harTilgang(systembruker: String, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
+    override fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
         sikkerLogger().info("Ingen PDP, har tilgang")
         return true
     }
@@ -42,7 +43,7 @@ object LocalhostPdpService : PdpService {
 
 // Benytter default ingen tilgang i prod inntil vi ønsker å eksponere APIet via http
 object IngenTilgangPdpService : PdpService {
-    override fun harTilgang(systembruker: String, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
+    override fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
         sikkerLogger().info("Ingen PDP, ingen tilgang")
         return false
     }

@@ -9,6 +9,10 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.put
+import no.nav.helsearbeidsgiver.utils.log.sikkerLogger
+import no.nav.sokos.oppgjorsrapporter.auth.getSystembruker
+import no.nav.sokos.oppgjorsrapporter.auth.tokenValidationContext
+import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 
 @Resource(path = "/api")
 class ApiPaths {
@@ -25,6 +29,7 @@ class ApiPaths {
 
 fun Route.rapportApi() {
     val rapportService: RapportService by application.dependencies
+    val pdpService: PdpService by application.dependencies
 
     get<ApiPaths.Rapporter> { rapporter ->
         // TODO: Listen med tilgjengelige rapporter kan bli lang; trenger vi å lage noe slags paging?  La klient angi hvilken tidsperiode de
@@ -33,15 +38,30 @@ fun Route.rapportApi() {
             call.respond(rapportService.listForOrg(OrgNr(rapporter.orgnr)))
         } else {
             // TODO: Finne orgnr brukeren har rettigheter til fra MinID-token, liste for alle dem
-            call.respond(HttpStatusCode.Companion.BadRequest, "Mangler orgnr")
+            call.respond(HttpStatusCode.BadRequest, "Mangler orgnr")
         }
     }
 
     get<ApiPaths.Rapporter.Id> { rapport ->
-        val rapport = rapportService.findById(Rapport.Id(rapport.id))
-        if (rapport == null) {
-            return@get call.respond(HttpStatusCode.NotFound)
-        }
+        val rapport = rapportService.findById(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
+        val tokenValidationContext = tokenValidationContext()
+        tokenValidationContext
+            .getSystembruker()
+            .fold(
+                { sysBruker ->
+                    sikkerLogger().info("Skal sjekke om systembruker $sysBruker har tilgang til $rapport")
+                    if (!pdpService.harTilgang(sysBruker, setOf(rapport.orgNr), rapport.type.altinnRessurs)) {
+                        sikkerLogger().info("Systembruker $sysBruker har forsøkt å aksessere rapport $rapport, men PDP gir ikke tilgang")
+                        return@get call.respond(HttpStatusCode.NotFound)
+                    }
+                    sikkerLogger().info("Autorisasjon OK for $sysBruker")
+                },
+                { e ->
+                    // TODO: Implementere støtte for flere typer autentisering/autorisasjon
+                    return@get call.respond(HttpStatusCode.NotFound)
+                },
+            )
+        // Autorisasjon har gått bra:
         call.respond(rapport)
     }
 

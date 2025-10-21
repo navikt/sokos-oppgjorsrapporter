@@ -11,6 +11,9 @@ import io.ktor.server.resources.Resources
 import io.ktor.util.AttributeKey
 import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
+import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
+import no.nav.sokos.oppgjorsrapporter.auth.DefaultAuthClient
+import no.nav.sokos.oppgjorsrapporter.auth.NoOpAuthClient
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseMigrator
@@ -44,7 +47,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
     dependencies {
         provide<DataSource> { DatabaseConfig.dataSource }
         provide(RapportService::class)
-        provide<PdpService>(AltinnPdpService::class)
+        provide<AuthClient> {
+            if (config.applicationProperties.profile == PropertiesConfig.Profile.LOCAL) NoOpAuthClient()
+            else DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.maskinportenProperties.altinn3BaseUrl)
+        }
+        provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
     }
 
     commonConfig()

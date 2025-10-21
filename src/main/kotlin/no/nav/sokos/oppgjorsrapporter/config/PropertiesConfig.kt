@@ -105,10 +105,18 @@ object PropertiesConfig {
         }
     }
 
-    data class SecurityProperties(val azureAdProperties: AzureAdProperties, val maskinportenProperties: MaskinportenProperties) {
+    data class SecurityProperties(
+        val azureAdProperties: AzureAdProperties,
+        val maskinportenProperties: MaskinportenProperties,
+        val tokenEndpoint: String,
+    ) {
         constructor(
             source: ConfigSource
-        ) : this(azureAdProperties = AzureAdProperties(source), maskinportenProperties = MaskinportenProperties(source))
+        ) : this(
+            azureAdProperties = AzureAdProperties(source),
+            maskinportenProperties = MaskinportenProperties(source),
+            source.get("authclient.tokenEndpoint"),
+        )
     }
 
     class AzureAdProperties(val clientId: String, val wellKnownUrl: String) {

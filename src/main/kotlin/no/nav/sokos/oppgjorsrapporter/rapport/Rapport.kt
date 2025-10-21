@@ -19,10 +19,10 @@ import kotliquery.Row
 
 @Serializable @JvmInline value class OrgNr(val raw: String)
 
-enum class RapportType {
-    K27,
-    T12,
-    T14,
+enum class RapportType(val altinnRessurs: String) {
+    K27("nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver"),
+    T12("Ikke definert ennå"),
+    T14("Ikke definert ennå"),
 }
 
 sealed interface RapportFelter {

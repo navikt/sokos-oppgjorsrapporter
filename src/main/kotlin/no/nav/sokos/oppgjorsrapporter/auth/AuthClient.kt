@@ -23,12 +23,7 @@ class NoOpAuthClient : AuthClient {
     override suspend fun altinnExchange(maskinportenToken: String): String = "dummy-token"
 }
 
-class DefaultAuthClient(
-    private val tokenEndpoint: String,
-    private val tokenExchangeEndpoint: String,
-    private val tokenIntrospectionEndpoint: String,
-    private val altinn3BaseUrl: URI,
-) : AuthClient {
+class DefaultAuthClient(private val tokenEndpoint: String, private val altinn3BaseUrl: URI) : AuthClient {
     private val sikkerLogger = sikkerLogger()
     private val httpClient = createHttpClient()
 
@@ -51,35 +46,6 @@ class DefaultAuthClient(
         } catch (e: ResponseException) {
             e.logAndRethrow()
         }
-
-    internal suspend fun exchange(provider: AuthClientIdentityProvider, target: String, userToken: String): TokenResponse =
-        try {
-            httpClient
-                .submitForm(
-                    url = tokenExchangeEndpoint,
-                    formParameters =
-                        parameters {
-                            identityProvider(provider)
-                            target(target)
-                            userToken(userToken)
-                        },
-                )
-                .body()
-        } catch (e: ResponseException) {
-            e.logAndRethrow()
-        }
-
-    internal suspend fun introspect(provider: AuthClientIdentityProvider, accessToken: String): TokenIntrospectionResponse =
-        httpClient
-            .submitForm(
-                url = tokenIntrospectionEndpoint,
-                formParameters =
-                    parameters {
-                        identityProvider(provider)
-                        token(accessToken)
-                    },
-            )
-            .body()
 
     override suspend fun altinnExchange(maskinportenToken: String): String {
         val tokenAltinn3ExchangeEndpoint: URI = altinn3BaseUrl.resolve("/authentication/api/v1/exchange/maskinporten")

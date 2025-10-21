@@ -62,18 +62,20 @@ abstract class ApiTest {
     }
 
     fun mockPdpTilganger() {
-        every {
-            mockedPdpService.harTilgang(systembruker = any(), orgnumre = match { it.contains(orgnrUtenPdpTilgang) }, ressurs = any())
-        } returns false
+        every { mockedPdpService.harTilgang(systembruker = any(), orgnumre = any(), ressurs = any()) } returns false
 
         every {
             mockedPdpService.harTilgang(
-                systembruker = any(),
-                orgnumre =
-                    match {
-                        (it.contains(hovedenhetOrgnrMedPdpTilgang) || it.contains(underenhetOrgnrMedPdpTilgang)) &&
-                            !it.contains(orgnrUtenPdpTilgang)
-                    },
+                systembruker = match { it.orgNr == hovedenhetOrgnrMedPdpTilgang },
+                orgnumre = match { it.contains(hovedenhetOrgnrMedPdpTilgang) || it.contains(underenhetOrgnrMedPdpTilgang) },
+                ressurs = any(),
+            )
+        } returns true
+
+        every {
+            mockedPdpService.harTilgang(
+                systembruker = match { it.orgNr == underenhetOrgnrMedPdpTilgang },
+                orgnumre = match { it.contains(underenhetOrgnrMedPdpTilgang) },
                 ressurs = any(),
             )
         } returns true
