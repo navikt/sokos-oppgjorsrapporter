@@ -96,43 +96,63 @@ class HentApiAuthTest : ApiTest() {
 
     fun mockRapport(id: Long, orgnr: OrgNr): Rapport = TestData.rapportMock.medId(id).medOrgNr(orgnr)
 
-    fun mockHentingAvEnkelRapport(id: Long, resultat: Rapport) {
-        every { mockedRapportService.findById(Rapport.Id(id)) } returns resultat
+    fun mockHentingAvEnkelRapport(resultat: Rapport) {
+        every { mockedRapportService.findById(resultat.id) } returns resultat
     }
 
     @Test
     fun `gir 200 OK ved henting av metainfo om en spesifikk rapport som systembruker har tilgang til`() {
-        val rapportId = 123L
-        val rapport = mockRapport(id = rapportId, orgnr = underenhetOrgnrMedPdpTilgang)
+        val rapportHovedenhet = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+        val rapportUnderenhet = mockRapport(id = 234, orgnr = underenhetOrgnrMedPdpTilgang)
 
-        mockHentingAvEnkelRapport(rapportId, rapport)
+        mockHentingAvEnkelRapport(rapportHovedenhet)
+        mockHentingAvEnkelRapport(rapportUnderenhet)
 
-        runBlocking {
-            val respons =
-                client.get(urlString = "/api/rapport/v1/$rapportId") {
-                    bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(hovedenhetOrgnrMedPdpTilgang))
+        mapOf(
+                // systembruker for hovedenhet skal få lov til å hente rapport på hovedenhet
+                hovedenhetOrgnrMedPdpTilgang to rapportHovedenhet,
+                // systembruker for hovedenhet skal få lov til å hente rapport på underenhet
+                hovedenhetOrgnrMedPdpTilgang to rapportUnderenhet,
+                // systembruker for underenhet skal få lov til å hente rapport på underenhet
+                underenhetOrgnrMedPdpTilgang to rapportUnderenhet,
+            )
+            .forEach { (orgNr, rapport) ->
+                runBlocking {
+                    val respons =
+                        client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
+                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgNr))
+                        }
+
+                    respons.status shouldBe HttpStatusCode.OK
+                    respons.bodyAsText().fromJson(Rapport.serializer()) shouldBe rapport
                 }
-
-            respons.status shouldBe HttpStatusCode.OK
-            val rapport = respons.bodyAsText().fromJson(Rapport.serializer())
-            rapport.orgNr shouldBe underenhetOrgnrMedPdpTilgang
-        }
+            }
     }
 
     @Test
     fun `gir 404 Not Found ved henting av metainfo om en spesifikk rapport som systembruker ikke har tilgang til`() {
-        val rapportId = 123L
-        val rapport = mockRapport(id = rapportId, orgnr = underenhetOrgnrMedPdpTilgang)
+        val rapportMedTilgang = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+        val rapportUtenTilgang = mockRapport(id = 321, orgnr = orgnrUtenPdpTilgang)
 
-        mockHentingAvEnkelRapport(rapportId, rapport)
+        mockHentingAvEnkelRapport(rapportMedTilgang)
+        mockHentingAvEnkelRapport(rapportUtenTilgang)
 
-        runBlocking {
-            val respons =
-                client.get(urlString = "/api/rapport/v1/$rapportId") {
-                    bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnrUtenPdpTilgang))
+        mapOf(
+                // systembruker for en org som ikke har gitt systembrukeren rettigheter forsøker å aksessere rapport for en annen org
+                orgnrUtenPdpTilgang to rapportMedTilgang,
+                // systembruker for en org som ikke har gitt systembrukeren rettigheter forsøker å aksessere rapport for "egen" org
+                orgnrUtenPdpTilgang to rapportUtenTilgang,
+                // systembruker for underenhet forsøker å aksessere rapport for egen orgs hovedenhet
+                underenhetOrgnrMedPdpTilgang to rapportMedTilgang,
+            )
+            .forEach { (orgNr, rapport) ->
+                runBlocking {
+                    val respons =
+                        client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
+                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgNr))
+                        }
+                    respons.status shouldBe HttpStatusCode.NotFound
                 }
-
-            respons.status shouldBe HttpStatusCode.NotFound
-        }
+            }
     }
 }

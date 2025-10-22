@@ -44,8 +44,7 @@ fun Route.rapportApi() {
 
     get<ApiPaths.Rapporter.Id> { rapport ->
         val rapport = rapportService.findById(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
-        val tokenValidationContext = tokenValidationContext()
-        tokenValidationContext
+        tokenValidationContext()
             .getSystembruker()
             .fold(
                 { sysBruker ->
