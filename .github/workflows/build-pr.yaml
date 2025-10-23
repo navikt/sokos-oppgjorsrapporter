@@ -15,9 +15,6 @@ on:
       - '.github/workflows/security.yaml'
       - '.github/dependabot.yaml'
 
-env:
-  ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
-
 jobs:
   build-pr:
     name: Build and test

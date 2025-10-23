@@ -19,7 +19,6 @@ on:
 
 env:
   TZ: Europe/Oslo
-  ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
 
 permissions:
   contents: "write"
