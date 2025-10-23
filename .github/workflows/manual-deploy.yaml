@@ -20,9 +20,7 @@ permissions:
 jobs:
   build:
     name: Build/test & push image
-    uses: navikt/pengeflyt-gha-workflows/.github/workflows/gradle-build-push-image.yaml@main
-    env:
-      ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
+    uses: navikt/pengeflyt-gha-workflows/.github/workflows/gradle-build-push-image.yaml@githubPassword-by-project-fra-secrets
     secrets: inherit
     with:
       image-tag: snapshot
@@ -31,7 +29,7 @@ jobs:
   deploy-dev:
     needs: build
     name: Deploy to dev-gcp
-    uses: navikt/pengeflyt-gha-workflows/.github/workflows/nais-app-deploy.yaml@main
+    uses: navikt/pengeflyt-gha-workflows/.github/workflows/nais-app-deploy.yaml@githubPassword-by-project-fra-secrets
     with:
       cluster: dev-gcp
       resource: .nais/naiserator-${{ inputs.environment }}.yaml
