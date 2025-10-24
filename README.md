@@ -141,12 +141,15 @@ For å kunne late som om man aksesserer applikasjonens API som et lønns- og per
  13. Registrer et "system" i Altinns systemregister for LPSet ved å kjøre `registrer nytt system`-requesten i Bruno.
      (Senere API-kall identifiserer dette systemet med `systemId`-en som er definert som en folder-variabel, slik at man ikke trenger å huske UUIDen man får tilbake i API-responsen.)
  14. Velg en passende syntetisk organisasjon i [Tenor](https://testdata.skatteetaten.no/web/testnorge/soek/brreg-er-fr) som skal representere LPS-kunden; for "refusjon arbeidsgiver" (aka K27)
-     vil det typisk være organisasjonens hovedenhet rapporten sendes til
+     vil det typisk være organisasjonens hovedenhet rapporten sendes til.  Husk orgnr og fnr til organisasjonens "Daglig leder" e.l.
  15. Legg valgt kunde-orgnr inn som collection-variablene `kundeSystembrukerOrgnr` og `kundeUnderenhetOrgnr` (eksempel:
      [SKRAVLETE ALTETENDE TIGER AS](https://testdata.skatteetaten.no/web/testnorge/avansert/brreg-er-fr?kql=tenorMetadata.id:313552381) med hovedenhet-orgnr `313552381`)
  16. Oppdater `kundeSystembrukerOrgnr` og `kundeUnderenhetOrgnr` i "Vars"-fliken på "liksom-lps"-collectionen til å begge ha hovedenhetens orgnr som verdi
- 17. Opprett en "systembruker" i Altinn (knyttet til LPSets registrerte system) for denne kunden ved å kjøre `opprett systembruker`-requesten i Bruno
- 18. 
+ 17. Opprett en "systembruker" i Altinn (knyttet til LPSets registrerte system) for denne kunden ved å kjøre `opprett systembruker`-requesten i Bruno.
+     I responsen finnes det en `confirmUrl` som skal brukes i neste punkt.
+ 18. Gå til `confirmUrl` (som er i tt02).  Velg innloggingsmetode `TestID: Lag din egen testbruker` og logg inn med fnr til kunde-organisasjonens "Daglig leder" (fra punkt 14).
+     Godkjenn systembrukeren.
+ 19. Kjør `hent rapport`-requesten i Bruno, og se at den gir forventet respons
 
 # 6. Drift og støtte
 
