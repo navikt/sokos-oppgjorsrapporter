@@ -1,0 +1,42 @@
+meta {
+  name: send inn inntektsmelding
+  type: http
+  seq: 7
+}
+
+post {
+  url: https://sykepenger-api.ekstern.dev.nav.no/v1/inntektsmelding
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "navReferanseId": "6d5265d9-6d7b-4ae5-932c-359605a96319",
+    "agp": {
+      "perioder": [
+        {
+          "fom": "2025-04-01",
+          "tom": "2025-04-16"
+        }
+      ],
+      "egenmeldinger": [],
+      "redusertLoennIAgp": null
+    },
+    "inntekt": {
+      "beloep": 58750.0,
+      "inntektsdato": "2025-04-16",
+      "naturalytelser": [],
+      "endringAarsaker": []
+    },
+    "refusjon": null,
+    "sykmeldtFnr": "31477310845",
+    "arbeidsgiverTlf": "12345678",
+    "aarsakInnsending": "Endring",
+    "avsender": {
+      "systemNavn": "Bruno Tigersys",
+      "systemVersjon": "1.1"
+    }
+  }
+  
+}

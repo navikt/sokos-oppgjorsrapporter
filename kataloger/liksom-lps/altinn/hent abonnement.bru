@@ -1,0 +1,28 @@
+meta {
+  name: hent abonnement
+  type: http
+  seq: 7
+}
+
+get {
+  url: https://platform.tt02.altinn.no/events/api/v1/subscriptions/{{subscriptionId}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  subscriptionId: 64314
+}
+
+script:pre-request {
+  const http = require("axios");
+  const systembrukerOrgnr = bru.getCollectionVar("kundeSystembrukerOrgnr")
+  const tokenrespons = await http.get("https://pengeflyt-token.intern.dev.nav.no/subscribe/" + systembrukerOrgnr)
+  req.setHeader("Authorization", "Bearer "+ tokenrespons.data);
+}
+
+docs {
+  Hent et abonnement på Altinn-events.
+  
+  Swagger: https://docs.altinn.studio/nb/events/api/openapi/#/Subscription
+}

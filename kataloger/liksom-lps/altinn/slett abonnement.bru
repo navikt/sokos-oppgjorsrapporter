@@ -1,0 +1,24 @@
+meta {
+  name: slett abonnement
+  type: http
+  seq: 8
+}
+
+delete {
+  url: https://platform.tt02.altinn.no/events/api/v1/subscriptions/{{subscriptionId}}
+  body: none
+  auth: none
+}
+
+script:pre-request {
+  const http = require("axios");
+  const systembrukerOrgnr = bru.getCollectionVar("kundeSystembrukerOrgnr")
+  const tokenrespons = await http.get("https://pengeflyt-token.intern.dev.nav.no/subscribe/" + systembrukerOrgnr)
+  req.setHeader("Authorization", "Bearer "+ tokenrespons.data);
+}
+
+docs {
+  Slett et abonnement på Altinn-events.
+  
+  Swagger: https://docs.altinn.studio/nb/events/api/openapi/#/Subscription
+}

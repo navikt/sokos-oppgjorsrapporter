@@ -1,0 +1,32 @@
+meta {
+  name: opprett abonnement
+  type: http
+  seq: 6
+}
+
+post {
+  url: https://platform.tt02.altinn.no/events/api/v1/subscriptions
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "endPoint": "https://hag-lps-api-client.ekstern.dev.nav.no/dialogporten-event",
+    "resourceFilter": "urn:altinn:resource:nav_sykepenger_dialog",
+    "subjectFilter": "/organisation/{{kundeUnderenhetOrgnr}}"
+  }
+}
+
+script:pre-request {
+  const http = require("axios");
+  const systembrukerOrgnr = bru.getCollectionVar("kundeSystembrukerOrgnr")
+  const tokenrespons = await http.get("https://pengeflyt-token.intern.dev.nav.no/subscribe/" + systembrukerOrgnr)
+  req.setHeader("Authorization", "Bearer "+ tokenrespons.data);
+}
+
+docs {
+  Opprett et abonnement på Altinn-events.
+  
+  Swagger: https://docs.altinn.studio/nb/events/api/openapi/#/Subscription
+}

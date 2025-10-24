@@ -1,0 +1,21 @@
+meta {
+  name: hent sykmeldinger
+  type: http
+  seq: 2
+}
+
+post {
+  url: https://sykepenger-api.ekstern.dev.nav.no/v1/sykmeldinger
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "orgnr": "{{kundeUnderenhetOrgnr}}",
+    "fnr": null,
+    "tom": null,
+    "fom": null,
+    "fraLoepenr": null
+  }
+}

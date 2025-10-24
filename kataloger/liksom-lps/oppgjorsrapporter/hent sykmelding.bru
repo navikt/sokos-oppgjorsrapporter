@@ -1,0 +1,15 @@
+meta {
+  name: hent sykmelding
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://sykepenger-api.ekstern.dev.nav.no/v1/sykmelding/{{id}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  id: c8cdcb93-75d3-4461-b09e-454a1ccd55a2
+}
