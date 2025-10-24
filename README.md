@@ -134,11 +134,19 @@ For å kunne late som om man aksesserer applikasjonens API som et lønns- og per
      * `MASKINPORTEN_INTEGRATION_ID` - "Klient ID"-UUIDen du kan finne på klientens "Detaljer"-flik
      * `MASKINPORTEN_KID` - UUIDen for nøkkelparet
   9. Legg til systembruker-scopes på klienten (når dette blir mulig basert på mailen du sendte i punkt 6)
- 10. Registrer et "system" i Altinns systemregister for LPSet
- 11. Lag en fork av [hag-token-tjeneste](https://github.com/navikt/hag-token-tjeneste), juster navn/scope/etc. til å matche ditt behov, og deploy denne
- 12. Kopier Bruno-collection fra [hag-ulv](https://github.com/navikt/hag-ulv/tree/main/kataloger/tigersys) og juster til å matche ditt behov; for denne applikasjonen så finnes resultatet [her](kataloger/liksom-lps)
- 13. Importer Bruno-collectionen i [Bruno](https://www.usebruno.com/)
- 14. Bruk Bruno til å `registrer nytt system`
+ 10. Lag en fork av [hag-token-tjeneste](https://github.com/navikt/hag-token-tjeneste), juster navn/scope/etc. til å matche ditt behov, og deploy denne
+ 11. Kopier Bruno-collection fra [hag-ulv](https://github.com/navikt/hag-ulv/tree/main/kataloger/tigersys) og juster til å matche ditt behov; for denne applikasjonen så finnes resultatet
+     [her](kataloger/liksom-lps)
+ 12. Importer Bruno-collectionen i [Bruno](https://www.usebruno.com/) 
+ 13. Registrer et "system" i Altinns systemregister for LPSet ved å kjøre `registrer nytt system`-requesten i Bruno.
+     (Senere API-kall identifiserer dette systemet med `systemId`-en som er definert som en folder-variabel, slik at man ikke trenger å huske UUIDen man får tilbake i API-responsen.)
+ 14. Velg en passende syntetisk organisasjon i [Tenor](https://testdata.skatteetaten.no/web/testnorge/soek/brreg-er-fr) som skal representere LPS-kunden; for "refusjon arbeidsgiver" (aka K27)
+     vil det typisk være organisasjonens hovedenhet rapporten sendes til
+ 15. Legg valgt kunde-orgnr inn som collection-variablene `kundeSystembrukerOrgnr` og `kundeUnderenhetOrgnr` (eksempel:
+     [SKRAVLETE ALTETENDE TIGER AS](https://testdata.skatteetaten.no/web/testnorge/avansert/brreg-er-fr?kql=tenorMetadata.id:313552381) med hovedenhet-orgnr `313552381`)
+ 16. Oppdater `kundeSystembrukerOrgnr` og `kundeUnderenhetOrgnr` i "Vars"-fliken på "liksom-lps"-collectionen til å begge ha hovedenhetens orgnr som verdi
+ 17. Opprett en "systembruker" i Altinn (knyttet til LPSets registrerte system) for denne kunden ved å kjøre `opprett systembruker`-requesten i Bruno
+ 18. 
 
 # 6. Drift og støtte
 

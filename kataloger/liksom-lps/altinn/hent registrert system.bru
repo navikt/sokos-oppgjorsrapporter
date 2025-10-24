@@ -12,14 +12,22 @@ get {
 
 script:pre-request {
   const http = require("axios");
-  const tokenrespons = await http.get("https://pengeflyt-token.intern.dev.nav.no/systemregister")
+  const tokenrespons = await http.get("https://pengeflyt-token.intern.dev.nav.no/systemregister", {timeout: 5000})
+  if (tokenrespons.status !== 200) {
+    throw new Error(`Uventet respons ved henting av token: ${tokenrespons.status}.  Sjekk at Naisdevice er grønn.`)
+  }
   req.setHeader("Authorization", "Bearer "+ tokenrespons.data);
 }
 
 script:post-response {
   const responseBody = res.getBody()
   const clientId = responseBody.clientId[0]
-  bru.setVar("clientId", clientId);
+  const expected = bru.getFolderVar("clientId")
+  if (clientId != expected) {
+    bru.runner.stopExecution()
+    throw new Error(`Fikk tilbake en uventet clientId (${clientId}); hadde forventet å få verdien som er definert som folder-variabel (${expected}).  Noen må finne ut av hva forskjellen skyldes.`)
+  }
+  
 }
 
 docs {

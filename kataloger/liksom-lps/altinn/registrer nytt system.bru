@@ -38,12 +38,11 @@ body:json {
 }
 
 script:pre-request {
-  if (!bru.hasVar("clientId")){
-    throw new Error("For å gjøre dette kallet må du sette variabelen clientId i requesten først. clientId settes i post-request scriptet til GET hent registrert system (eller manuelt i requesten).");
-  }
-  
   const http = require("axios");
-  const tokenrespons = await http.get("https://pengeflyt-token.intern.dev.nav.no/systemregister")
+  const tokenrespons = await http.get("https://pengeflyt-token.intern.dev.nav.no/systemregister", {timeout: 5000})
+  if (tokenrespons.status !== 200) {
+    throw new Error(`Uventet respons ved henting av token: ${tokenrespons.status}.  Sjekk at Naisdevice er grønn.`)
+  }
   req.setHeader("Authorization", "Bearer "+ tokenrespons.data);
 }
 
