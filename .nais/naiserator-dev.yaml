@@ -42,12 +42,6 @@ spec:
   azure:
     application:
       enabled: true
-      allowAllUsers: false
-      claims:
-        extra:
-          - azp_name
-        #groups:
-         # - id: 138d21fb-4e96-46d6-91e4-e3926aa349e5 # 0000-CA-SOKOS-MF-UTBETALING
   maskinporten:
     enabled: true
     scopes:
