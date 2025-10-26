@@ -60,13 +60,10 @@ vars:pre-request {
 }
 
 script:pre-request {
-  const http = require("axios");
+  const { initBearerAuth } = require('./tokenAuth');
   const systembrukerOrgnr = bru.getCollectionVar("kundeSystembrukerOrgnr")
-  const tokenrespons = await http.get("https://pengeflyt-token.intern.dev.nav.no/dialogporten/" + systembrukerOrgnr, {timeout: 5000})
-  if (tokenrespons.status !== 200) {
-    throw new Error(`Uventet respons ved henting av token: ${tokenrespons.status}.  Sjekk at Naisdevice er grønn.`)
-  }
-  req.setHeader("Authorization", "Bearer "+ tokenrespons.data);
+  await initBearerAuth(`dialogporten/${systembrukerOrgnr}`, req);
+  
 }
 
 settings {

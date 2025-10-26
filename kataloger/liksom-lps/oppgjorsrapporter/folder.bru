@@ -8,10 +8,10 @@ auth {
 }
 
 script:pre-request {
-  const http = require("axios");
+  const { initBearerAuth } = require('./tokenAuth');
   const systembrukerOrgnr = bru.getCollectionVar("kundeSystembrukerOrgnr")
-  const tokenrespons = await http.get("https://pengeflyt-token.intern.dev.nav.no/systembruker/" + systembrukerOrgnr)
-  req.setHeader("Authorization", "Bearer "+ tokenrespons.data);
+  await initBearerAuth(`systembruker/${systembrukerOrgnr}`, req);
+  
 }
 
 docs {

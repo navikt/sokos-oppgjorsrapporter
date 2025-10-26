@@ -23,12 +23,9 @@ body:json {
 }
 
 script:pre-request {
-  const http = require("axios");
-  const tokenrespons = await http.get("https://pengeflyt-token.intern.dev.nav.no/systembruker-forespoersel", {timeout: 5000})
-  if (tokenrespons.status !== 200) {
-    throw new Error(`Uventet respons ved henting av token: ${tokenrespons.status}.  Sjekk at Naisdevice er grønn.`)
-  }
-  req.setHeader("Authorization", "Bearer "+ tokenrespons.data);
+  const { initBearerAuth } = require('./tokenAuth');
+  await initBearerAuth(`systembruker-forespoersel`, req);
+  
 }
 
 docs {
