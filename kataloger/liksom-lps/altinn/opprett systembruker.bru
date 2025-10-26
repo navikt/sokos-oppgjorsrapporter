@@ -12,8 +12,19 @@ post {
 
 body:json {
   {
+    "externalRef": "v2-med-rights",
     "systemId": "{{systemId}}",
     "partyOrgNo": "{{kundeSystembrukerOrgnr}}",
+    "rights": [
+      {
+        "resource": [
+          {
+            "id": "urn:altinn:resource",
+            "value": "nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver"
+          }
+        ]
+      }
+    ],
     "accessPackages": [
       {
         "urn": "urn:altinn:accesspackage:lonn-personopplysninger-saerlig-kategori"
