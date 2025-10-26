@@ -71,6 +71,8 @@ spec:
           namespace: nais
           cluster: dev-gcp
     outbound:
+      external:
+        - host: platform.tt02.altinn.no
       rules:
         - application: logging
           namespace: nais-system
