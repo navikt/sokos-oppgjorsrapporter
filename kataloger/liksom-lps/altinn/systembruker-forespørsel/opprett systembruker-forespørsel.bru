@@ -1,7 +1,7 @@
 meta {
-  name: opprett systembruker
+  name: opprett systembruker-forespørsel
   type: http
-  seq: 4
+  seq: 3
 }
 
 post {
@@ -12,7 +12,6 @@ post {
 
 body:json {
   {
-    "externalRef": "v2-med-rights",
     "systemId": "{{systemId}}",
     "partyOrgNo": "{{kundeSystembrukerOrgnr}}",
     "rights": [

@@ -1,11 +1,11 @@
 meta {
-  name: registrer nytt system
+  name: oppdater system
   type: http
-  seq: 2
+  seq: 1
 }
 
-post {
-  url: https://platform.tt02.altinn.no/authentication/api/v1/systemregister/vendor
+put {
+  url: https://platform.tt02.altinn.no/authentication/api/v1/systemregister/vendor/{{systemId}}
   body: json
   auth: none
 }
@@ -41,9 +41,10 @@ body:json {
         "urn": "urn:altinn:accesspackage:lonn-personopplysninger-saerlig-kategori"
       }
     ],
-    "clientId": [
-      "{{clientId}}"
-    ]
+    "allowedRedirectUrls": [
+      "https://hag-lps-api-client.ekstern.dev.nav.no/velkommen"
+    ],
+    "clientId": ["{{clientId}}"]
   }
 }
 
@@ -54,7 +55,7 @@ script:pre-request {
 }
 
 docs {
-  Registrer nytt system (f.eks. Bjørnesys) i Altinn sitt systemregister. For å oppdatere eksisterende system (f.eks. LiksomSys), bruk `PUT oppdater system`.
+  Oppdater system (f.eks. LiksomSys) i Altinn sitt systemregister.
   
   Swagger: https://docs.altinn.studio/nb/api/authentication/spec/#/SystemRegister
 }

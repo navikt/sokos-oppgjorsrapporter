@@ -1,11 +1,11 @@
 meta {
-  name: hent systembruker
+  name: list systembruker for system
   type: http
   seq: 5
 }
 
 get {
-  url: https://platform.tt02.altinn.no/authentication/api/v1/systemuser/request/vendor/782fcad9-8658-4ad9-a54b-eb923c9dffa2
+  url: https://platform.tt02.altinn.no/authentication/api/v1/systemuser/vendor/bysystem/{{systemId}}
   body: json
   auth: none
 }
