@@ -42,6 +42,7 @@ spec:
   azure:
     application:
       enabled: true
+      allowAllUsers: true # Inntil vi får spesifisert hvilke Entra ID-grupper som skal ha intern-tilgang
   maskinporten:
     enabled: true
     scopes:
