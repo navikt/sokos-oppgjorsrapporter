@@ -76,4 +76,6 @@ spec:
       rules:
         - application: logging
           namespace: nais-system
+  envFrom:
+    - secret: altinn-authorization-subscription
   env:
