@@ -24,33 +24,40 @@ enum class AuthenticationType {
 
 fun Application.securityConfig(config: PropertiesConfig.Configuration) {
     authentication {
-        tokenValidationSupport(
-            name = AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name,
-            config =
-                TokenSupportConfig(
-                    IssuerConfig(
-                        name = "azureAd",
-                        discoveryUrl = config.securityProperties.azureAdProperties.wellKnownUrl,
-                        acceptedAudience = listOf(config.securityProperties.azureAdProperties.clientId),
-                    )
-                ),
-        )
-        tokenValidationSupport(
-            name = AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER.name,
-            config =
-                TokenSupportConfig(
-                    IssuerConfig(
-                        name = "maskinporten",
-                        discoveryUrl = config.securityProperties.maskinportenProperties.wellKnownUrl,
-                        acceptedAudience = listOf(config.securityProperties.maskinportenProperties.eksponertScope),
-                        optionalClaims = listOf("aud", "sub"),
-                    )
-                ),
-            requiredClaims = RequiredClaims(issuer = "maskinporten", claimMap = arrayOf("authorization_details", "consumer", "scope")),
-            additionalValidation = {
-                it.gyldigScope(config.securityProperties.maskinportenProperties.eksponertScope) && it.gyldigSystembrukerOgConsumer()
-            },
-            resourceRetriever = DefaultResourceRetriever(DEFAULT_HTTP_CONNECT_TIMEOUT, DEFAULT_HTTP_READ_TIMEOUT, DEFAULT_HTTP_SIZE_LIMIT),
-        )
+        AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name.let { azureAd ->
+            tokenValidationSupport(
+                name = azureAd,
+                config =
+                    TokenSupportConfig(
+                        IssuerConfig(
+                            name = azureAd,
+                            discoveryUrl = config.securityProperties.azureAdProperties.wellKnownUrl,
+                            acceptedAudience = listOf(config.securityProperties.azureAdProperties.clientId),
+                        )
+                    ),
+                requiredClaims = RequiredClaims(issuer = azureAd, claimMap = arrayOf("NAVident", "groups")),
+            )
+        }
+
+        AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER.name.let { systembruker ->
+            tokenValidationSupport(
+                name = systembruker,
+                config =
+                    TokenSupportConfig(
+                        IssuerConfig(
+                            name = systembruker,
+                            discoveryUrl = config.securityProperties.maskinportenProperties.wellKnownUrl,
+                            acceptedAudience = listOf(config.securityProperties.maskinportenProperties.eksponertScope),
+                            optionalClaims = listOf("aud", "sub"),
+                        )
+                    ),
+                requiredClaims = RequiredClaims(issuer = systembruker, claimMap = arrayOf("authorization_details", "consumer", "scope")),
+                additionalValidation = {
+                    it.gyldigScope(config.securityProperties.maskinportenProperties.eksponertScope) && it.gyldigSystembrukerOgConsumer()
+                },
+                resourceRetriever =
+                    DefaultResourceRetriever(DEFAULT_HTTP_CONNECT_TIMEOUT, DEFAULT_HTTP_READ_TIMEOUT, DEFAULT_HTTP_SIZE_LIMIT),
+            )
+        }
     }
 }

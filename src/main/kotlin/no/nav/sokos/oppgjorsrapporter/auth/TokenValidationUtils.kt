@@ -6,7 +6,9 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 import kotlin.collections.get
 import no.nav.security.token.support.core.context.TokenValidationContext
+import no.nav.security.token.support.core.jwt.JwtTokenClaims
 import no.nav.security.token.support.v3.TokenValidationContextPrincipal
+import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 
 suspend fun RoutingContext.tokenValidationContext(): TokenValidationContext {
@@ -19,16 +21,24 @@ suspend fun RoutingContext.tokenValidationContext(): TokenValidationContext {
     return tokenValidationContext
 }
 
+fun TokenValidationContext.claimsFor(authType: AuthenticationType): JwtTokenClaims = this.getClaims(authType.name)
+
+fun TokenValidationContext.maskinportenAuthDetails() =
+    (this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("authorization_details") as? List<*>)?.filterIsInstance<
+        Map<*, *>
+    >() ?: emptyList()
+
 fun TokenValidationContext.getSystembruker(): Result<Systembruker> = runCatching {
-    val authDetails = this.getAuthDetails()
+    val authDetails = this.maskinportenAuthDetails()
     val systemBrukerIdListe = (authDetails.first()["systemuser_id"] as List<*>).filterIsInstance<String>()
     val systemBrukerOrgMap = authDetails.first()["systemuser_org"] as? Map<*, *>
     val systemBrukerOrgnr = systemBrukerOrgMap?.extractOrgnummer()
-    require(systemBrukerOrgnr != null)
+    requireNotNull(systemBrukerOrgnr)
     Systembruker(systemBrukerIdListe.first(), OrgNr(systemBrukerOrgnr))
 }
 
-fun TokenValidationContext.gyldigScope(scope: String): Boolean = this.getClaims("maskinporten").get("scope").toString() == scope
+fun TokenValidationContext.gyldigScope(scope: String): Boolean =
+    this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("scope").toString() == scope
 
 fun TokenValidationContext.gyldigSystembrukerOgConsumer(): Boolean {
     val systembruker = this.getSystembruker()
@@ -39,15 +49,22 @@ fun TokenValidationContext.gyldigSystembrukerOgConsumer(): Boolean {
 fun String.gyldigOrgnr(): Boolean = this.matches(Regex("\\d{9}"))
 
 fun TokenValidationContext.getConsumerOrgnr(): String {
-    val consumer = this.getClaims("maskinporten").get("consumer") as? Map<*, *>
+    val consumer = this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("consumer") as? Map<*, *>
     val orgnr = consumer?.extractOrgnummer()
-    require(orgnr != null)
+    requireNotNull(orgnr)
     return orgnr
 }
 
-fun TokenValidationContext.getAuthDetails() =
-    (this.getClaims("maskinporten").get("authorization_details") as? List<*>)?.filterIsInstance<Map<*, *>>() ?: emptyList()
-
 private fun Map<*, *>.extractOrgnummer(): String? = (get("ID") as? String)?.split(":")?.get(1)
 
-data class Systembruker(val id: String, val orgNr: OrgNr)
+fun TokenValidationContext.getEntraId(): Result<EntraId> = runCatching {
+    val navIdent = this.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("NAVident") as? String
+    requireNotNull(navIdent)
+    EntraId(navIdent)
+}
+
+sealed interface AutentisertBruker
+
+data class Systembruker(val id: String, val orgNr: OrgNr) : AutentisertBruker
+
+data class EntraId(val navIdent: String) : AutentisertBruker

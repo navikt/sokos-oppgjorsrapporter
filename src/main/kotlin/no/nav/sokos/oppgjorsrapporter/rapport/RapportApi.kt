@@ -10,6 +10,9 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.put
 import no.nav.helsearbeidsgiver.utils.log.sikkerLogger
+import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
+import no.nav.sokos.oppgjorsrapporter.auth.getEntraId
 import no.nav.sokos.oppgjorsrapporter.auth.getSystembruker
 import no.nav.sokos.oppgjorsrapporter.auth.tokenValidationContext
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
@@ -44,16 +47,24 @@ fun Route.rapportApi() {
 
     get<ApiPaths.Rapporter.Id> { rapport ->
         val rapport = rapportService.findById(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
-        tokenValidationContext()
+        val tvContext = tokenValidationContext()
+        tvContext
             .getSystembruker()
+            .recoverCatching { tvContext.getEntraId() }
             .fold(
-                { sysBruker ->
-                    sikkerLogger().info("Skal sjekke om systembruker $sysBruker har tilgang til $rapport")
-                    if (!pdpService.harTilgang(sysBruker, setOf(rapport.orgNr), rapport.type.altinnRessurs)) {
-                        sikkerLogger().info("Systembruker $sysBruker har forsøkt å aksessere rapport $rapport, men PDP gir ikke tilgang")
-                        return@get call.respond(HttpStatusCode.NotFound)
+                { bruker ->
+                    sikkerLogger().info("Skal sjekke om systembruker $bruker har tilgang til $rapport")
+                    when (bruker) {
+                        is Systembruker -> {
+                            if (!pdpService.harTilgang(bruker, setOf(rapport.orgNr), rapport.type.altinnRessurs)) {
+                                sikkerLogger()
+                                    .info("Systembruker $bruker har forsøkt å aksessere rapport $rapport, men PDP gir ikke tilgang")
+                                return@get call.respond(HttpStatusCode.NotFound)
+                            }
+                        }
+                        is EntraId -> {}
                     }
-                    sikkerLogger().info("Autorisasjon OK for $sysBruker")
+                    sikkerLogger().info("Autorisasjon OK for $bruker")
                 },
                 { e ->
                     // TODO: Implementere støtte for flere typer autentisering/autorisasjon
