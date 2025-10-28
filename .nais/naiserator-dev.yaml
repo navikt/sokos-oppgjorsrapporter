@@ -42,7 +42,10 @@ spec:
   azure:
     application:
       enabled: true
-      allowAllUsers: true # Inntil vi får spesifisert hvilke Entra ID-grupper som skal ha intern-tilgang
+      allowAllUsers: false
+      claims:
+        groups:
+          - id: "9c5b24f2-5e01-4966-adaf-bc9fb6410a32" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER
   maskinporten:
     enabled: true
     scopes:
