@@ -1,11 +1,14 @@
 package no.nav.sokos.oppgjorsrapporter.auth
 
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldStartWith
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.plugins.di.dependencies
@@ -24,7 +27,9 @@ import no.nav.sokos.oppgjorsrapporter.module
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
-import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
+import no.nav.sokos.oppgjorsrapporter.rapport.Variant
+import no.nav.sokos.oppgjorsrapporter.rapport.VariantFormat
 import no.nav.sokos.oppgjorsrapporter.rapport.medId
 import no.nav.sokos.oppgjorsrapporter.rapport.medOrgNr
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
@@ -39,7 +44,7 @@ abstract class ApiTest {
     val hovedenhetOrgnrMedPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
     val underenhetOrgnrMedPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
 
-    val mockedRapportService = mockk<RapportService>()
+    val mockedRapportRepository = mockk<RapportRepository>()
     val mockedPdpService = mockk<PdpService>()
 
     val mockOAuth2Server: MockOAuth2Server = MockOAuth2Server().apply { start() }
@@ -48,7 +53,7 @@ abstract class ApiTest {
         configureTestApplication(container, mockOAuth2Server)
 
         application {
-            dependencies.provide<RapportService> { mockedRapportService }
+            dependencies.provide<RapportRepository> { mockedRapportRepository }
             dependencies.provide<PdpService> { mockedPdpService }
             module()
         }
@@ -66,7 +71,7 @@ abstract class ApiTest {
 
         every {
             mockedPdpService.harTilgang(
-                systembruker = match { it.orgNr == hovedenhetOrgnrMedPdpTilgang },
+                systembruker = match { it.userOrg == hovedenhetOrgnrMedPdpTilgang },
                 orgnumre = match { it.contains(hovedenhetOrgnrMedPdpTilgang) || it.contains(underenhetOrgnrMedPdpTilgang) },
                 ressurs = any(),
             )
@@ -74,7 +79,7 @@ abstract class ApiTest {
 
         every {
             mockedPdpService.harTilgang(
-                systembruker = match { it.orgNr == underenhetOrgnrMedPdpTilgang },
+                systembruker = match { it.userOrg == underenhetOrgnrMedPdpTilgang },
                 orgnumre = match { it.contains(underenhetOrgnrMedPdpTilgang) },
                 ressurs = any(),
             )
@@ -97,7 +102,10 @@ class HentApiAuthTest : ApiTest() {
     fun mockRapport(id: Long, orgnr: OrgNr): Rapport = TestData.rapportMock.medId(id).medOrgNr(orgnr)
 
     fun mockHentingAvEnkelRapport(resultat: Rapport) {
-        every { mockedRapportService.findById(resultat.id) } returns resultat
+        every { mockedRapportRepository.findById(any(), resultat.id) } returns resultat
+        every { mockedRapportRepository.hentInnhold(any(), resultat.id, VariantFormat.Pdf) } returns
+            Triple(resultat, Variant.Id(1), TestData.minimalPdf.encodeToByteArray())
+        every { mockedRapportRepository.audit(any(), any()) } returns true
     }
 
     @Test
@@ -130,6 +138,36 @@ class HentApiAuthTest : ApiTest() {
     }
 
     @Test
+    fun `gir 200 OK ved henting av innhold i en spesifikk rapport som systembruker har tilgang til`() {
+        val rapportHovedenhet = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+        val rapportUnderenhet = mockRapport(id = 234, orgnr = underenhetOrgnrMedPdpTilgang)
+
+        mockHentingAvEnkelRapport(rapportHovedenhet)
+        mockHentingAvEnkelRapport(rapportUnderenhet)
+
+        mapOf(
+                // systembruker for hovedenhet skal få lov til å hente rapport på hovedenhet
+                hovedenhetOrgnrMedPdpTilgang to rapportHovedenhet,
+                // systembruker for hovedenhet skal få lov til å hente rapport på underenhet
+                hovedenhetOrgnrMedPdpTilgang to rapportUnderenhet,
+                // systembruker for underenhet skal få lov til å hente rapport på underenhet
+                underenhetOrgnrMedPdpTilgang to rapportUnderenhet,
+            )
+            .forEach { (orgNr, rapport) ->
+                runBlocking {
+                    val respons =
+                        client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
+                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgNr))
+                            accept(ContentType.Application.Pdf)
+                        }
+
+                    respons.status shouldBe HttpStatusCode.OK
+                    respons.bodyAsText() shouldStartWith "%PDF-"
+                }
+            }
+    }
+
+    @Test
     fun `gir 404 Not Found ved henting av metainfo om en spesifikk rapport som systembruker ikke har tilgang til`() {
         val rapportMedTilgang = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
         val rapportUtenTilgang = mockRapport(id = 321, orgnr = orgnrUtenPdpTilgang)
@@ -150,6 +188,34 @@ class HentApiAuthTest : ApiTest() {
                     val respons =
                         client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
                             bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgNr))
+                        }
+                    respons.status shouldBe HttpStatusCode.NotFound
+                }
+            }
+    }
+
+    @Test
+    fun `gir 404 Not Found ved henting av innhold i en spesifikk rapport som systembruker ikke har tilgang til`() {
+        val rapportMedTilgang = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+        val rapportUtenTilgang = mockRapport(id = 321, orgnr = orgnrUtenPdpTilgang)
+
+        mockHentingAvEnkelRapport(rapportMedTilgang)
+        mockHentingAvEnkelRapport(rapportUtenTilgang)
+
+        mapOf(
+                // systembruker for en org som ikke har gitt systembrukeren rettigheter forsøker å aksessere rapport for en annen org
+                orgnrUtenPdpTilgang to rapportMedTilgang,
+                // systembruker for en org som ikke har gitt systembrukeren rettigheter forsøker å aksessere rapport for "egen" org
+                orgnrUtenPdpTilgang to rapportUtenTilgang,
+                // systembruker for underenhet forsøker å aksessere rapport for egen orgs hovedenhet
+                underenhetOrgnrMedPdpTilgang to rapportMedTilgang,
+            )
+            .forEach { (orgNr, rapport) ->
+                runBlocking {
+                    val respons =
+                        client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
+                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgNr))
+                            accept(ContentType.Application.Pdf)
                         }
                     respons.status shouldBe HttpStatusCode.NotFound
                 }

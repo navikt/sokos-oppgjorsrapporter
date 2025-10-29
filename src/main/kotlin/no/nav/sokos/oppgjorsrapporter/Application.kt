@@ -26,6 +26,7 @@ import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
 import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 
 fun main() {
@@ -46,6 +47,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
 
     dependencies {
         provide<DataSource> { DatabaseConfig.dataSource }
+        provide(RapportRepository::class)
         provide(RapportService::class)
         provide<AuthClient> {
             if (config.applicationProperties.profile == PropertiesConfig.Profile.LOCAL) NoOpAuthClient()

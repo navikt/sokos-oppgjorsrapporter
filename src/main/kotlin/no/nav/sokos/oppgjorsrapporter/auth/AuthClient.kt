@@ -9,7 +9,8 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.parameters
 import java.net.URI
 import kotlinx.coroutines.runBlocking
-import no.nav.helsearbeidsgiver.utils.log.sikkerLogger
+import mu.KotlinLogging
+import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 
 interface AuthClient {
     fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): () -> String
@@ -24,7 +25,7 @@ class NoOpAuthClient : AuthClient {
 }
 
 class DefaultAuthClient(private val tokenEndpoint: String, private val altinn3BaseUrl: URI) : AuthClient {
-    private val sikkerLogger = sikkerLogger()
+    private val logger = KotlinLogging.logger {}
     private val httpClient = createHttpClient()
 
     override fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): () -> String = {
@@ -55,9 +56,9 @@ class DefaultAuthClient(private val tokenEndpoint: String, private val altinn3Ba
 
     private suspend fun ResponseException.logAndRethrow(): Nothing {
         val error = response.body<ErrorResponse>()
-        val msg = "Klarte ikke hente token. Feilet med status '${response.status}' og feilmelding '${error.errorDescription}'."
-
-        sikkerLogger.error(msg)
+        logger.error(TEAM_LOGS_MARKER) {
+            "Klarte ikke hente token. Feilet med status '${response.status}' og feilmelding '${error.errorDescription}'."
+        }
         throw this
     }
 }

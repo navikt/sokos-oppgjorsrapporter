@@ -23,18 +23,18 @@ suspend fun RoutingContext.tokenValidationContext(): TokenValidationContext {
 
 fun TokenValidationContext.claimsFor(authType: AuthenticationType): JwtTokenClaims = this.getClaims(authType.name)
 
-fun TokenValidationContext.maskinportenAuthDetails() =
-    (this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("authorization_details") as? List<*>)?.filterIsInstance<
-        Map<*, *>
-    >() ?: emptyList()
+fun TokenValidationContext.maskinportenAuthDetails() = runCatching {
+    (this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("authorization_details") as List<*>)
+        .filterIsInstance<Map<*, *>>()
+        .single()
+}
 
 fun TokenValidationContext.getSystembruker(): Result<Systembruker> = runCatching {
-    val authDetails = this.maskinportenAuthDetails()
-    val systemBrukerIdListe = (authDetails.first()["systemuser_id"] as List<*>).filterIsInstance<String>()
-    val systemBrukerOrgMap = authDetails.first()["systemuser_org"] as? Map<*, *>
-    val systemBrukerOrgnr = systemBrukerOrgMap?.extractOrgnummer()
-    requireNotNull(systemBrukerOrgnr)
-    Systembruker(systemBrukerIdListe.first(), OrgNr(systemBrukerOrgnr))
+    val authDetails = this.maskinportenAuthDetails().getOrThrow()
+    val systemBrukerId = (authDetails["systemuser_id"] as List<*>).filterIsInstance<String>().single()
+    val systemBrukerOrgMap = authDetails["systemuser_org"] as Map<*, *>
+    val systemBrukerOrgnr = requireNotNull(systemBrukerOrgMap.extractOrgnummer())
+    Systembruker(systemBrukerId, OrgNr(systemBrukerOrgnr), authDetails["system_id"] as String)
 }
 
 fun TokenValidationContext.gyldigScope(scope: String): Boolean =
@@ -43,28 +43,27 @@ fun TokenValidationContext.gyldigScope(scope: String): Boolean =
 fun TokenValidationContext.gyldigSystembrukerOgConsumer(): Boolean {
     val systembruker = this.getSystembruker()
     val consumerOrgnr = this.getConsumerOrgnr()
-    return consumerOrgnr.gyldigOrgnr() && systembruker.getOrThrow().orgNr.raw.gyldigOrgnr()
+    return consumerOrgnr.gyldigOrgnr() && systembruker.getOrThrow().userOrg.raw.gyldigOrgnr()
 }
 
 fun String.gyldigOrgnr(): Boolean = this.matches(Regex("\\d{9}"))
 
 fun TokenValidationContext.getConsumerOrgnr(): String {
-    val consumer = this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("consumer") as? Map<*, *>
-    val orgnr = consumer?.extractOrgnummer()
-    requireNotNull(orgnr)
-    return orgnr
+    val consumer = this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("consumer") as Map<*, *>
+    return requireNotNull(consumer.extractOrgnummer())
 }
 
 private fun Map<*, *>.extractOrgnummer(): String? = (get("ID") as? String)?.split(":")?.get(1)
 
 fun TokenValidationContext.getEntraId(): Result<EntraId> = runCatching {
-    val navIdent = this.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("NAVident") as? String
-    requireNotNull(navIdent)
-    EntraId(navIdent)
+    val claims = this.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)
+    val navIdent = requireNotNull(claims.get("NAVident") as String)
+    val groups = requireNotNull((claims.get("groups") as List<*>).filterIsInstance<String>())
+    EntraId(navIdent, groups)
 }
 
 sealed interface AutentisertBruker
 
-data class Systembruker(val id: String, val orgNr: OrgNr) : AutentisertBruker
+data class Systembruker(val userId: String, val userOrg: OrgNr, val systemId: String) : AutentisertBruker
 
-data class EntraId(val navIdent: String) : AutentisertBruker
+data class EntraId(val navIdent: String, val groups: List<String>) : AutentisertBruker

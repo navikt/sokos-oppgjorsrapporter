@@ -11,6 +11,7 @@ import kotlinx.io.bytestring.buildByteString
 import kotlinx.io.bytestring.encodeToByteString
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
+import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 
 class RapportServiceTest :
     FunSpec({
@@ -112,12 +113,15 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", container.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
-                    val innhold = sut.hentInnhold(Variant.Id(7)) { stream -> buildByteString { append(stream.readAllBytes()) } }
-                    val expected = buildByteString {
-                        append("PDF".toByteArray())
-                        append(0.toByte())
-                        append("4".toByteArray())
-                    }
+                    val innhold =
+                        sut.hentInnhold(EntraId("navIdent", listOf("group")), Rapport.Id(4), VariantFormat.Pdf) { _, data -> data }
+                    val expected =
+                        buildByteString {
+                                append("PDF".toByteArray())
+                                append(0.toByte())
+                                append("4".toByteArray())
+                            }
+                            .toByteArray()
                     innhold shouldBe expected
                 }
             }

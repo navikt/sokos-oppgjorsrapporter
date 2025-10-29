@@ -45,7 +45,10 @@ class SecurityTest :
                         }
                         val response =
                             client.get("/api/rapport/v1?orgnr=987654321") {
-                                header("Authorization", "Bearer ${mockOAuth2Server.tokenFromDefaultProvider()}")
+                                header(
+                                    "Authorization",
+                                    "Bearer ${mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf("group")))}",
+                                )
                                 contentType(ContentType.Application.Json)
                             }
 
@@ -56,5 +59,5 @@ class SecurityTest :
         }
     })
 
-private fun MockOAuth2Server.tokenFromDefaultProvider() =
-    issueToken(issuerId = "default", clientId = "default", tokenCallback = DefaultOAuth2TokenCallback()).serialize()
+private fun MockOAuth2Server.tokenFromDefaultProvider(claims: Map<String, Any> = emptyMap()): String =
+    issueToken(issuerId = "default", clientId = "default", tokenCallback = DefaultOAuth2TokenCallback(claims = claims)).serialize()
