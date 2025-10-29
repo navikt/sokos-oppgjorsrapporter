@@ -1,26 +1,17 @@
 <configuration>
     <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
 
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>
-                %green(%d{HH:mm:ss}) %cyan([%-5.5t]) %boldCyan(%0.-5p) %yellow(%logger{36}) %cyan(%class.%M) : %m%n
-            </pattern>
-        </encoder>
-    </appender>
-
     <!--
-     The "team-logs" and "default-json" appenders are intended to be mutually exclusive;
-     no single log call should end up appending to both of them.
-     To ensure this, "team-logs" will only accept log calls that use the "TEAM_LOGS" marker,
-     while "default-json" will only accept calls *without* that marker.
+      Appenderne "console-json" og "team-logs" er ment å være enten/eller - et log-kall skal aldri ende opp i begge.
+      For å sikre at dette skjer, vil "team-logs" filtrere slik at kun kall som har "TEAM_LOGS"-markeren blir sendt,
+      mens "console-json" vil filtrere motsatt på samme marker.
     -->
-    <appender name="team-logs" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>team-logs.nais-system:5170</destination>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${NAIS_POD_NAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
-            <includeContext>false</includeContext>
-        </encoder>
+    <appender name="team-logs" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="real-team-logs"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+        <neverBlock>true</neverBlock>
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
             <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
                 <marker>TEAM_LOGS</marker>
@@ -30,8 +21,20 @@
         </filter>
     </appender>
 
-    <appender name="default-json" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    <appender name="real-team-logs" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>team-logs.nais-system:5170</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${NAIS_POD_NAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
+            <includeContext>false</includeContext>
+        </encoder>
+    </appender>
+
+    <appender name="console-json" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="real-console-json"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+        <neverBlock>true</neverBlock>
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
             <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
                 <marker>TEAM_LOGS</marker>
@@ -41,20 +44,34 @@
         </filter>
     </appender>
 
-    <appender name="default-json-async" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="default-json"/>
-        <queueSize>512</queueSize>
-        <discardingThreshold>0</discardingThreshold>
-        <includeCallerData>false</includeCallerData>
-        <neverBlock>true</neverBlock>
+    <appender name="real-console-json" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %green(%d{HH:mm:ss}) %cyan([%-5.5t]) %boldCyan(%0.-5p) %yellow(%logger{36}) %cyan(%class.%M) : %m%n
+            </pattern>
+        </encoder>
     </appender>
 
     <if condition='isDefined("NAIS_CLUSTER_NAME")'>
         <then>
             <root level="INFO">
-                <appender-ref ref="${LOG_APPENDER:-default-json-async}"/>
-                <appender-ref ref="${LOG_APPENDER:-team-logs}"/>
+                <appender-ref ref="console-json"/>
+                <appender-ref ref="team-logs"/>
             </root>
+
+            <!--
+              Noe av koden vi har lånt fra Team HAG bruker en spesifikk "tjenestekall"-logg for å sende ting til Team Logs (uten at noen
+              marker er involvert).
+              For å sikre at den lånte koden ikke sender sensitive logger til Loki, lager vi derfor en "tjenestekall"-logger her, og
+              videresender meldinger derfra direkte til "real-team-logs" - som ikke har noe filter på marker.
+            -->
+            <logger name="tjenestekall" level="INFO" additivity="false">
+                <appender-ref ref="real-team-logs"/>
+            </logger>
         </then>
         <else>
             <root level="INFO">
