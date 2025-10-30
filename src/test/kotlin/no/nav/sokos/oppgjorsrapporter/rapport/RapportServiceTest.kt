@@ -5,6 +5,10 @@ import io.kotest.extensions.testcontainers.toDataSource
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.ktor.server.plugins.di.*
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import java.time.LocalDate
 import java.util.*
 import kotlinx.io.bytestring.buildByteString
@@ -109,12 +113,16 @@ class RapportServiceTest :
             }
 
             test("kan hente innholdet fra en variant") {
-                TestUtil.withFullApplication(container) {
+                val mockedRepository = mockk<RapportRepository>()
+                TestUtil.withFullApplication(container, { dependencies.provide<RapportRepository> { mockedRepository } }) {
                     TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", container.toDataSource())
-
+                    every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
+                    every { mockedRepository.audit(any(), any()) } answers { callOriginal() }
                     val sut: RapportService = application.dependencies.resolve()
+
                     val innhold =
                         sut.hentInnhold(EntraId("navIdent", listOf("group")), Rapport.Id(4), VariantFormat.Pdf) { _, data -> data }
+
                     val expected =
                         buildByteString {
                                 append("PDF".toByteArray())
@@ -123,6 +131,26 @@ class RapportServiceTest :
                             }
                             .toByteArray()
                     innhold shouldBe expected
+
+                    val auditSlot = slot<RapportAudit>()
+                    verify(exactly = 1) { mockedRepository.audit(any(), capture(auditSlot)) }
+                    val audit = auditSlot.captured
+                    audit.rapportId shouldBe Rapport.Id(4)
+                    audit.variantId shouldBe Variant.Id(7)
+                    audit.hendelse shouldBe RapportAudit.Hendelse.VARIANT_NEDLASTET
+                }
+            }
+
+            test("vil ikke audit-logge forsøk på å hente innholdet fra en variant hvis innholdet ikke returneres til klienten") {
+                val mockedRepository = mockk<RapportRepository>()
+                TestUtil.withFullApplication(container) {
+                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", container.toDataSource())
+                    every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
+                    val sut: RapportService = application.dependencies.resolve()
+
+                    sut.hentInnhold(EntraId("navIdent", listOf("group")), Rapport.Id(4), VariantFormat.Pdf) { _, _ -> null }
+
+                    verify(exactly = 0) { mockedRepository.audit(any(), any()) }
                 }
             }
         }

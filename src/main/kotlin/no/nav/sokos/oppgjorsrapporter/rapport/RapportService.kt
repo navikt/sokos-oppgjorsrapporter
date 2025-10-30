@@ -59,28 +59,32 @@ class RapportService(private val dataSource: DataSource, private val repository:
     fun listVariants(rapportId: Rapport.Id): List<Variant> =
         using(sessionOf(dataSource)) { it.transaction { tx -> repository.listVariants(tx, rapportId) } }
 
-    fun <T> hentInnhold(
+    fun <T : Any> hentInnhold(
         bruker: AutentisertBruker,
         rapportId: Rapport.Id,
         format: VariantFormat,
-        process: suspend (Rapport, ByteArray) -> T,
+        process: suspend (Rapport, ByteArray) -> T?,
     ): T? =
         using(sessionOf(dataSource)) {
             it.transaction { tx ->
                 repository.hentInnhold(tx, rapportId, format)?.let { (rapport, variantId, innhold) ->
-                    repository.audit(
-                        tx,
-                        RapportAudit(
-                            RapportAudit.Id(0),
-                            rapport.id,
-                            variantId,
-                            Instant.now(),
-                            RapportAudit.Hendelse.VARIANT_NEDLASTET,
-                            brukernavn(bruker),
-                            null,
-                        ),
-                    )
                     runBlocking { process(rapport, innhold) }
+                        ?.apply {
+                            // process() kan returnere null for å indikere at innholdet ikke ble sendt - f.eks. dersom den oppdaget at
+                            // brukeren ikke hadde tilgang.  Kun hvis den returnerer non-null skal vi legge inn en audit-event.
+                            repository.audit(
+                                tx,
+                                RapportAudit(
+                                    RapportAudit.Id(0),
+                                    rapport.id,
+                                    variantId,
+                                    Instant.now(),
+                                    RapportAudit.Hendelse.VARIANT_NEDLASTET,
+                                    brukernavn(bruker),
+                                    null,
+                                ),
+                            )
+                        }
                 }
             }
         }

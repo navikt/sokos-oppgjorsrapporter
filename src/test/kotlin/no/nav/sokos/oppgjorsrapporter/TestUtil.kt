@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter
 
+import io.ktor.server.application.Application
 import io.ktor.server.config.*
 import io.ktor.server.plugins.di.DI
 import io.ktor.server.testing.ApplicationTestBuilder
@@ -20,10 +21,11 @@ import org.testcontainers.containers.PostgreSQLContainer
 private val logger = KotlinLogging.logger {}
 
 object TestUtil {
-    fun withFullApplication(container: PostgreSQLContainer<Nothing>, thunk: suspend ApplicationTestBuilder.() -> Unit): TestResult =
-        withMockOAuth2Server {
-            withTestApplication(container, thunk)
-        }
+    fun withFullApplication(
+        container: PostgreSQLContainer<Nothing>,
+        dependencyOverrides: Application.() -> Unit = {},
+        thunk: suspend ApplicationTestBuilder.() -> Unit,
+    ): TestResult = withMockOAuth2Server { withTestApplication(container, dependencyOverrides, thunk) }
 
     fun getOverrides(container: PostgreSQLContainer<Nothing>): MapApplicationConfig =
         MapApplicationConfig()
@@ -145,11 +147,18 @@ fun MockOAuth2Server.authConfigOverrides() =
         put("maskinporten.wellKnownUrl", wellKnownUrl("maskinporten").toString())
     }
 
-fun MockOAuth2Server.withTestApplication(container: PostgreSQLContainer<Nothing>, thunk: suspend ApplicationTestBuilder.() -> Unit) {
+fun MockOAuth2Server.withTestApplication(
+    container: PostgreSQLContainer<Nothing>,
+    dependencyOverrides: Application.() -> Unit = {},
+    thunk: suspend ApplicationTestBuilder.() -> Unit,
+) {
     testApplication {
         configureTestApplication(container, this@withTestApplication)
 
-        application { module() }
+        application {
+            dependencyOverrides()
+            module()
+        }
         startApplication()
 
         thunk()

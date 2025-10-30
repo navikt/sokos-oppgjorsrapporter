@@ -97,10 +97,13 @@ fun Route.rapportApi() {
             VariantFormat.entries.find { f -> acceptItems.any { it.value == f.contentType } }
                 ?: return@get call.respond(HttpStatusCode.NotAcceptable)
         rapportService.hentInnhold(bruker, Rapport.Id(innhold.parent.id), format) { rapport, innhold ->
-            if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgNr)) {
-                return@hentInnhold call.respond(HttpStatusCode.NotFound)
+            if (harTilgangTilRessurs(bruker, rapport.type, rapport.orgNr)) {
+                call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold }
+                rapport
+            } else {
+                call.respond(HttpStatusCode.NotFound)
+                null
             }
-            call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold }
         }
     }
 
