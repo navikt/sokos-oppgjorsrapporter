@@ -18,7 +18,7 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.binder.system.UptimeMetrics
 import kotlinx.serialization.json.Json
-import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
+import no.nav.sokos.oppgjorsrapporter.metrics.prometheusMeterRegistry
 import org.slf4j.Marker
 import org.slf4j.MarkerFactory
 import org.slf4j.event.Level
@@ -42,7 +42,7 @@ fun Application.commonConfig() {
         )
     }
     install(MicrometerMetrics) {
-        registry = Metrics.prometheusMeterRegistry
+        registry = prometheusMeterRegistry
         meterBinders = listOf(UptimeMetrics(), JvmMemoryMetrics(), JvmGcMetrics(), JvmThreadMetrics(), ProcessorMetrics())
     }
 }
@@ -66,6 +66,6 @@ fun Routing.internalNaisRoutes(
                     call.respondText(text = applicationState.readyErrors().joinToString("\n"), status = HttpStatusCode.InternalServerError)
             }
         }
-        get("metrics") { call.respondText(Metrics.prometheusMeterRegistry.scrape()) }
+        get("metrics") { call.respondText(prometheusMeterRegistry.scrape()) }
     }
 }

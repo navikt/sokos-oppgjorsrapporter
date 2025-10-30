@@ -17,10 +17,10 @@ import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
-import no.nav.sokos.oppgjorsrapporter.auth.getEntraId
-import no.nav.sokos.oppgjorsrapporter.auth.getSystembruker
+import no.nav.sokos.oppgjorsrapporter.auth.getBruker
 import no.nav.sokos.oppgjorsrapporter.auth.tokenValidationContext
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
+import no.nav.sokos.oppgjorsrapporter.metrics.tellApiRequest
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 
 private val logger = KotlinLogging.logger {}
@@ -65,10 +65,8 @@ fun Route.rapportApi() {
     get<ApiPaths.Rapporter> { rapporter ->
         // TODO: Listen med tilgjengelige rapporter kan bli lang; trenger vi å lage noe slags paging?  La klient angi hvilken tidsperiode de
         // er interesserte i?
-        val bruker =
-            autentisertBruker().getOrElse {
-                return@get call.respond(HttpStatusCode.Unauthorized)
-            }
+        tellApiRequest()
+        val bruker = autentisertBruker()
         if (rapporter.orgnr != null) {
             val orgNr = OrgNr(rapporter.orgnr)
             val rapporter = rapportService.listForOrg(orgNr)
@@ -82,10 +80,8 @@ fun Route.rapportApi() {
     }
 
     get<ApiPaths.Rapporter.Id> { rapport ->
-        val bruker =
-            autentisertBruker().getOrElse {
-                return@get call.respond(HttpStatusCode.Unauthorized)
-            }
+        tellApiRequest()
+        val bruker = autentisertBruker()
         val rapport = rapportService.findById(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
         if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgNr)) {
             return@get call.respond(HttpStatusCode.NotFound)
@@ -94,10 +90,8 @@ fun Route.rapportApi() {
     }
 
     get<ApiPaths.Rapporter.Id.Innhold> { innhold ->
-        val bruker =
-            autentisertBruker().getOrElse {
-                return@get call.respond(HttpStatusCode.Unauthorized)
-            }
+        tellApiRequest()
+        val bruker = autentisertBruker()
         val acceptItems = call.request.acceptItems()
         val format =
             VariantFormat.entries.find { f -> acceptItems.any { it.value == f.contentType } }
@@ -111,10 +105,25 @@ fun Route.rapportApi() {
     }
 
     put<ApiPaths.Rapporter.Id.Arkiver> { arkiver ->
+        tellApiRequest()
+        val bruker = autentisertBruker()
         call.respondText("sett arkivert: $arkiver")
         TODO()
     }
 }
 
-private suspend fun RoutingContext.autentisertBruker(): Result<AutentisertBruker> =
-    tokenValidationContext().let { ctx -> ctx.getSystembruker().recoverCatching { ctx.getEntraId().getOrThrow() } }
+private suspend fun RoutingContext.autentisertBruker(): AutentisertBruker =
+    tokenValidationContext().let { ctx ->
+        ctx.getBruker().getOrElse {
+            call.respond(HttpStatusCode.Unauthorized)
+            // "Hemmeligheter som access tokens skal aldri logges", i følge [etterlevelseskrav
+            // K267.1](https://etterlevelse.ansatt.nav.no/krav/267/1) - men for å kunne debugge hvorfor vi ikke klarer
+            // å finne ut av hvilken bruker det er snakk om her, selv om den har kommet gjennom authenticate(...)-oppsettet i
+            // routingConfig, må vi nesten logge *claimene* i de tokenene som er validert.
+            // Kun token-claims (men uten signatur etc.) skal ikke være nok til at noen med logg-tilgang kan late som om de er den
+            // aktuelle brukeren.
+            val claims = ctx.issuers.associateWith { ctx.getClaims(it) }
+            logger.warn(TEAM_LOGS_MARKER) { "Bruker skal være autentisert, men klarer ikke å finne AutentisertBruker for $claims" }
+            throw IllegalStateException("Klarer ikke å finne AutentisertBruker")
+        }
+    }
