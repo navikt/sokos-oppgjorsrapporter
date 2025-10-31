@@ -1,0 +1,45 @@
+meta {
+  name: opprett systembruker-forespørsel
+  type: http
+  seq: 3
+}
+
+post {
+  url: https://platform.tt02.altinn.no/authentication/api/v1/systemuser/request/vendor
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "systemId": "{{systemId}}",
+    "partyOrgNo": "{{kundeSystembrukerOrgnr}}",
+    "rights": [
+      {
+        "resource": [
+          {
+            "id": "urn:altinn:resource",
+            "value": "nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver"
+          }
+        ]
+      }
+    ],
+    "accessPackages": [
+      {
+        "urn": "urn:altinn:accesspackage:lonn-personopplysninger-saerlig-kategori"
+      }
+    ]
+  }
+}
+
+script:pre-request {
+  const { initBearerAuth } = require('./tokenAuth');
+  await initBearerAuth(`systembruker-forespoersel`, req);
+  
+}
+
+docs {
+  Opprett systembrukerforespørsel (forespørselen må godkjennes før selve systembrukeren blir opprettet).
+  
+  Swagger: https://docs.altinn.studio/nb/api/authentication/spec/#/RequestSystemUser
+}

@@ -2,6 +2,7 @@ package no.nav.sokos.oppgjorsrapporter.config
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import no.nav.sokos.oppgjorsrapporter.metrics.prometheusMeterRegistry
 
 object DatabaseConfig {
     private lateinit var applicationProperties: PropertiesConfig.ApplicationProperties
@@ -31,5 +32,6 @@ fun createDataSource(url: String): HikariDataSource =
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_READ_COMMITTED"
             jdbcUrl = url
+            metricRegistry = prometheusMeterRegistry
         }
     )

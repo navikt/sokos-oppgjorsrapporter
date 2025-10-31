@@ -1,0 +1,32 @@
+meta {
+  name: hent dialog
+  type: http
+  seq: 4
+}
+
+get {
+  url: https://platform.tt02.altinn.no/dialogporten/api/v1/enduser/dialogs/{{dialogId}}
+  body: none
+  auth: none
+}
+
+params:query {
+  ~serviceResource: nav_sykepenger_dialogporten
+}
+
+vars:pre-request {
+  dialogId: 019a05e5-be2a-7776-a25d-cf414c35517f
+}
+
+script:pre-request {
+  const { initBearerAuth } = require('./tokenAuth');
+  const systembrukerOrgnr = bru.getCollectionVar("kundeSystembrukerOrgnr")
+  await initBearerAuth(`dialogporten/${systembrukerOrgnr}`, req);
+  
+}
+
+docs {
+  Hent dialog fra Dialogporten.
+  
+  Swagger: https://platform.tt02.altinn.no/dialogporten/swagger/index.html#/Enduser
+}

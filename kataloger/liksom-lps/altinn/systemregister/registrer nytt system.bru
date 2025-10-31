@@ -1,0 +1,60 @@
+meta {
+  name: registrer nytt system
+  type: http
+  seq: 1
+}
+
+post {
+  url: https://platform.tt02.altinn.no/authentication/api/v1/systemregister/vendor
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "{{systemId}}",
+    "vendor": {
+      "id": "0192:{{systemLeverandoerOrgnr}}"
+    },
+    "name": {
+      "en": "LiksomSys",
+      "nb": "LiksomSys",
+      "nn": "LiksomSys"
+    },
+    "description": {
+      "en": "LiksomSys is good stuff",
+      "nb": "LiksomSys er bra",
+      "nn": "LiksomSys er morosamt"
+    },
+    "rights": [
+      {
+        "resource": [
+          {
+            "id": "urn:altinn:resource",
+            "value": "nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver"
+          }
+        ]
+      }
+    ],
+    "accessPackages": [
+      {
+        "urn": "urn:altinn:accesspackage:lonn-personopplysninger-saerlig-kategori"
+      }
+    ],
+    "clientId": [
+      "{{clientId}}"
+    ]
+  }
+}
+
+script:pre-request {
+  const { initBearerAuth } = require('./tokenAuth');
+  await initBearerAuth(`systemregister`, req);
+  
+}
+
+docs {
+  Registrer nytt system (f.eks. Bjørnesys) i Altinn sitt systemregister. For å oppdatere eksisterende system (f.eks. LiksomSys), bruk `PUT oppdater system`.
+  
+  Swagger: https://docs.altinn.studio/nb/api/authentication/spec/#/SystemRegister
+}

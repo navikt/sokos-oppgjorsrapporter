@@ -6,12 +6,14 @@ import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.addShutdownHook
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.di.DI
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.resources.Resources
 import io.ktor.util.AttributeKey
 import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
+import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
+import no.nav.sokos.oppgjorsrapporter.auth.DefaultAuthClient
+import no.nav.sokos.oppgjorsrapporter.auth.NoOpAuthClient
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseMigrator
@@ -22,6 +24,9 @@ import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
+import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
+import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 
 fun main() {
@@ -38,21 +43,17 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
 
     DatabaseConfig.init(config)
 
-    install(DI) {
-        onShutdown = { dependencyKey, instance ->
-            when (instance) {
-                // Vi ønsker bare en DataSource i bruk for en hel test-kjøring, selv om flere tester start/stopper applikasjonen;
-                // dette er en opt-out av auto-close-greiene til Kotlins DI-extension:
-                is DataSource -> {}
-                is AutoCloseable -> instance.close()
-            }
-        }
-    }
     install(Resources)
 
     dependencies {
         provide<DataSource> { DatabaseConfig.dataSource }
+        provide(RapportRepository::class)
         provide(RapportService::class)
+        provide<AuthClient> {
+            if (config.applicationProperties.profile == PropertiesConfig.Profile.LOCAL) NoOpAuthClient()
+            else DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.maskinportenProperties.altinn3BaseUrl)
+        }
+        provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
     }
 
     commonConfig()

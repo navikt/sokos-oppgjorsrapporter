@@ -1,0 +1,15 @@
+meta {
+  name: hent rapport
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://sokos-oppgjorsrapporter.ekstern.dev.nav.no/api/rapport/v1/{{id}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  id: 1
+}

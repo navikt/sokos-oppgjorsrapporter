@@ -31,6 +31,7 @@ spec:
       memory: 512Mi
   ingresses:
     - https://sokos-oppgjorsrapporter.intern.dev.nav.no
+    - https://sokos-oppgjorsrapporter.ekstern.dev.nav.no
   prometheus:
     enabled: true
     path: /internal/metrics
@@ -41,6 +42,24 @@ spec:
   azure:
     application:
       enabled: true
+      allowAllUsers: false
+      claims:
+        groups:
+          - id: "9c5b24f2-5e01-4966-adaf-bc9fb6410a32" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER
+  maskinporten:
+    enabled: true
+    scopes:
+      exposes:
+        - accessibleForAll: true
+          atMaxAge: 600 # OK med lang token-levetid i dev
+          enabled: true
+          product: utbetaling
+          separator: "/"
+          name: oppgjorsrapporter
+      consumes:
+        - name: "altinn:authorization/authorize"
+  tokenx:
+    enabled: true
   gcp:
     sqlInstances:
       - type: POSTGRES_17
@@ -56,8 +75,11 @@ spec:
           namespace: nais
           cluster: dev-gcp
     outbound:
+      external:
+        - host: platform.tt02.altinn.no
       rules:
         - application: logging
           namespace: nais-system
-
+  envFrom:
+    - secret: altinn-authorization-subscription
   env:

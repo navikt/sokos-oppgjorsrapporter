@@ -9,6 +9,7 @@ import com.natpryce.konfig.stringType
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.config.ApplicationConfigValue
 import java.io.File
+import java.net.URI
 
 fun configFrom(config: ApplicationConfig): PropertiesConfig.Configuration {
     val configSource = configSourceFrom(config)
@@ -104,14 +105,42 @@ object PropertiesConfig {
         }
     }
 
-    data class SecurityProperties(val azureAdProperties: AzureAdProperties) {
-        constructor(source: ConfigSource) : this(azureAdProperties = AzureAdProperties(source))
+    data class SecurityProperties(
+        val azureAdProperties: AzureAdProperties,
+        val maskinportenProperties: MaskinportenProperties,
+        val tokenEndpoint: String,
+    ) {
+        constructor(
+            source: ConfigSource
+        ) : this(
+            azureAdProperties = AzureAdProperties(source),
+            maskinportenProperties = MaskinportenProperties(source),
+            source.get("authclient.tokenEndpoint"),
+        )
     }
 
     class AzureAdProperties(val clientId: String, val wellKnownUrl: String) {
         constructor(
             source: ConfigSource
         ) : this(clientId = source.get("AZURE_APP_CLIENT_ID"), wellKnownUrl = source.get("AZURE_APP_WELL_KNOWN_URL"))
+    }
+
+    class MaskinportenProperties(
+        val wellKnownUrl: String,
+        val eksponertScope: String,
+        val altinn3BaseUrl: URI,
+        val subscriptionKey: String,
+        val pdpScope: String,
+    ) {
+        constructor(
+            source: ConfigSource
+        ) : this(
+            wellKnownUrl = source.get("maskinporten.wellKnownUrl"),
+            eksponertScope = source.get("maskinporten.eksponert_scope"),
+            altinn3BaseUrl = URI.create(source.get("altinn.base_url")),
+            subscriptionKey = source.get("altinn.subscription_key"),
+            pdpScope = source.get("altinn.pdp_scope"),
+        )
     }
 
     enum class Profile {

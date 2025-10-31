@@ -1,0 +1,15 @@
+meta {
+  name: hent forespørsel
+  type: http
+  seq: 5
+}
+
+get {
+  url: https://sykepenger-api.ekstern.dev.nav.no/v1/forespoersel/{{id}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  id: 6d5265d9-6d7b-4ae5-932c-359605a96319
+}

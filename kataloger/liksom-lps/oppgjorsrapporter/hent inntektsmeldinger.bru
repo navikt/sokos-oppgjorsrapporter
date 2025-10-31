@@ -1,0 +1,24 @@
+meta {
+  name: hent inntektsmeldinger
+  type: http
+  seq: 9
+}
+
+post {
+  url: https://sykepenger-api.ekstern.dev.nav.no/v1/inntektsmeldinger
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "orgnr": "{{kundeUnderenhetOrgnr}}",
+    "innsendingId": null,
+    "fnr": null,
+    "navReferanseId": null,
+    "tom": null,
+    "fom": null,
+    "status": null,
+    "fraLoepenr": null
+  }
+}

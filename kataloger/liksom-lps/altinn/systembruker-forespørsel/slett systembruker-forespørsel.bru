@@ -1,0 +1,27 @@
+meta {
+  name: slett systembruker-forespørsel
+  type: http
+  seq: 4
+}
+
+delete {
+  url: https://platform.tt02.altinn.no/authentication/api/v1/systemuser/request/vendor/{{uuidOfSystemUserToDelete}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  uuidOfSystemUserToDelete: replace-this-bogus-value
+}
+
+script:pre-request {
+  const { initBearerAuth } = require('./tokenAuth');
+  await initBearerAuth(`systembruker-forespoersel`, req);
+  
+}
+
+docs {
+  Slett et abonnement på Altinn-events.
+  
+  Swagger: https://docs.altinn.studio/nb/events/api/openapi/#/Subscription
+}

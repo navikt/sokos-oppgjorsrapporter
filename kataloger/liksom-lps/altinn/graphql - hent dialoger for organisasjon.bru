@@ -1,0 +1,78 @@
+meta {
+  name: graphql: hent dialoger for organisasjon
+  type: graphql
+  seq: 6
+}
+
+post {
+  url: https://platform.tt02.altinn.no/dialogporten/graphql
+  body: graphql
+  auth: inherit
+}
+
+body:graphql {
+  query GetDialogsForParty($partyId: String!) {
+    searchDialogs(input: { party: [$partyId] }) {
+      items {
+        id
+        org
+        serviceResource
+        party
+        status
+        content {
+          title {
+            value {
+              value
+              languageCode
+            }
+            mediaType
+          }
+          summary {
+            value {
+              value
+              languageCode
+            }
+            mediaType
+          }
+        }
+        createdAt
+        updatedAt
+      }
+      hasNextPage
+      continuationToken
+      errors {
+        message
+      }
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "partyId": "urn:altinn:organization:identifier-no:{{kundeUnderenhetOrgnr}}"
+  }
+  
+}
+
+vars:pre-request {
+  scopes: digdir:dialogporten
+}
+
+script:pre-request {
+  const { initBearerAuth } = require('./tokenAuth');
+  const systembrukerOrgnr = bru.getCollectionVar("kundeSystembrukerOrgnr")
+  await initBearerAuth(`dialogporten/${systembrukerOrgnr}`, req);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+docs {
+  Hent dialoger fra Dialogporten.
+  
+  Swagger: https://docs.altinn.studio/nb/dialogporten/reference/graphql/
+}

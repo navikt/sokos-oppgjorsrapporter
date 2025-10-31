@@ -1,0 +1,21 @@
+meta {
+  name: oppgjørsrapporter
+  seq: 3
+}
+
+auth {
+  mode: none
+}
+
+script:pre-request {
+  const { initBearerAuth } = require('./tokenAuth');
+  const systembrukerOrgnr = bru.getCollectionVar("kundeSystembrukerOrgnr")
+  await initBearerAuth(`systembruker/${systembrukerOrgnr}`, req);
+  
+}
+
+docs {
+  Hent sykmelding, sykepengesøknad, inntektsmeldingforespørsel og inntektsmelding. Send inn inntektsmelding.
+  
+  Swagger: https://sykepenger-api.ekstern.dev.nav.no/swagger
+}

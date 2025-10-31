@@ -1,36 +1,22 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
-import java.io.InputStream
 import java.time.Instant
 import javax.sql.DataSource
-import kotliquery.TransactionalSession
-import kotliquery.queryOf
+import kotlinx.coroutines.runBlocking
 import kotliquery.sessionOf
 import kotliquery.using
+import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
+import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 
-class RapportService(private val dataSource: DataSource) {
+class RapportService(private val dataSource: DataSource, private val repository: RapportRepository) {
+    private val systemBrukernavn = "system"
+
     fun insert(rapport: UlagretRapport): Rapport =
-        using(sessionOf(dataSource)) { session ->
-            val query =
-                queryOf(
-                        """
-                            INSERT INTO rapport.rapport(orgnr, type, tittel, dato_valutert)
-                            VALUES (:orgnr, CAST(:type as rapport.rapport_type), :tittel, :dato_valutert)
-                            RETURNING *
-                        """
-                            .trimIndent(),
-                        mapOf(
-                            "orgnr" to rapport.orgNr.raw,
-                            "type" to rapport.type.name,
-                            "tittel" to rapport.tittel,
-                            "dato_valutert" to rapport.datoValutert,
-                        ),
-                    )
-                    .map { row -> Rapport(row) }
-                    .asSingle
-            session.transaction { tx ->
-                tx.run(query)!!.also {
-                    audit(
+        using(sessionOf(dataSource)) {
+            it.transaction { tx ->
+                repository.insert(tx, rapport).also {
+                    repository.audit(
                         tx,
                         RapportAudit(
                             RapportAudit.Id(0),
@@ -38,7 +24,7 @@ class RapportService(private val dataSource: DataSource) {
                             null,
                             Instant.now(),
                             RapportAudit.Hendelse.RAPPORT_OPPRETTET,
-                            currentUser(),
+                            systemBrukernavn,
                             null,
                         ),
                     )
@@ -46,62 +32,15 @@ class RapportService(private val dataSource: DataSource) {
             }
         }
 
-    fun findById(id: Rapport.Id): Rapport? =
-        using(sessionOf(dataSource)) { session ->
-            val query =
-                queryOf(
-                        """
-                            SELECT id, orgnr, type, tittel, dato_valutert, opprettet, arkivert
-                            FROM rapport.rapport
-                            WHERE id = :id
-                        """
-                            .trimIndent(),
-                        mapOf("id" to id.raw),
-                    )
-                    .map { row -> Rapport(row) }
-                    .asSingle
-            session.transaction { tx -> tx.run(query) }
-        }
+    fun findById(id: Rapport.Id): Rapport? = using(sessionOf(dataSource)) { it.transaction { tx -> repository.findById(tx, id) } }
 
-    fun listForOrg(orgNr: OrgNr): List<Rapport> =
-        using(sessionOf(dataSource)) { session ->
-            val query =
-                queryOf(
-                        """
-                            SELECT id, orgnr, type, tittel, dato_valutert, opprettet, arkivert
-                            FROM rapport.rapport
-                            WHERE orgnr = :orgnr
-                        """
-                            .trimIndent(),
-                        mapOf("orgnr" to orgNr.raw),
-                    )
-                    .map { row -> Rapport(row) }
-                    .asList
-            session.transaction { tx -> tx.run(query) }
-        }
+    fun listForOrg(orgNr: OrgNr): List<Rapport> = using(sessionOf(dataSource)) { it.transaction { tx -> repository.listForOrg(tx, orgNr) } }
 
     fun insertVariant(variant: UlagretVariant): Variant =
-        using(sessionOf(dataSource)) { session ->
-            val query =
-                queryOf(
-                        """
-                            INSERT INTO rapport.rapport_variant (rapport_id, format, filnavn, innhold) 
-                            VALUES (:rapport_id, CAST(:format as rapport.rapport_format), :filnavn, :innhold)
-                            RETURNING id, rapport_id, format, filnavn, octet_length(innhold) AS bytes
-                        """
-                            .trimIndent(),
-                        mapOf(
-                            "rapport_id" to variant.rapportId.raw,
-                            "format" to variant.format.contentType,
-                            "filnavn" to variant.filnavn,
-                            "innhold" to variant.innhold.toByteArray(),
-                        ),
-                    )
-                    .map { row -> Variant(row) }
-                    .asSingle
-            session.transaction { tx ->
-                tx.run(query)!!.also {
-                    audit(
+        using(sessionOf(dataSource)) {
+            it.transaction { tx ->
+                repository.insertVariant(tx, variant).also {
+                    repository.audit(
                         tx,
                         RapportAudit(
                             RapportAudit.Id(0),
@@ -109,7 +48,7 @@ class RapportService(private val dataSource: DataSource) {
                             it.id,
                             Instant.now(),
                             RapportAudit.Hendelse.VARIANT_OPPRETTET,
-                            currentUser(),
+                            systemBrukernavn,
                             null,
                         ),
                     )
@@ -118,70 +57,41 @@ class RapportService(private val dataSource: DataSource) {
         }
 
     fun listVariants(rapportId: Rapport.Id): List<Variant> =
-        using(sessionOf(dataSource)) { session ->
-            val query =
-                queryOf(
-                        """
-                            SELECT id, rapport_id, format, filnavn, octet_length(innhold) AS bytes
-                            FROM rapport.rapport_variant
-                            WHERE rapport_id = :rapportId
-                        """
-                            .trimIndent(),
-                        mapOf("rapportId" to rapportId.raw),
-                    )
-                    .map { row -> Variant(row) }
-                    .asList
-            session.transaction { tx -> tx.run(query) }
-        }
+        using(sessionOf(dataSource)) { it.transaction { tx -> repository.listVariants(tx, rapportId) } }
 
-    fun <T> hentInnhold(variantId: Variant.Id, process: (InputStream) -> T): T? =
-        using(sessionOf(dataSource)) { session ->
-            session.transaction { tx ->
-                val query =
-                    queryOf(
-                            "SELECT rapport_id, innhold FROM rapport.rapport_variant WHERE id = :variantId",
-                            mapOf("variantId" to variantId.raw),
-                        )
-                        .map { row ->
-                            audit(
+    fun <T : Any> hentInnhold(
+        bruker: AutentisertBruker,
+        rapportId: Rapport.Id,
+        format: VariantFormat,
+        process: suspend (Rapport, ByteArray) -> T?,
+    ): T? =
+        using(sessionOf(dataSource)) {
+            it.transaction { tx ->
+                repository.hentInnhold(tx, rapportId, format)?.let { (rapport, variantId, innhold) ->
+                    runBlocking { process(rapport, innhold) }
+                        ?.apply {
+                            // process() kan returnere null for å indikere at innholdet ikke ble sendt - f.eks. dersom den oppdaget at
+                            // brukeren ikke hadde tilgang.  Kun hvis den returnerer non-null skal vi legge inn en audit-event.
+                            repository.audit(
                                 tx,
                                 RapportAudit(
                                     RapportAudit.Id(0),
-                                    Rapport.Id(row.long("rapport_id")),
-                                    null,
+                                    rapport.id,
+                                    variantId,
                                     Instant.now(),
                                     RapportAudit.Hendelse.VARIANT_NEDLASTET,
-                                    currentUser(),
+                                    brukernavn(bruker),
                                     null,
                                 ),
                             )
-
-                            process(row.binaryStream("innhold"))
                         }
-                        .asSingle
-
-                tx.run(query)
+                }
             }
         }
 
-    private fun currentUser() = "auth_not_implemented_yet"
-
-    private fun audit(tx: TransactionalSession, data: RapportAudit) =
-        tx.execute(
-            queryOf(
-                """
-                    INSERT INTO rapport.rapport_audit (rapport_id, variant_id, tidspunkt, hendelse, brukernavn, tekst)
-                    VALUES (:rapportId, :variantId, :tidspunkt, :hendelse, :brukernavn, :tekst)
-                """
-                    .trimIndent(),
-                mapOf(
-                    "rapportId" to data.rapportId.raw,
-                    "variantId" to data.variantId?.raw,
-                    "tidspunkt" to data.tidspunkt,
-                    "hendelse" to data.hendelse.name,
-                    "brukernavn" to data.brukernavn,
-                    "tekst" to data.tekst,
-                ),
-            )
-        )
+    private fun brukernavn(bruker: AutentisertBruker) =
+        when (bruker) {
+            is EntraId -> "azure:NAVident=${bruker.navIdent}"
+            is Systembruker -> "systembruker:system=${bruker.systemId} org=${bruker.userOrg} id=${bruker.userId}"
+        }
 }

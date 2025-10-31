@@ -1,0 +1,23 @@
+meta {
+  name: list systembruker for system
+  type: http
+  seq: 5
+}
+
+get {
+  url: https://platform.tt02.altinn.no/authentication/api/v1/systemuser/vendor/bysystem/{{systemId}}
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  const { initBearerAuth } = require('./tokenAuth');
+  await initBearerAuth(`systembruker-forespoersel`, req);
+  
+}
+
+docs {
+  Hent systembrukerforespørsel/systembruker (forespørselen må godkjennes før selve systembrukeren blir opprettet).
+  
+  Swagger: https://docs.altinn.studio/nb/api/authentication/spec/#/RequestSystemUser
+}

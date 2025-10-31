@@ -1,0 +1,15 @@
+meta {
+  name: hent inntektsmelding
+  type: http
+  seq: 8
+}
+
+get {
+  url: https://sykepenger-api.ekstern.dev.nav.no/v1/inntektsmelding/{{id}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  id: 742d3cb3-0066-4edc-913d-7fa2a0411422
+}

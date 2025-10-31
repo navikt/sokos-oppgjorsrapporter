@@ -1,21 +1,24 @@
 group = "no.nav.sokos"
 
+val flywayVersion = "11.14.0"
+val hikariVersion = "7.0.2"
+val janinoVersion = "3.1.12"
+val konfigVersion = "1.6.10.0"
+val kotestVersion = "6.0.3"
+val kotlinLoggingVersion = "3.0.5"
+val kotlinxSerializationVersion = "1.9.0"
+val kotliqueryVersion = "1.9.1"
 val ktorVersion = "3.3.1"
 val logbackVersion = "1.5.19"
 val logstashVersion = "8.1"
 val micrometerVersion = "1.15.4"
-val kotlinLoggingVersion = "3.0.5"
-val janinoVersion = "3.1.12"
-val konfigVersion = "1.6.10.0"
-val kotestVersion = "6.0.3"
-val kotlinxSerializationVersion = "1.9.0"
 val mockOAuth2ServerVersion = "3.0.0"
 val mockkVersion = "1.14.6"
-val hikariVersion = "7.0.2"
 val postgresVersion = "42.7.8"
-val kotliqueryVersion = "1.9.1"
-val flywayVersion = "11.14.0"
 val testcontainersVersion = "1.21.3"
+val tokenSupportVersion = "5.0.24"
+val utilsVersion = "0.10.1"
+val pdpClientVersion = "1.0.0"
 
 plugins {
     application
@@ -30,7 +33,15 @@ application {
 }
 
 repositories {
+    val githubPassword: String by project
     mavenCentral()
+    maven {
+        setUrl("https://maven.pkg.github.com/navikt/*")
+        credentials {
+            username = "x-access-token"
+            password = githubPassword
+        }
+    }
 }
 
 dependencies {
@@ -45,7 +56,7 @@ dependencies {
 
     // Ktor client
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-client-apache-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-apache5-jvm:$ktorVersion")
 
     // Database
     implementation("com.zaxxer:HikariCP:$hikariVersion")
@@ -54,8 +65,7 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
 
     // Security
-    implementation("io.ktor:ktor-server-auth-jvm:$ktorVersion")
-    implementation("io.ktor:ktor-server-auth-jwt-jvm:$ktorVersion")
+    implementation("no.nav.security:token-validation-ktor-v3:${tokenSupportVersion}")
 
     // Serialization
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktorVersion")
@@ -73,6 +83,11 @@ dependencies {
 
     // Config
     implementation("com.natpryce:konfig:$konfigVersion")
+
+    // Inntil vi får tenkt gjennom om vi vil gjøre serialization etc. annerledes så henter vi inn Team HAG sine utils
+    implementation("no.nav.helsearbeidsgiver:utils:${utilsVersion}")
+    implementation("no.nav.helsearbeidsgiver:altinn-pdp-client:${pdpClientVersion}")
+    testImplementation(testFixtures("no.nav.helsearbeidsgiver:utils:$utilsVersion"))
 
     // Test
     testImplementation("io.ktor:ktor-server-test-host-jvm:$ktorVersion")
