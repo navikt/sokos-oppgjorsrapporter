@@ -11,6 +11,13 @@ import io.ktor.server.resources.Resources
 import io.ktor.util.AttributeKey
 import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.slf4j.MDCContext
+import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.DefaultAuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.NoOpAuthClient
@@ -18,16 +25,21 @@ import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseMigrator
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
+import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.applicationLifecycleConfig
 import no.nav.sokos.oppgjorsrapporter.config.commonConfig
 import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
+import no.nav.sokos.oppgjorsrapporter.jobs.RapportMottak
+import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
 import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+
+private val logger = KotlinLogging.logger {}
 
 fun main() {
     embeddedServer(Netty, port = 8080, module = Application::module)
@@ -54,12 +66,26 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
             else DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.maskinportenProperties.altinn3BaseUrl)
         }
         provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
+        provide<MqConsumer> { MqConsumer(config.mqConfiguration) }
     }
 
     commonConfig()
     applicationLifecycleConfig(applicationState)
     securityConfig(config)
     routingConfig(applicationState)
+
+    val mqErrors = mutableListOf<String>()
+    applicationState.registerSystem("MQ") { mqErrors }
+    val exceptionHandler = CoroutineExceptionHandler { _, e ->
+        logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet" }
+        // Ved å legge til en feil på et registrert system, flippes applicationState.ready til `false`
+        mqErrors.add(e.toString())
+        applicationState.alive = false
+    }
+
+    with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
+        launch { RapportMottak(applicationState, dependencies.resolve()).start() }
+    }
 }
 
 val ConfigAttributeKey = AttributeKey<PropertiesConfig.Configuration>("config")
