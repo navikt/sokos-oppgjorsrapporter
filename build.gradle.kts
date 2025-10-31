@@ -19,6 +19,8 @@ val testcontainersVersion = "1.21.3"
 val tokenSupportVersion = "5.0.30"
 val utilsVersion = "0.10.1"
 val pdpClientVersion = "1.0.0"
+val ibmMqVersion = "9.4.4.0"
+val jacksonVersion = "2.20.0"
 
 plugins {
     application
@@ -46,6 +48,7 @@ repositories {
 
 dependencies {
 
+
     // Ktor server
     implementation("io.ktor:ktor-server-call-logging-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktorVersion")
@@ -57,12 +60,16 @@ dependencies {
     // Ktor client
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-client-apache5-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-logging:${ktorVersion}")
 
     // Database
     implementation("com.zaxxer:HikariCP:$hikariVersion")
     implementation("org.postgresql:postgresql:$postgresVersion")
     implementation("com.github.seratch:kotliquery:$kotliqueryVersion")
     implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
+
+    // MQ
+    implementation("com.ibm.mq:com.ibm.mq.allclient:${ibmMqVersion}")
 
     // Security
     implementation("no.nav.security:token-validation-ktor-v3:${tokenSupportVersion}")
@@ -81,6 +88,9 @@ dependencies {
     runtimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
     runtimeOnly("net.logstash.logback:logstash-logback-encoder:$logstashVersion")
 
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:${jacksonVersion}")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}")
     // Config
     implementation("com.natpryce:konfig:$konfigVersion")
 

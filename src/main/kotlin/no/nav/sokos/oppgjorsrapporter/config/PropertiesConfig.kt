@@ -65,12 +65,11 @@ object PropertiesConfig {
 
     operator fun get(key: String): String = config[Key(key, stringType)]
 
-    fun getOrEmpty(key: String): String = config.getOrElse(Key(key, stringType), "")
-
     data class Configuration(
         val applicationProperties: ApplicationProperties,
         val securityProperties: SecurityProperties,
         val postgresProperties: PostgresProperties,
+        val mqConfiguration: MqProperties,
     ) {
         constructor(
             source: ConfigSource
@@ -78,6 +77,7 @@ object PropertiesConfig {
             applicationProperties = ApplicationProperties(source),
             securityProperties = SecurityProperties(source),
             postgresProperties = PostgresProperties(source),
+            mqConfiguration = MqProperties(source),
         )
     }
 
@@ -103,6 +103,28 @@ object PropertiesConfig {
             private val defaultUser = "SOKOS_OPPGJORSRAPPORTER"
             private val dbName = "SOKOS_OPPGJORSRAPPORTER_DB"
         }
+    }
+
+    data class MqProperties(
+        val mqHost: String,
+        val mqPort: Int,
+        val mqName: String,
+        val mqChannel: String,
+        val mqUrBackoutQueue: String,
+        val mqUsername: String,
+        val mqPassword: String,
+    ) {
+        constructor(
+            source: ConfigSource
+        ) : this(
+            mqHost = source.get("mq.host"),
+            mqPort = source.get("mq.port").toInt(),
+            mqName = source.get("mq.name"),
+            mqChannel = source.get("mq.channel"),
+            mqUrBackoutQueue = source.get("mq.fraUrBackoutQueue"),
+            mqUsername = source.get("mq.username"),
+            mqPassword = source.get("mq.password"),
+        )
     }
 
     data class SecurityProperties(
