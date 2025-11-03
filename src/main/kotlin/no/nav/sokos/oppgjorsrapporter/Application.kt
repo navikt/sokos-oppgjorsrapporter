@@ -57,9 +57,6 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
 
     install(Resources)
 
-    val mqErrors = mutableListOf<String>()
-    applicationState.registerSystem("MQ") { mqErrors }
-
     dependencies {
         provide<DataSource> { DatabaseConfig.dataSource }
         provide(RapportRepository::class)
@@ -69,20 +66,26 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
             else DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.maskinportenProperties.altinn3BaseUrl)
         }
         provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
-        provide("mqJob") {
-                val exceptionHandler = CoroutineExceptionHandler { _, e ->
-                    logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet" }
-                    // Ved å legge til en feil på et registrert system, flippes applicationState.ready til `false`
-                    mqErrors.add(e.toString())
-                    applicationState.alive = false
-                }
 
-                with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                    launch { RapportMottak(applicationState, this@module.dependencies.resolve<MqConsumer>()).start() }
+        if (config.mqConfiguration.enabled) {
+            provide("mqJob") {
+                    val mqErrors = mutableListOf<String>()
+                    applicationState.registerSystem("MQ") { mqErrors }
+
+                    val exceptionHandler = CoroutineExceptionHandler { _, e ->
+                        logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet" }
+                        // Ved å legge til en feil på et registrert system, flippes applicationState.ready til `false`
+                        mqErrors.add(e.toString())
+                        applicationState.alive = false
+                    }
+
+                    with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
+                        launch { RapportMottak(applicationState, this@module.dependencies.resolve<MqConsumer>()).start() }
+                    }
                 }
-            }
-            .cleanup { it.cancel() }
-        provide<MqConsumer> { MqConsumer(config.mqConfiguration) }
+                .cleanup { it.cancel() }
+            provide<MqConsumer> { MqConsumer(config.mqConfiguration) }
+        }
     }
 
     commonConfig()

@@ -23,7 +23,7 @@ class RapportServiceTest :
             val dbContainer = TestContainer.postgres
 
             test("kan lagre en rapport i databasen") {
-                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                TestUtil.withFullApplication(dbContainer = dbContainer) {
                     TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -37,7 +37,7 @@ class RapportServiceTest :
             }
 
             test("kan hente en gitt rapport fra databasen") {
-                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                TestUtil.withFullApplication(dbContainer) {
                     TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -50,7 +50,7 @@ class RapportServiceTest :
             }
 
             test("kan hente en liste med rapporter for en organisasjon") {
-                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                TestUtil.withFullApplication(dbContainer) {
                     TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -69,7 +69,7 @@ class RapportServiceTest :
             }
 
             test("kan liste variantene av en rapport") {
-                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                TestUtil.withFullApplication(dbContainer) {
                     TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -92,7 +92,7 @@ class RapportServiceTest :
             }
 
             test("kan lagre en rapport-variant i databasen") {
-                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                TestUtil.withFullApplication(dbContainer) {
                     TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -115,9 +115,8 @@ class RapportServiceTest :
             test("kan hente innholdet fra en variant") {
                 val mockedRepository = mockk<RapportRepository>()
                 TestUtil.withFullApplication(
-                    dbContainer,
-                    TestContainer.mq,
-                    { dependencies.provide<RapportRepository> { mockedRepository } },
+                    dbContainer = dbContainer,
+                    dependencyOverrides = { dependencies.provide<RapportRepository> { mockedRepository } },
                 ) {
                     TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
                     every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
@@ -147,7 +146,7 @@ class RapportServiceTest :
 
             test("vil ikke audit-logge forsøk på å hente innholdet fra en variant hvis innholdet ikke returneres til klienten") {
                 val mockedRepository = mockk<RapportRepository>()
-                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                TestUtil.withFullApplication(dbContainer) {
                     TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
                     every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
                     val sut: RapportService = application.dependencies.resolve()
