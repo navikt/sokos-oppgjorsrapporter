@@ -73,6 +73,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
         provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
 
         if (config.mqConfiguration.enabled) {
+            provide<MqConsumer> { MqConsumer(config.mqConfiguration) }
             provide("mqJob") {
                     val mqErrors = mutableListOf<String>()
                     applicationState.registerSystem("MQ") { mqErrors }
@@ -85,11 +86,10 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
                     }
 
                     with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                        launch { RapportMottak(applicationState, this@module.dependencies.resolve<MqConsumer>()).start() }
+                        launch { RapportMottak(applicationState, resolve()).start() }
                     }
                 }
                 .cleanup { it.cancel() }
-            provide<MqConsumer> { MqConsumer(config.mqConfiguration) }
         }
     }
 
