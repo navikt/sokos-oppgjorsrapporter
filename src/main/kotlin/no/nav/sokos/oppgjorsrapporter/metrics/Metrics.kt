@@ -19,6 +19,10 @@ private val apiRequestsTeller =
     io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_http_requests")
         .description("Teller antall http requests til Oppgjørsrapporter-API")
         .withRegistry(prometheusMeterRegistry)
+private val apiRequestsSystembrukerTeller =
+    io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_http_requests_systembruker")
+        .description("Teller antall systembruker-autentiserte requests til Oppgjørsrapporter-API")
+        .withRegistry(prometheusMeterRegistry)
 
 suspend fun RoutingContext.tellApiRequest() {
     val metode = call.request.httpMethod
@@ -37,21 +41,26 @@ suspend fun RoutingContext.tellApiRequest() {
             }
             .joinToString("/")
     val ctx = tokenValidationContext()
-    val tags = mutableListOf<Tag>(Tag.of("ressurs", path), Tag.of("metode", metode.value))
-    ctx.getBruker().onSuccess {
-        when (it) {
-            is Systembruker ->
-                tags.addAll(
-                    listOf(
-                        Tag.of("auth", "systembruker"),
-                        Tag.of("systembruker_orgnr", it.userOrg.raw),
-                        Tag.of("system_id", it.systemId),
-                        Tag.of("consumer_orgnr", ctx.getConsumerOrgnr()),
-                    )
-                )
-
-            is EntraId -> tags.add(Tag.of("auth", "azure"))
-        }
-    }
-    apiRequestsTeller.withTags(tags).increment()
+    val basisTags = listOf<Tag>(Tag.of("ressurs", path), Tag.of("metode", metode.value))
+    val auth =
+        ctx.getBruker()
+            .fold(
+                {
+                    when (it) {
+                        is Systembruker -> {
+                            val systembrukerTags =
+                                listOf(
+                                    Tag.of("systembruker_orgnr", it.userOrg.raw),
+                                    Tag.of("system_id", it.systemId),
+                                    Tag.of("consumer_orgnr", ctx.getConsumerOrgnr()),
+                                )
+                            apiRequestsSystembrukerTeller.withTags(basisTags.plus(systembrukerTags)).increment()
+                            "systembruker"
+                        }
+                        is EntraId -> "azure"
+                    }
+                },
+                { "unknown" },
+            )
+    apiRequestsTeller.withTags(basisTags.plus(Tag.of("auth", auth))).increment()
 }
