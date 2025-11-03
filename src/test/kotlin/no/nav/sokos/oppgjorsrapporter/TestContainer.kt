@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter
 
+import com.ibm.mq.testcontainers.MQContainer
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
@@ -28,4 +29,7 @@ object TestContainer {
             start()
         }
     }
+
+    val mqImage = "icr.io/ibm-messaging/mq:9.4.0.6-r1"
+    val mq: MQContainer by lazy { MQContainer(DockerImageName.parse(mqImage)).acceptLicense().apply { start() } }
 }

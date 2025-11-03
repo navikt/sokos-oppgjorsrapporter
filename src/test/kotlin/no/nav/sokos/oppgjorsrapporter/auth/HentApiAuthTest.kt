@@ -48,9 +48,10 @@ abstract class ApiTest {
     val mockedPdpService = mockk<PdpService>()
 
     val mockOAuth2Server: MockOAuth2Server = MockOAuth2Server().apply { start() }
-    val container = TestContainer.postgres
+    val dbContainer = TestContainer.postgres
+    val mqContainer = TestContainer.mq
     private val testApplication: TestApplication = TestApplication {
-        configureTestApplication(container, mockOAuth2Server)
+        configureTestApplication(dbContainer, mqContainer, mockOAuth2Server)
 
         application {
             dependencies.provide<RapportRepository> { mockedRapportRepository }

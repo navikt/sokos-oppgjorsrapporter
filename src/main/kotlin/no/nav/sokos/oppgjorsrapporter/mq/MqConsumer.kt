@@ -30,7 +30,7 @@ class MqConsumer(val config: PropertiesConfig.MqProperties) {
                 hostName = config.mqHost
                 port = config.mqPort
                 channel = config.mqChannel
-                queueManager = config.mqName
+                queueManager = config.mqManagerName
                 targetClientMatching = true
                 userAuthenticationMQCSP = true
             }
@@ -39,8 +39,8 @@ class MqConsumer(val config: PropertiesConfig.MqProperties) {
 
         session = connection.createSession(Session.SESSION_TRANSACTED)
 
-        logger.info { "Kobler seg til MQ køen ${config.mqName}" }
-        val queue = nonJmsQueue(config.mqName)
+        logger.info { "Kobler seg til MQ køen ${config.mqManagerName}" }
+        val queue = nonJmsQueue(config.mqManagerName)
         initBlock(session, queue)
 
         connection.start()

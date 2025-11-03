@@ -20,11 +20,11 @@ import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 class RapportServiceTest :
     FunSpec({
         context("RapportService") {
-            val container = TestContainer.postgres
+            val dbContainer = TestContainer.postgres
 
             test("kan lagre en rapport i databasen") {
-                TestUtil.withFullApplication(container) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", container.toDataSource())
+                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val ulagret =
@@ -37,8 +37,8 @@ class RapportServiceTest :
             }
 
             test("kan hente en gitt rapport fra databasen") {
-                TestUtil.withFullApplication(container) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", container.toDataSource())
+                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val rapport = sut.findById(Rapport.Id(1))
@@ -50,8 +50,8 @@ class RapportServiceTest :
             }
 
             test("kan hente en liste med rapporter for en organisasjon") {
-                TestUtil.withFullApplication(container) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", container.toDataSource())
+                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val orgNr = OrgNr("123456789")
@@ -69,8 +69,8 @@ class RapportServiceTest :
             }
 
             test("kan liste variantene av en rapport") {
-                TestUtil.withFullApplication(container) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", container.toDataSource())
+                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val varianter = sut.listVariants(Rapport.Id(2))
@@ -92,8 +92,8 @@ class RapportServiceTest :
             }
 
             test("kan lagre en rapport-variant i databasen") {
-                TestUtil.withFullApplication(container) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", container.toDataSource())
+                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val ulagretRapport =
@@ -114,8 +114,12 @@ class RapportServiceTest :
 
             test("kan hente innholdet fra en variant") {
                 val mockedRepository = mockk<RapportRepository>()
-                TestUtil.withFullApplication(container, { dependencies.provide<RapportRepository> { mockedRepository } }) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", container.toDataSource())
+                TestUtil.withFullApplication(
+                    dbContainer,
+                    TestContainer.mq,
+                    { dependencies.provide<RapportRepository> { mockedRepository } },
+                ) {
+                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
                     every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
                     every { mockedRepository.audit(any(), any()) } answers { callOriginal() }
                     val sut: RapportService = application.dependencies.resolve()
@@ -143,8 +147,8 @@ class RapportServiceTest :
 
             test("vil ikke audit-logge forsøk på å hente innholdet fra en variant hvis innholdet ikke returneres til klienten") {
                 val mockedRepository = mockk<RapportRepository>()
-                TestUtil.withFullApplication(container) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", container.toDataSource())
+                TestUtil.withFullApplication(dbContainer, TestContainer.mq) {
+                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
                     every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
                     val sut: RapportService = application.dependencies.resolve()
 
