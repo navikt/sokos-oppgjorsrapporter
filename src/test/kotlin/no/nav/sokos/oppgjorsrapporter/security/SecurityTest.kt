@@ -20,7 +20,7 @@ class SecurityTest :
 
             test("test http GET endepunkt uten token bør returnere 401") {
                 withMockOAuth2Server {
-                    withTestApplication(container) {
+                    withTestApplication(container, TestContainer.mq) {
                         val response = client.get("/api/rapport/v1")
                         response.status shouldBe HttpStatusCode.Unauthorized
                     }
@@ -30,7 +30,7 @@ class SecurityTest :
             test("test http GET endepunkt med token bør returnere 200") {
                 withMockOAuth2Server {
                     val mockOAuth2Server = this
-                    withTestApplication(container) {
+                    withTestApplication(container, TestContainer.mq) {
                         val client = createClient {
                             install(ContentNegotiation) {
                                 json(

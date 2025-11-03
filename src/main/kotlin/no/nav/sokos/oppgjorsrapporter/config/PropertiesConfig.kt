@@ -108,7 +108,7 @@ object PropertiesConfig {
     data class MqProperties(
         val mqHost: String,
         val mqPort: Int,
-        val mqName: String,
+        val mqManagerName: String,
         val mqChannel: String,
         val mqUrBackoutQueue: String,
         val mqUsername: String,
@@ -119,7 +119,7 @@ object PropertiesConfig {
         ) : this(
             mqHost = source.get("mq.host"),
             mqPort = source.get("mq.port").toInt(),
-            mqName = source.get("mq.name"),
+            mqManagerName = source.get("mq.managerName"),
             mqChannel = source.get("mq.channel"),
             mqUrBackoutQueue = source.get("mq.fraUrBackoutQueue"),
             mqUsername = source.get("mq.username"),

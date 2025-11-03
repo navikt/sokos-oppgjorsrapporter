@@ -107,6 +107,7 @@ dependencies {
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
+    testImplementation("com.ibm.mq:mq-java-testcontainer:1.21.2")
 }
 
 kotlin {
