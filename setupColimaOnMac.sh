@@ -27,6 +27,7 @@ som ~/.zshrc):
   export COLIMA_VM="default"
   export COLIMA_VM_SOCKET="${HOME}/.colima/${COLIMA_VM}/docker.sock"
   export DOCKER_HOST="unix://${COLIMA_VM_SOCKET}"
+  export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE="/var/run/docker.sock"
 
 Dette må gjøres på en måte som også IntelliJ ser dersom man skal kunne starte
 tester derfra.
