@@ -35,17 +35,9 @@ APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening](https://github.com
 Det finnes flere alternativer til [testcontainer-kompatible container runtimes](https://java.testcontainers.org/supported_docker_environment/).
 På en Mac kan man nokså kjapt få et Docker-oppsett som er testcontainers-kompatibelt slik:
 
-1. `brew install podman-desktop`
-2. Start "Podman Desktop"-appen
-3. Gå til "Settings", velg "Preferences", og skru på "Docker Compatibility"-knappen
-4. Gå til "Dashboard"
-5. Trykk på knappen for å installere Podman, og gjennomfør installasjonen
-
-   Forhåpentligvis vil `brew install podman` også virke etterhvert, men det har vært issues i f.eks. 5.6.0 med at brew-varianten er pakket uten noen ting den trenger, så som `krunkit`...
-6. Hvis det er et spørsmål om du ønsker "Mac helper"-dingsen på Dashboard-siden, så må du takke ja til det
-7. Hvis det er en "Podman needs to be set up"-boks der, trykker du "Set up" og følger instruksjonene
-8. Nå skal det stå "Podman vX.y.z RUNNING" nederst på Dashboardet, og ting bør virke
-9. Du kan evt. også dobbeltsjekke i Settings -> Docker Compatibility at "System socket status" viser "podman is listening"
+1. `brew install docker colima`
+2. Kjør `./setupColimaOnMac.sh` for å få konfigurert opp Colima med en virtuell maskin det kan kjøres containere med forskjellige CPU-arkitekturer i
+3. Oppdater environment-variable (som skrevet ut av scriptet) i f.eks. ~/.zshrc, og restart tingene som trenger å restartes (kanskje til og med logge ut og inn av Macen din for å få kjørt .zshrc på ny)
 
 ## Henvendelser
 
