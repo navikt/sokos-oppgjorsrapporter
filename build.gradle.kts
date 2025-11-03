@@ -50,7 +50,7 @@ dependencies {
 
 
     // Ktor server
-    implementation("io.ktor:ktor-server-call-logging-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-di:$ktorVersion")
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")

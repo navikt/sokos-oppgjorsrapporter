@@ -50,6 +50,11 @@ fun main() {
 fun Application.module(appConfig: ApplicationConfig = environment.config) {
     val config = resolveConfig(appConfig)
 
+    // Gjør dette tidlig, så Micrometer sitt PrometheusMeterRegistry ikke skriker om at
+    // "A MeterFilter is being configured after a Meter has been registered to this registry"
+    // fordi createDataSource() registrerer Meters
+    commonConfig()
+
     val applicationState = ApplicationState()
     DatabaseMigrator(createDataSource(config.postgresProperties.adminJdbcUrl), applicationState)
 
@@ -88,7 +93,6 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
         }
     }
 
-    commonConfig()
     applicationLifecycleConfig(applicationState)
     securityConfig(config)
     routingConfig(applicationState)
