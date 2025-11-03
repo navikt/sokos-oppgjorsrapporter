@@ -26,21 +26,27 @@ private val logger = KotlinLogging.logger {}
 object TestUtil {
     fun withFullApplication(
         dbContainer: PostgreSQLContainer<Nothing>,
-        mqContainer: MQContainer,
+        mqContainer: MQContainer? = null,
         dependencyOverrides: Application.() -> Unit = {},
         thunk: suspend ApplicationTestBuilder.() -> Unit,
-    ): TestResult = withMockOAuth2Server { withTestApplication(dbContainer, mqContainer, dependencyOverrides, thunk) }
+    ): TestResult = withMockOAuth2Server {
+        withTestApplication(dbContainer = dbContainer, mqContainer = mqContainer, dependencyOverrides = dependencyOverrides, thunk = thunk)
+    }
 
     fun testApplicationProfile() = MapApplicationConfig().apply { put("APPLICATION_PROFILE", "LOCAL") }
 
-    fun testContainerMqOverrides(container: MQContainer) =
+    fun testContainerMqOverrides(container: MQContainer?) =
         MapApplicationConfig().apply {
-            put("MQ_HOST", container.host)
-            put("MQ_PORT", container.port.toString())
-            put("MQ_MANAGER_NAME", container.queueManager)
-            put("MQ_CHANNEL", container.channel)
-            put("MQ_SERVICE_USERNAME", container.appUser)
-            put("MQ_SERVICE_PASSWORD", container.appPassword)
+            val enabled = container != null
+            put("MQ_ENABLED", enabled.toString())
+            if (enabled) {
+                put("MQ_HOST", container.host)
+                put("MQ_PORT", container.port.toString())
+                put("MQ_MANAGER_NAME", container.queueManager)
+                put("MQ_CHANNEL", container.channel)
+                put("MQ_SERVICE_USERNAME", container.appUser)
+                put("MQ_SERVICE_PASSWORD", container.appPassword)
+            }
         }
 
     fun testcontainerDbOverrides(container: PostgreSQLContainer<Nothing>): MapApplicationConfig =
@@ -164,12 +170,12 @@ fun MockOAuth2Server.authConfigOverrides() =
 
 fun MockOAuth2Server.withTestApplication(
     dbContainer: PostgreSQLContainer<Nothing>,
-    mqContainer: MQContainer,
+    mqContainer: MQContainer? = null,
     dependencyOverrides: Application.() -> Unit = {},
     thunk: suspend ApplicationTestBuilder.() -> Unit,
 ) {
     testApplication {
-        configureTestApplication(dbContainer, mqContainer, this@withTestApplication)
+        configureTestApplication(dbContainer = dbContainer, mqContainer = mqContainer, server = this@withTestApplication)
 
         application {
             dependencyOverrides()
@@ -183,7 +189,7 @@ fun MockOAuth2Server.withTestApplication(
 
 fun TestApplicationBuilder.configureTestApplication(
     dbContainer: PostgreSQLContainer<Nothing>,
-    mqContainer: MQContainer,
+    mqContainer: MQContainer? = null,
     server: MockOAuth2Server,
 ) {
     environment {

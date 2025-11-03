@@ -106,6 +106,7 @@ object PropertiesConfig {
     }
 
     data class MqProperties(
+        val enabled: Boolean,
         val mqHost: String,
         val mqPort: Int,
         val mqManagerName: String,
@@ -117,6 +118,7 @@ object PropertiesConfig {
         constructor(
             source: ConfigSource
         ) : this(
+            enabled = source.get("mq.enabled").toBoolean(),
             mqHost = source.get("mq.host"),
             mqPort = source.get("mq.port").toInt(),
             mqManagerName = source.get("mq.managerName"),
