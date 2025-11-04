@@ -27,13 +27,13 @@ class RefusjonsRapportBestillingSerializationTest {
                     "dk": "DK",
                     "fraDato": "2024-01-01",
                     "tilDato": "2024-12-31",
-                    "maxdato": "  "
+                    "maxDato": "  "
                 }
             """
                 .trimIndent()
 
         val data = json.decodeFromString<Data>(input)
-        assertNull(data.maxdato)
+        assertNull(data.maxDato)
         assertThat(data.fraDato).isEqualTo("2024-01-01")
         assertThat(data.tilDato).isEqualTo("2024-12-31")
     }
@@ -52,7 +52,7 @@ class RefusjonsRapportBestillingSerializationTest {
                 dk = "DK",
                 fraDato = LocalDate.parse("2024-01-01"),
                 tilDato = LocalDate.parse("2024-12-31"),
-                maxdato = null,
+                maxDato = null,
             )
         val output = json.encodeToString(data)
         // Should not contain a non-empty string for maxdato
@@ -70,7 +70,7 @@ class RefusjonsRapportBestillingSerializationTest {
                     "dk": "DK",
                     "fraDato": "2024-01-01",
                     "tilDato": "2024-12-31",
-                    "maxdato": null
+                    "maxDato": null
                 }
                 """
                     .trimIndent()

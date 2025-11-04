@@ -1,89 +1,90 @@
 {
   "header": {
-    "orgnr": 974600119,
-    "bankkonto": 24700004000,
+    "orgnr": 974600019,
+    "bankkonto": "02470303400",
     "sumBelop": 59430.00,
     "dkSumBelop": "D",
-    "valutert": "2025-10-28"
+    "valutert": "2025-10-28",
+    "linjer": 6
   },
   "datarec": [
     {
       "navenhet": 8020,
-      "bedriftsnummer": 933000542,
+      "bedriftsnummer": 933001542,
       "kode": "H",
       "tekst": "Sykepenger feriepenger",
-      "fnr": "29066649716",
+      "fnr": "29070049716",
       "navn": "wopoj hyfom",
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
       "belop": 9905.00,
       "dk": "D",
-      "maxdato": " "
-    },
-    {
-      "navenhet": 8020,
-      "bedriftsnummer": 933000542,
-      "kode": "H",
-      "tekst": "Sykepenger feriepenger",
-      "fnr": "29066649716",
-      "navn": "wopoj hyfom",
-      "fraDato": "2025-05-01",
-      "tilDato": "2025-05-31",
-      "belop": 9905.00,
-      "dk": "D",
-      "maxdato": " "
-    },
-    {
-      "navenhet": 8020,
-      "bedriftsnummer": 933000542,
-      "kode": "H",
-      "tekst": "Sykepenger feriepenger",
-      "fnr": "15066667358",
-      "navn": "sujam} }jusit",
-      "fraDato": "2025-05-01",
-      "tilDato": "2025-05-31",
-      "belop": 9905.00,
-      "dk": "D",
-      "maxdato": " "
-    },
-    {
-      "navenhet": 8020,
-      "bedriftsnummer": 933000542,
-      "kode": "H",
-      "tekst": "Sykepenger feriepenger",
-      "fnr": "17070666477",
-      "navn": "w{jy ypab",
-      "fraDato": "2025-05-01",
-      "tilDato": "2025-05-31",
-      "belop": 9905.00,
-      "dk": "D",
-      "maxdato": " "
+      "maxDato": " "
     },
     {
       "navenhet": 8020,
       "bedriftsnummer": 933001542,
       "kode": "H",
       "tekst": "Sykepenger feriepenger",
-      "fnr": "18106666441",
+      "fnr": "29070049716",
+      "navn": "wopoj hyfom",
+      "fraDato": "2025-05-01",
+      "tilDato": "2025-05-31",
+      "belop": 9905.00,
+      "dk": "D",
+      "maxDato": " "
+    },
+    {
+      "navenhet": 8020,
+      "bedriftsnummer": 933001542,
+      "kode": "H",
+      "tekst": "Sykepenger feriepenger",
+      "fnr": "15060037358",
+      "navn": "sujam} }jusit",
+      "fraDato": "2025-05-01",
+      "tilDato": "2025-05-31",
+      "belop": 9905.00,
+      "dk": "D",
+      "maxDato": " "
+    },
+    {
+      "navenhet": 8020,
+      "bedriftsnummer": 933001542,
+      "kode": "H",
+      "tekst": "Sykepenger feriepenger",
+      "fnr": "17000003477",
+      "navn": "w{jy ypab",
+      "fraDato": "2025-05-01",
+      "tilDato": "2025-05-31",
+      "belop": 9905.00,
+      "dk": "D",
+      "maxDato": " "
+    },
+    {
+      "navenhet": 8020,
+      "bedriftsnummer": 933001542,
+      "kode": "H",
+      "tekst": "Sykepenger feriepenger",
+      "fnr": "18100040441",
       "navn": "odexiv n}r",
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
       "belop": 9905.00,
       "dk": "D",
-      "maxdato": " "
+      "maxDato": " "
     },
     {
       "navenhet": 8020,
-      "bedriftsnummer": 933000542,
+      "bedriftsnummer": 933001542,
       "kode": "H",
       "tekst": "Sykepenger feriepenger",
-      "fnr": "23066643414",
+      "fnr": "23020043414",
       "navn": "f{na nuxy",
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
       "belop": 9905.00,
       "dk": "D",
-      "maxdato": " "
+      "maxDato": " "
     }
   ]
 }

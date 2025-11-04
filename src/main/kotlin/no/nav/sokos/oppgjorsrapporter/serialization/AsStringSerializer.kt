@@ -11,6 +11,10 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.nullable
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 
 abstract class AsStringSerializer<T : Any>(serialName: String, private val parse: (String) -> T) : KSerializer<T> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
@@ -35,11 +39,11 @@ abstract class AsNullableStringSerializer<T : Any>(
     }
 
     override fun deserialize(decoder: Decoder): T? {
-        if (decoder.decodeNotNullMark()) {
-            val str = decoder.decodeString()
-            return if (treatAsNull(str)) null else delegateTo.deserialize(decoder)
-        } else {
-            return decoder.decodeNull()
+        val input = decoder as JsonDecoder
+        val element: JsonElement = input.decodeJsonElement()
+        return when {
+            element is JsonNull || (element is JsonPrimitive && element.isString && treatAsNull(element.content)) -> null
+            else -> input.json.decodeFromJsonElement(delegateTo, element)
         }
     }
 }
