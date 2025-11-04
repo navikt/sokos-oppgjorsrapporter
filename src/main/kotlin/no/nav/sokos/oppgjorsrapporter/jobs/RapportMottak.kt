@@ -1,4 +1,4 @@
-@file:UseSerializers(LocalDateAsStringSerializer::class, InstantAsStringSerializer::class, BigDecimalSerializer::class)
+@file:UseSerializers(LocalDateAsStringSerializer::class, InstantAsStringSerializer::class, BigDecimalSerializer::class, LocalDateAsNullableStringSerializer::class)
 
 package no.nav.sokos.oppgjorsrapporter.jobs
 
@@ -18,6 +18,7 @@ import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import org.slf4j.MDC
+import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsNullableStringSerializer
 
 class RapportMottak(private val applicationState: ApplicationState, private val mqConsumer: MqConsumer) {
 
