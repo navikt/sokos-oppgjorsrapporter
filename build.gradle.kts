@@ -4,6 +4,7 @@ val flywayVersion = "11.16.0"
 val hikariVersion = "7.0.2"
 val ibmMqVersion = "9.4.4.0"
 val janinoVersion = "3.1.12"
+val jsonUnitVersion = "4.1.1"
 val konfigVersion = "1.6.10.0"
 val kotestVersion = "6.0.4"
 val kotlinLoggingVersion = "3.0.5"
@@ -104,6 +105,8 @@ dependencies {
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
     testImplementation("com.ibm.mq:mq-java-testcontainer:1.21.2")
+    testImplementation("net.javacrumbs.json-unit:json-unit:${jsonUnitVersion}")
+    testImplementation("net.javacrumbs.json-unit:json-unit-assertj:${jsonUnitVersion}")
 }
 
 kotlin {
