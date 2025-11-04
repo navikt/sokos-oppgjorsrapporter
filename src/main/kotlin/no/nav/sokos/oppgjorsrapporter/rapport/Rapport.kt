@@ -1,4 +1,4 @@
-@file:UseSerializers(LocalDateSerializer::class, InstantSerializer::class)
+@file:UseSerializers(LocalDateAsStringSerializer::class, InstantAsStringSerializer::class)
 
 package no.nav.sokos.oppgjorsrapporter.rapport
 
@@ -6,16 +6,11 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlinx.io.bytestring.ByteString
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import kotliquery.Row
+import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
+import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 
 @Serializable @JvmInline value class OrgNr(val raw: String)
 
@@ -38,22 +33,6 @@ data class UlagretRapport(
     override val tittel: String,
     override val datoValutert: LocalDate,
 ) : RapportFelter
-
-abstract class AsStringSerializer<T : Any>(serialName: String, private val parse: (String) -> T) : KSerializer<T> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
-
-    override fun serialize(encoder: Encoder, value: T) {
-        value.toString().let(encoder::encodeString)
-    }
-
-    override fun deserialize(decoder: Decoder): T = decoder.decodeString().runCatching(parse).getOrElse { throw SerializationException(it) }
-}
-
-object LocalDateSerializer :
-    AsStringSerializer<LocalDate>(serialName = "utbetaling.pengeflyt.kotlinx.LocalDateSerializer", parse = LocalDate::parse)
-
-object InstantSerializer :
-    AsStringSerializer<Instant>(serialName = "utbetaling.pengeflyt.kotlinx.LocalDateSerializer", parse = Instant::parse)
 
 @Serializable
 data class Rapport(
