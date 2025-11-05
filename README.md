@@ -35,9 +35,12 @@ APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening](https://github.com
 Det finnes flere alternativer til [testcontainer-kompatible container runtimes](https://java.testcontainers.org/supported_docker_environment/).
 På en Mac kan man nokså kjapt få et Docker-oppsett som er testcontainers-kompatibelt slik:
 
-1. `brew install docker colima`
-2. Kjør `./setupColimaOnMac.sh` for å få konfigurert opp Colima med en virtuell maskin det kan kjøres containere med forskjellige CPU-arkitekturer i
-3. Oppdater environment-variable (som skrevet ut av scriptet) i f.eks. ~/.zshrc, og restart tingene som trenger å restartes (kanskje til og med logge ut og inn av Macen din for å få kjørt .zshrc på ny)
+1. Første gangs oppsett av Colima:
+   * Kjør `brew install docker colima`
+   * Kjør `./setupColimaOnMac.sh` for å få konfigurert opp Colima med en virtuell maskin det kan kjøres containere med forskjellige CPU-arkitekturer i
+   * Oppdater environment-variable (som skrevet ut av scriptet) i f.eks. ~/.zshrc, og restart tingene som trenger å restartes (kanskje til og med logge ut og inn av Macen din for å få kjørt .zshrc på ny)
+2. Hvis colima har stoppet (etter reboot e.l., sjekk med `colima status`) kan den startes igjen med `colima start`
+   * Hvis `colima start` av en eller annen grunn ikke klarer å starte colima, er antakelig den enkleste løsningen å kverke den (`colima delete`) og så starte fra punkt 1 over.
 
 ## Henvendelser
 
