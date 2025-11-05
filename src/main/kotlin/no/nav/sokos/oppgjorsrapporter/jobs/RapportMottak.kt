@@ -9,49 +9,40 @@ package no.nav.sokos.oppgjorsrapporter.jobs
 
 import java.math.BigDecimal
 import java.time.LocalDate
-import java.util.UUID
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.slf4j.MDCContext
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json.Default.decodeFromString
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
+import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsNullableStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
-import org.slf4j.MDC
 
-class RapportMottak(private val applicationState: ApplicationState, private val mqConsumer: MqConsumer) {
-
+class RapportMottak(private val applicationState: ApplicationState, private val refusjonMqConsumer: MqConsumer) {
     private val logger = KotlinLogging.logger {}
 
-    suspend fun start() {
+    suspend fun run() {
         // TODO: prosesser mottate rapporter
-        hentRapporter { logger.info { "Hentet rapporter fra ur: $it" } }
+        hentBestillinger { logger.info { "Hentet rapport-bestilling: $it" } }
     }
 
-    private suspend fun hentRapporter(block: suspend (List<RefusjonsRapportBestilling>) -> Unit) {
-        do try {
-            // TODO: Vi trenger vel ikke å begrense oss på den måten her? Dette er kopiert fra utbetalingsmelding
-            val mqRapporter = mqConsumer.receiveMessages(maxMessages = 1000)
-            if (mqRapporter.isNotEmpty()) {
-                // TODO: trenger vi å opprette correlation id? Håndteres ikke dette av autoinustrumentering i Nais?
-                MDC.put("x-correlation-id", UUID.randomUUID().toString())
-                withContext(MDCContext()) {
-                    val rapporter = mqRapporter.map { decodeFromString<RefusjonsRapportBestilling>(it) }
-                    logger.info { "Hentet ${rapporter.size} rapporter fra MQ" }
-                    block(rapporter)
+    private suspend fun hentBestillinger(block: suspend (RefusjonsRapportBestilling) -> Unit) {
+        do {
+            refusjonMqConsumer.receive()?.let { dokument ->
+                logger.debug(TEAM_LOGS_MARKER) { "Melding mottatt: $dokument" }
+                try {
+                    val bestilling = decodeFromString<RefusjonsRapportBestilling>(dokument)
+                    logger.info { "Hentet bestilling på refusjons-rapport fra MQ" }
+                    block(bestilling)
+                    refusjonMqConsumer.commit()
+                } catch (ex: Exception) {
+                    refusjonMqConsumer.rollback()
+                    logger.error(TEAM_LOGS_MARKER, ex) { "Noe gikk galt; lesing av meldingen er rullet tilbake (kanskje til BOQ)" }
                 }
-                mqConsumer.commit()
-            } else delay(timeMillis = 500L)
-        } catch (ex: Exception) {
-            val antallRapporter = mqConsumer.messagesInTransaction()
-            mqConsumer.rollback()
-            logger.error(ex) { "Noe gikk galt. Legger $antallRapporter rapporter på BOQ." }
+            }
         } while (applicationState.alive)
     }
 }

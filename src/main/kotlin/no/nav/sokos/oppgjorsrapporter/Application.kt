@@ -73,23 +73,25 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
         provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
 
         if (config.mqConfiguration.enabled) {
-            provide<MqConsumer> { MqConsumer(config.mqConfiguration) }
-            provide("mqJob") {
-                    val mqErrors = mutableListOf<String>()
-                    applicationState.registerSystem("MQ") { mqErrors }
+            config.mqConfiguration.queues.forEach { inQueue ->
+                provide<MqConsumer>("mq.consumer.${inQueue.key}") { MqConsumer(config.mqConfiguration, inQueue.queueName) }
+                provide("mq.consumejob.${inQueue.key}") {
+                        val mqErrors = mutableListOf<String>()
+                        applicationState.registerSystem("MQ") { mqErrors }
 
-                    val exceptionHandler = CoroutineExceptionHandler { _, e ->
-                        logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet" }
-                        // Ved å legge til en feil på et registrert system, flippes applicationState.ready til `false`
-                        mqErrors.add(e.toString())
-                        applicationState.alive = false
-                    }
+                        val exceptionHandler = CoroutineExceptionHandler { _, e ->
+                            logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet" }
+                            // Ved å legge til en feil på et registrert system, flippes applicationState.ready til `false`
+                            mqErrors.add(e.toString())
+                            applicationState.alive = false
+                        }
 
-                    with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                        launch { RapportMottak(applicationState, resolve()).start() }
+                        with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
+                            launch { RapportMottak(applicationState, resolve()).run() }
+                        }
                     }
-                }
-                .cleanup { it.cancel() }
+                    .cleanup { it.cancel() }
+            }
         }
     }
 
