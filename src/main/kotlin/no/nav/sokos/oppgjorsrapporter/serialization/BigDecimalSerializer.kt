@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.serialization
 
+import java.math.BigDecimal
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -10,13 +11,15 @@ import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonUnquotedLiteral
 import kotlinx.serialization.json.jsonPrimitive
-import java.math.BigDecimal
 
 @ExperimentalSerializationApi
 object BigDecimalSerializer : KSerializer<BigDecimal> {
     override val descriptor = PrimitiveSerialDescriptor("java.math.BigDecimal", PrimitiveKind.DOUBLE)
 
-    /** If decoding JSON uses [kotlinx.serialization.json.JsonDecoder.decodeJsonElement] to get the raw content, otherwise decodes using [kotlinx.serialization.encoding.Decoder.decodeString]. */
+    /**
+     * If decoding JSON uses [kotlinx.serialization.json.JsonDecoder.decodeJsonElement] to get the raw content, otherwise decodes using
+     * [kotlinx.serialization.encoding.Decoder.decodeString].
+     */
     override fun deserialize(decoder: Decoder): BigDecimal =
         when (decoder) {
             is JsonDecoder -> decoder.decodeJsonElement().jsonPrimitive.content.toBigDecimal()
