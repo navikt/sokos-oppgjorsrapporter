@@ -22,19 +22,6 @@ class MqConsumer(private val config: PropertiesConfig.MqProperties, private val 
         connect()
     }
 
-    private fun PropertiesConfig.MqProperties.connect(): Connection =
-        MQConnectionFactory()
-            .apply {
-                this.transportType = WMQConstants.WMQ_CM_CLIENT
-                this.hostName = config.host
-                this.port = config.port
-                this.channel = config.channel
-                this.queueManager = config.managerName
-                this.targetClientMatching = true
-                this.userAuthenticationMQCSP = true
-            }
-            .createConnection(config.username, config.password)
-
     fun connect() {
         val connection = config.connect()
         session = connection.createSession(Session.SESSION_TRANSACTED)
@@ -70,3 +57,16 @@ class MqConsumer(private val config: PropertiesConfig.MqProperties, private val 
         }
     }
 }
+
+fun PropertiesConfig.MqProperties.connect(): Connection =
+    MQConnectionFactory()
+        .apply {
+            this.transportType = WMQConstants.WMQ_CM_CLIENT
+            this.hostName = host
+            this.port = port
+            this.channel = channel
+            this.queueManager = managerName
+            this.targetClientMatching = true
+            this.userAuthenticationMQCSP = true
+        }
+        .createConnection(username, password)

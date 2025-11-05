@@ -89,8 +89,8 @@ spec:
     - name: MQ_PORT
       value: "1413"
     - name: MQ_MANAGER_NAME
-      value: Q1_OPPGJORSRAPPORTER.FRA_UR
+      value: MQLS01
     - name: MQ_CHANNEL
       value: Q1_OPPGJORSRAPPORTER
-    - name: MQ_UR_BACKOUT_QUEUE
-      value: Q1_OPPGJORSRAPPORTER.FRA_UR_BOQ
+    - name: MQ_REFUSJON_QUEUE
+      value: Q1_REFUSJONSRAPPORTER.FRA_UR

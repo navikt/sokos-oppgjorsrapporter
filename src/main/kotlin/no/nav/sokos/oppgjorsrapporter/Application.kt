@@ -32,8 +32,8 @@ import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
-import no.nav.sokos.oppgjorsrapporter.jobs.RapportMottak
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
+import no.nav.sokos.oppgjorsrapporter.mq.RapportMottak
 import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
@@ -63,6 +63,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
     install(Resources)
 
     dependencies {
+        provide { applicationState }
         provide<DataSource> { DatabaseConfig.dataSource }
         provide(RapportRepository::class)
         provide(RapportService::class)
@@ -74,7 +75,12 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
 
         if (config.mqConfiguration.enabled) {
             config.mqConfiguration.queues.forEach { inQueue ->
-                provide<MqConsumer>("mq.consumer.${inQueue.key}") { MqConsumer(config.mqConfiguration, inQueue.queueName) }
+                val consumerKey = "mq.consumer.${inQueue.key}"
+                provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.queueName) }
+
+                val mottakKey = "mq.mottak.${inQueue.key}"
+                provide(mottakKey) { RapportMottak(resolve(), resolve(consumerKey), resolve()) }
+
                 provide("mq.consumejob.${inQueue.key}") {
                         val mqErrors = mutableListOf<String>()
                         applicationState.registerSystem("MQ") { mqErrors }
@@ -87,7 +93,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
                         }
 
                         with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                            launch { RapportMottak(applicationState, resolve()).run() }
+                            launch { resolve<RapportMottak>(mottakKey).run() }
                         }
                     }
                     .cleanup { it.cancel() }

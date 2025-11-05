@@ -4,7 +4,7 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import kotlinx.serialization.json.Json
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
-import no.nav.sokos.oppgjorsrapporter.jobs.Data
+import no.nav.sokos.oppgjorsrapporter.mq.Data
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test

@@ -2,6 +2,7 @@ package no.nav.sokos.oppgjorsrapporter.rapport
 
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 
 class RapportRepository {
     fun insert(tx: TransactionalSession, rapport: UlagretRapport): Rapport {
@@ -129,4 +130,8 @@ class RapportRepository {
                 ),
             )
         )
+
+    fun lagreBestilling(bestilling: RefusjonsRapportBestilling) {
+        TODO("Not yet implemented")
+    }
 }
