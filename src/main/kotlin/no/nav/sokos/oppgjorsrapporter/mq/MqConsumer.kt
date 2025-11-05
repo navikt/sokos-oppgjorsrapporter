@@ -3,82 +3,70 @@ package no.nav.sokos.oppgjorsrapporter.mq
 import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import com.ibm.msg.client.wmq.WMQConstants
-import javax.jms.ConnectionFactory
+import javax.jms.Connection
 import javax.jms.MessageConsumer
 import javax.jms.Session
 import javax.jms.TextMessage
-import kotlin.let
+import kotlin.time.Duration.Companion.seconds
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 
-class MqConsumer(val config: PropertiesConfig.MqProperties) {
+class MqConsumer(private val config: PropertiesConfig.MqProperties, private val queueName: String) {
     private val logger = KotlinLogging.logger {}
 
-    lateinit var session: Session
+    private lateinit var session: Session
     private lateinit var mqConsumer: MessageConsumer
-    var uncomittedMessages: Int = 0
-    var connected: Boolean = false
+    private var connected: Boolean = false
 
     init {
-        connect { session, queue -> mqConsumer = session.createConsumer(queue) }
+        connect()
     }
 
-    fun connect(initBlock: (Session, MQQueue) -> Unit) {
-        val connectionFactory: ConnectionFactory =
-            MQConnectionFactory().apply {
-                transportType = WMQConstants.WMQ_CM_CLIENT
-                hostName = config.mqHost
-                port = config.mqPort
-                channel = config.mqChannel
-                queueManager = config.mqManagerName
-                targetClientMatching = true
-                userAuthenticationMQCSP = true
+    private fun PropertiesConfig.MqProperties.connect(): Connection =
+        MQConnectionFactory()
+            .apply {
+                this.transportType = WMQConstants.WMQ_CM_CLIENT
+                this.hostName = config.host
+                this.port = config.port
+                this.channel = config.channel
+                this.queueManager = config.managerName
+                this.targetClientMatching = true
+                this.userAuthenticationMQCSP = true
             }
+            .createConnection(config.username, config.password)
 
-        val connection = connectionFactory.createConnection(config.mqUsername, config.mqPassword)
-
+    fun connect() {
+        val connection = config.connect()
         session = connection.createSession(Session.SESSION_TRANSACTED)
 
-        logger.info { "Kobler seg til MQ køen ${config.mqManagerName}" }
-        val queue = nonJmsQueue(config.mqManagerName)
-        initBlock(session, queue)
+        logger.info("Connecting to MQ queue $queueName")
+        val queue = nonJmsQueue(queueName)
+        mqConsumer = session.createConsumer(queue)
 
         connection.start()
         connected = true
     }
 
-    fun commit() {
-        session.commit()
-        uncomittedMessages = 0
-    }
-
-    fun rollback() {
-        session.rollback()
-        uncomittedMessages = 0
-    }
-
-    fun messagesInTransaction() = uncomittedMessages
-
     private fun nonJmsQueue(queueName: String) =
         (session.createQueue(queueName) as MQQueue).apply { targetClient = WMQConstants.WMQ_CLIENT_NONJMS_MQ }
 
-    fun receiveMessages(maxMessages: Int): List<String> {
-        val messages = mutableListOf<String>()
-        repeat(maxMessages) {
-            val message =
-                try {
-                    if (!connected) {
-                        connect { session, queue -> mqConsumer = session.createConsumer(queue) }
+    fun commit() = session.commit()
+
+    fun rollback() = session.rollback()
+
+    fun receive(): String? {
+        try {
+            if (!connected) connect()
+            return when (val message = mqConsumer.receive(0.5.seconds.inWholeMilliseconds)) {
+                is TextMessage ->
+                    message.text.also {
+                        //   Metrics.orderCounter.inc()
                     }
-                    (mqConsumer.receive(100L) as? TextMessage)?.text
-                } catch (ex: Exception) {
-                    rollback()
-                    connected = false
-                    throw ex
-                }
-            message?.let { messages.add(it) } ?: return@repeat
+                else -> null
+            }
+        } catch (ex: Exception) {
+            connected = false
+            throw ex
         }
-        uncomittedMessages += messages.size
-        return messages
     }
 }

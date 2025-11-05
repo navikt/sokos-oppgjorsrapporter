@@ -107,26 +107,30 @@ object PropertiesConfig {
 
     data class MqProperties(
         val enabled: Boolean,
-        val mqHost: String,
-        val mqPort: Int,
-        val mqManagerName: String,
-        val mqChannel: String,
-        val mqUrBackoutQueue: String,
-        val mqUsername: String,
-        val mqPassword: String,
+        val host: String,
+        val port: Int,
+        val managerName: String,
+        val channel: String,
+        val queues: List<MqQueueProperties>,
+        val username: String,
+        val password: String,
     ) {
         constructor(
             source: ConfigSource
         ) : this(
             enabled = source.get("mq.enabled").toBoolean(),
-            mqHost = source.get("mq.host"),
-            mqPort = source.get("mq.port").toInt(),
-            mqManagerName = source.get("mq.managerName"),
-            mqChannel = source.get("mq.channel"),
-            mqUrBackoutQueue = source.get("mq.fraUrBackoutQueue"),
-            mqUsername = source.get("mq.username"),
-            mqPassword = source.get("mq.password"),
+            host = source.get("mq.host"),
+            port = source.get("mq.port").toInt(),
+            managerName = source.get("mq.managerName"),
+            channel = source.get("mq.channel"),
+            queues = listOf("refusjon").map { MqQueueProperties(source, it) },
+            username = source.get("mq.username"),
+            password = source.get("mq.password"),
         )
+    }
+
+    data class MqQueueProperties(val key: String, val queueName: String) {
+        constructor(source: ConfigSource, key: String) : this(key, source.get("mq.$key.queueName"))
     }
 
     data class SecurityProperties(
