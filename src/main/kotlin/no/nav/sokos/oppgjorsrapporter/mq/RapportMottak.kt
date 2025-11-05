@@ -5,7 +5,7 @@
     LocalDateAsNullableStringSerializer::class,
 )
 
-package no.nav.sokos.oppgjorsrapporter.jobs
+package no.nav.sokos.oppgjorsrapporter.mq
 
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -15,18 +15,27 @@ import kotlinx.serialization.json.Json.Default.decodeFromString
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
-import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsNullableStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 
-class RapportMottak(private val applicationState: ApplicationState, private val refusjonMqConsumer: MqConsumer) {
+class RapportMottak(
+    private val applicationState: ApplicationState,
+    private val refusjonMqConsumer: MqConsumer,
+    private val rapportRepository: RapportRepository,
+) {
     private val logger = KotlinLogging.logger {}
 
     suspend fun run() {
         // TODO: prosesser mottate rapporter
-        hentBestillinger { logger.info { "Hentet rapport-bestilling: $it" } }
+        hentBestillinger { process(it) }
+    }
+
+    fun process(bestilling: RefusjonsRapportBestilling) {
+        rapportRepository.lagreBestilling(bestilling)
+        logger.info { "Hentet rapport-bestilling: $bestilling" }
     }
 
     private suspend fun hentBestillinger(block: suspend (RefusjonsRapportBestilling) -> Unit) {
