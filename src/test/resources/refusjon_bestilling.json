@@ -3,7 +3,6 @@
     "orgnr": 974600019,
     "bankkonto": "02470303400",
     "sumBelop": 59430.00,
-    "dkSumBelop": "D",
     "valutert": "2025-10-28",
     "linjer": 6
   },
@@ -18,7 +17,6 @@
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
       "belop": 9905.00,
-      "dk": "D",
       "maxDato": " "
     },
     {
@@ -31,7 +29,6 @@
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
       "belop": 9905.00,
-      "dk": "D",
       "maxDato": " "
     },
     {
@@ -44,7 +41,6 @@
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
       "belop": 9905.00,
-      "dk": "D",
       "maxDato": " "
     },
     {
@@ -57,7 +53,6 @@
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
       "belop": 9905.00,
-      "dk": "D",
       "maxDato": " "
     },
     {
@@ -70,7 +65,6 @@
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
       "belop": 9905.00,
-      "dk": "D",
       "maxDato": " "
     },
     {
@@ -83,7 +77,6 @@
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
       "belop": 9905.00,
-      "dk": "D",
       "maxDato": " "
     }
   ]
