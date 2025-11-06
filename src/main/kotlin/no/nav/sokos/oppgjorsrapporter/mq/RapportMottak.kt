@@ -29,30 +29,30 @@ class RapportMottak(
     private val logger = KotlinLogging.logger {}
 
     suspend fun run() {
-        // TODO: prosesser mottate rapporter
-        hentBestillinger { process(it) }
+        while (applicationState.ready) {
+            hentBestilling { process(it) }
+        }
     }
 
     fun process(bestilling: RefusjonsRapportBestilling) {
         logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
+        // TODO: prosesser mottate rapporter
         rapportRepository.lagreBestilling(bestilling)
     }
 
-    private suspend fun hentBestillinger(block: suspend (RefusjonsRapportBestilling) -> Unit) {
-        do {
-            refusjonMqConsumer.receive()?.let { dokument ->
-                logger.debug(TEAM_LOGS_MARKER) { "Melding mottatt: $dokument" }
-                try {
-                    val bestilling = decodeFromString<RefusjonsRapportBestilling>(dokument)
-                    logger.info { "Hentet bestilling på refusjons-rapport fra MQ" }
-                    block(bestilling)
-                    refusjonMqConsumer.commit()
-                } catch (ex: Exception) {
-                    refusjonMqConsumer.rollback()
-                    logger.error(TEAM_LOGS_MARKER, ex) { "Noe gikk galt; lesing av meldingen er rullet tilbake (kanskje til BOQ)" }
-                }
+    private suspend fun hentBestilling(block: suspend (RefusjonsRapportBestilling) -> Unit) {
+        refusjonMqConsumer.receive()?.let { dokument ->
+            logger.debug(TEAM_LOGS_MARKER) { "Melding mottatt: $dokument" }
+            try {
+                val bestilling = decodeFromString<RefusjonsRapportBestilling>(dokument)
+                logger.info { "Hentet bestilling på refusjons-rapport fra MQ" }
+                block(bestilling)
+                refusjonMqConsumer.commit()
+            } catch (ex: Exception) {
+                refusjonMqConsumer.rollback()
+                logger.error(TEAM_LOGS_MARKER, ex) { "Noe gikk galt; lesing av meldingen er rullet tilbake (kanskje til BOQ)" }
             }
-        } while (applicationState.alive)
+        }
     }
 }
 

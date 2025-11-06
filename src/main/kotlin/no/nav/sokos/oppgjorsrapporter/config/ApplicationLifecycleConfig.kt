@@ -2,12 +2,12 @@ package no.nav.sokos.oppgjorsrapporter.config
 
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStarted
-import io.ktor.server.application.ApplicationStopped
+import io.ktor.server.application.ApplicationStopPreparing
 
 fun Application.applicationLifecycleConfig(applicationState: ApplicationState) {
     monitor.subscribe(ApplicationStarted) { applicationState.started = true }
 
-    monitor.subscribe(ApplicationStopped) { applicationState.started = false }
+    monitor.subscribe(ApplicationStopPreparing) { applicationState.started = false }
 }
 
 class ApplicationState(var started: Boolean = false, var alive: Boolean = true) {
@@ -18,7 +18,7 @@ class ApplicationState(var started: Boolean = false, var alive: Boolean = true) 
     }
 
     val ready
-        get() = started && systems.values.all { it().isEmpty() }
+        get() = started && alive && systems.values.all { it().isEmpty() }
 
     fun readyErrors(): List<String> = systems.flatMap { (key, value) -> value().map { "$key:\t$it" } }
 }
