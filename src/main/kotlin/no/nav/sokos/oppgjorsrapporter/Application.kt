@@ -1,6 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter
 
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStarted
 import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.addShutdownHook
@@ -13,6 +14,7 @@ import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
@@ -93,9 +95,27 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
 
                 val job =
                     with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                        launch { resolve<RapportMottak>(mottakKey).run() }
+                        launch(start = CoroutineStart.LAZY) { resolve<RapportMottak>(mottakKey).run() }
                     }
-                provide("mq.consumejob.${inQueue.key}") { job }.cleanup { it.cancel() }
+                // Vent med å faktisk starte jobben til applikasjonen er ferdig startet - slik at jobben kan gå ut fra at
+                // applicationState.ready har blitt true før den starter
+                this@module.monitor.subscribe(ApplicationStarted) { job.start() }
+
+                // Hvis jobben mot formodning gjør seg ferdig (uten å ha feilet eller ha blitt kansellert, altså med cause == null) mens
+                // applikasjonen fortsatt er started, er det noe muffens på gang; det er kjipt om applikasjonen fortsetter å kjøre uten å ha
+                // noen jobb som kan ta imot nye meldinger fra MQ
+                job.invokeOnCompletion { cause ->
+                    if (cause == null && applicationState.started) {
+                        logger.error("Oops: Job for '${inQueue.key}' har gjort seg ferdig selv om applikasjonen fortsatt er 'started'")
+                    }
+                }
+
+                provide("mq.consumejob.${inQueue.key}") { job }
+                    .cleanup {
+                        it.cancel()
+                        // TODO: Dersom en jobb har mottatt en melding og holder på å prosessere den, hadde det vært fint om den fikk lov
+                        //       til å gjøre seg ferdig med prosesseringen før applikasjonen stopper.  Hvordan kan vi få til det?
+                    }
             }
         }
     }
