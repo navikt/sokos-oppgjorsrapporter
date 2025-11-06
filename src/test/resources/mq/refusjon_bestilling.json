@@ -2,7 +2,7 @@
   "header": {
     "orgnr": 974600019,
     "bankkonto": "02470303400",
-    "sumBelop": 59430.00,
+    "sumBelop": 9093.00,
     "valutert": "2025-10-28",
     "linjer": 6
   },
@@ -16,8 +16,7 @@
       "navn": "wopoj hyfom",
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
-      "belop": 9905.00,
-      "maxDato": " "
+      "belop": 9905.00
     },
     {
       "navenhet": 8020,
@@ -28,8 +27,7 @@
       "navn": "wopoj hyfom",
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
-      "belop": 9905.00,
-      "maxDato": " "
+      "belop": 9905.00
     },
     {
       "navenhet": 8020,
@@ -37,11 +35,9 @@
       "kode": "H",
       "tekst": "Sykepenger feriepenger",
       "fnr": "15060037358",
-      "navn": "sujam} }jusit",
-      "fraDato": "2025-05-01",
+      "navn": "sujamg gjusit",
       "tilDato": "2025-05-31",
-      "belop": 9905.00,
-      "maxDato": " "
+      "belop": 19005.00
     },
     {
       "navenhet": 8020,
@@ -49,11 +45,10 @@
       "kode": "H",
       "tekst": "Sykepenger feriepenger",
       "fnr": "17000003477",
-      "navn": "w{jy ypab",
+      "navn": "wgjy ypab",
       "fraDato": "2025-05-01",
-      "tilDato": "2025-05-31",
-      "belop": 9905.00,
-      "maxDato": " "
+      "belop": -9908.00,
+      "maxDato": "2026-03-31"
     },
     {
       "navenhet": 8020,
@@ -61,11 +56,9 @@
       "kode": "H",
       "tekst": "Sykepenger feriepenger",
       "fnr": "18100040441",
-      "navn": "odexiv n}r",
-      "fraDato": "2025-05-01",
-      "tilDato": "2025-05-31",
-      "belop": 9905.00,
-      "maxDato": " "
+      "navn": "odexiv ngr",
+      "belop": -9906.00,
+      "maxDato": "2026-01-31"
     },
     {
       "navenhet": 8020,
@@ -73,11 +66,11 @@
       "kode": "H",
       "tekst": "Sykepenger feriepenger",
       "fnr": "23020043414",
-      "navn": "f{na nuxy",
+      "navn": "f na nuxy",
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
-      "belop": 9905.00,
-      "maxDato": " "
+      "belop": -9908.00,
+      "maxDato": "2026-07-31"
     }
   ]
 }
