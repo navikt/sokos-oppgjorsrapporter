@@ -49,7 +49,6 @@ class RefusjonsRapportBestillingSerializationTest {
                 fnr = "12345678901",
                 navn = "Test Person",
                 belop = BigDecimal("100.0"),
-                dk = "DK",
                 fraDato = LocalDate.parse("2024-01-01"),
                 tilDato = LocalDate.parse("2024-12-31"),
                 maxDato = null,
@@ -67,7 +66,6 @@ class RefusjonsRapportBestillingSerializationTest {
                     "fnr": "12345678901",
                     "navn": "Test Person",
                     "belop": 100.0,
-                    "dk": "DK",
                     "fraDato": "2024-01-01",
                     "tilDato": "2024-12-31",
                     "maxDato": null

@@ -34,8 +34,8 @@ class RapportMottak(
     }
 
     fun process(bestilling: RefusjonsRapportBestilling) {
+        logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
         rapportRepository.lagreBestilling(bestilling)
-        logger.info { "Hentet rapport-bestilling: $bestilling" }
     }
 
     private suspend fun hentBestillinger(block: suspend (RefusjonsRapportBestilling) -> Unit) {
@@ -60,7 +60,15 @@ class RapportMottak(
 @Serializable data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>)
 
 @Serializable
-data class Header(val orgnr: Long, val bankkonto: String, val sumBelop: BigDecimal, val dkSumBelop: String, val valutert: LocalDate)
+data class Header(
+    val orgnr: Long,
+    val bankkonto: String,
+    val sumBelop: BigDecimal,
+    val valutert: LocalDate,
+    // Antall elementer i `datarec: List<Data>`.  Trengs egentlig ikke av vår applikasjon, men JSON-genereringen på sender-siden har ikke
+    // noen enkel måte å utelate den på.
+    val linjer: Long,
+)
 
 @Serializable
 data class Data(
@@ -71,7 +79,6 @@ data class Data(
     val fnr: String,
     val navn: String,
     val belop: BigDecimal,
-    val dk: String,
     val fraDato: LocalDate?,
     val tilDato: LocalDate?,
     val maxDato: LocalDate?,

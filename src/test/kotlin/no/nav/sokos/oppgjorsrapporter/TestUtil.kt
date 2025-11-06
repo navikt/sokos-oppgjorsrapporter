@@ -38,14 +38,14 @@ object TestUtil {
     fun testContainerMqOverrides(container: MQContainer?) =
         MapApplicationConfig().apply {
             val enabled = container != null
-            put("MQ_ENABLED", enabled.toString())
+            put("mq.enabled", enabled.toString())
             if (enabled) {
-                put("MQ_HOST", container.host)
-                put("MQ_PORT", container.port.toString())
-                put("MQ_MANAGER_NAME", container.queueManager)
-                put("MQ_CHANNEL", container.channel)
-                put("MQ_SERVICE_USERNAME", container.appUser)
-                put("MQ_SERVICE_PASSWORD", container.appPassword)
+                put("mq.host", container.host)
+                put("mq.port", container.port.toString())
+                put("mq.managerName", container.queueManager)
+                put("mq.channel", container.channel)
+                put("mq.username", container.appUser)
+                put("mq.password", container.appPassword)
             }
         }
 
