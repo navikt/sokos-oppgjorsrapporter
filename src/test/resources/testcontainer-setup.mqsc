@@ -1,2 +1,88 @@
-DEFINE QLOCAL(REFUSJON_QUEUE)
-SET AUTHREC PROFILE (REFUSJON_QUEUE) OBJTYPE (QUEUE) PRINCIPAL ('app') AUTHADD (BROWSE, INQ, GET, PUT)
+* MQSC-kommandoene her startet som relevante biter fra en MQSC-dump i Q1; se [Slack](https://nav-it.slack.com/archives/CBF1W2DAB/p1762417496097239?thread_ts=1761657574.431579&cid=CBF1W2DAB)
+
+DEFINE CHANNEL('Q1_OPPGJORSRAPPORTER')  +
+       CHLTYPE(SVRCONN)  +
+       DESCR('Channel for OPPGJORSRAPPORTER in q1 ')  +
+       TRPTYPE(TCP)  +
+       SSLCIPH(' ')  +
+       SSLCAUTH(REQUIRED)  +
+       SSLPEER(' ')  +
+       MAXMSGL(104857600)  +
+       MCAUSER(' ')  +
+       HBINT(300)  +
+       KAINT(AUTO)  +
+       DISCINT(0)  +
+       COMPHDR(NONE)  +
+       COMPMSG(NONE)  +
+       SHARECNV(10)  +
+       MAXINST(60)  +
+       MAXINSTC(30)  +
+       SCYEXIT(' ')  +
+       SCYDATA(' ')  +
+       MONCHL(QMGR)  +
+       REPLACE
+
+DEFINE QLOCAL('Q1_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG_BOQ')  +
+       DESCR('Backout for Q1_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG')  +
+       CLUSTER(' ')  +
+       CLUSNL(' ')  +
+       CLWLUSEQ(QMGR)  +
+       USAGE(NORMAL)  +
+       MAXDEPTH(50000)  +
+       MAXMSGL(4194304)  +
+       DEFPSIST(NO)  +
+       DEFBIND(OPEN)  +
+       PUT(ENABLED)  +
+       GET(ENABLED)  +
+       BOTHRESH(0)  +
+       BOQNAME(' ')  +
+       SHARE  +
+       DEFSOPT(SHARED)  +
+       NOTRIGGER  +
+       INITQ(' ')  +
+       PROCESS(' ')  +
+       TRIGTYPE(FIRST)  +
+       TRIGDATA(' ')  +
+       REPLACE
+CLEAR QLOCAL('Q1_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG_BOQ')
+
+DEFINE QLOCAL('Q1_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG')  +
+       DESCR('Queue for OPPGJORSRAPPORTER in q1. ')  +
+       CLUSTER(' ')  +
+       CLUSNL(' ')  +
+       CLWLUSEQ(QMGR)  +
+       USAGE(NORMAL)  +
+       MAXDEPTH(50000)  +
+       MAXMSGL(4194304)  +
+       DEFPSIST(NO)  +
+       DEFBIND(OPEN)  +
+       PUT(ENABLED)  +
+       GET(ENABLED)  +
+       BOTHRESH(1)  +
+       BOQNAME('Q1_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG_BOQ')  +
+       SHARE  +
+       DEFSOPT(SHARED)  +
+       NOTRIGGER  +
+       INITQ(' ')  +
+       PROCESS(' ')  +
+       TRIGTYPE(FIRST)  +
+       TRIGDATA(' ')  +
+       REPLACE
+CLEAR QLOCAL('Q1_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG')
+
+DEFINE QALIAS('QA.Q1_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG')  +
+       DESCR(' ')  +
+       TARGTYPE(QUEUE)  +
+       CLUSTER(' ')  +
+*       CLUSNL('NL.QASS.Q1.CLUSTER')  +
+       TARGET('Q1_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG')  +
+       DEFPSIST(NO)  +
+       DEFBIND(OPEN)  +
+       PUT(ENABLED)  +
+       GET(ENABLED)  +
+       REPLACE
+
+*** Lagt til manuelt:
+*** Sette opp tilgang til channel (addressmap) og queue (la bruker 'app' gjøre ikke-admin-operasjoner)
+SET CHLAUTH(Q1_OPPGJORSRAPPORTER) TYPE(ADDRESSMAP) ADDRESS('*') USERSRC(CHANNEL) CHCKCLNT(REQUIRED) ACTION(REPLACE)
+SET AUTHREC PROFILE (QA.Q1_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG) OBJTYPE (QUEUE) PRINCIPAL ('app') AUTHADD (BROWSE,DSP,GET,INQ,PUT)
