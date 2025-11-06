@@ -1,9 +1,4 @@
-@file:UseSerializers(
-    LocalDateAsStringSerializer::class,
-    InstantAsStringSerializer::class,
-    BigDecimalSerializer::class,
-    LocalDateAsNullableStringSerializer::class,
-)
+@file:UseSerializers(LocalDateAsStringSerializer::class, InstantAsStringSerializer::class, BigDecimalSerializer::class)
 
 package no.nav.sokos.oppgjorsrapporter.mq
 
@@ -11,14 +6,13 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.json.Json.Default.decodeFromString
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
-import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsNullableStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 
 class RapportMottak(
@@ -34,19 +28,18 @@ class RapportMottak(
         }
     }
 
-    fun process(bestilling: RefusjonsRapportBestilling) {
+    fun process(dokument: String) {
+        val bestilling = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(dokument)
         logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
         // TODO: prosesser mottate rapporter
         rapportRepository.lagreBestilling(bestilling)
     }
 
-    private suspend fun hentBestilling(block: suspend (RefusjonsRapportBestilling) -> Unit) {
+    private suspend fun hentBestilling(block: suspend (String) -> Unit) {
         refusjonMqConsumer.receive()?.let { dokument ->
-            logger.debug(TEAM_LOGS_MARKER) { "Melding mottatt: $dokument" }
+            logger.info(TEAM_LOGS_MARKER) { "Melding mottatt: $dokument" }
             try {
-                val bestilling = decodeFromString<RefusjonsRapportBestilling>(dokument)
-                logger.info { "Hentet bestilling på refusjons-rapport fra MQ" }
-                block(bestilling)
+                block(dokument)
                 refusjonMqConsumer.commit()
             } catch (ex: Exception) {
                 refusjonMqConsumer.rollback()
@@ -57,7 +50,12 @@ class RapportMottak(
 }
 
 // TODO: mulig at det kommer endringer på denne når vi vet hvordan strukturen til det Trond leverer blir
-@Serializable data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>)
+@Serializable
+data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>) {
+    companion object {
+        val json = Json { explicitNulls = false }
+    }
+}
 
 @Serializable
 data class Header(

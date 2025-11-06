@@ -2,15 +2,15 @@ package serialization
 
 import java.math.BigDecimal
 import java.time.LocalDate
-import kotlinx.serialization.json.Json
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import no.nav.sokos.oppgjorsrapporter.mq.Data
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class RefusjonsRapportBestillingSerializationTest {
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = RefusjonsRapportBestilling.json
 
     @Test
     fun `deserialize nullable LocalDate values properly`() {
@@ -24,10 +24,8 @@ class RefusjonsRapportBestillingSerializationTest {
                     "fnr": "12345678901",
                     "navn": "Test Person",
                     "belop": 100.0,
-                    "dk": "DK",
                     "fraDato": "2024-01-01",
-                    "tilDato": "2024-12-31",
-                    "maxDato": "  "
+                    "tilDato": "2024-12-31"
                 }
             """
                 .trimIndent()
@@ -67,8 +65,7 @@ class RefusjonsRapportBestillingSerializationTest {
                     "navn": "Test Person",
                     "belop": 100.0,
                     "fraDato": "2024-01-01",
-                    "tilDato": "2024-12-31",
-                    "maxDato": null
+                    "tilDato": "2024-12-31"
                 }
                 """
                     .trimIndent()
