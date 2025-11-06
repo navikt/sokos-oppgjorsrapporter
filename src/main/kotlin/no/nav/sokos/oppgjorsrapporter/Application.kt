@@ -74,6 +74,16 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
         provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
 
         if (config.mqConfiguration.enabled) {
+            val mqErrors = mutableListOf<String>()
+            applicationState.registerSystem("MQ") { mqErrors }
+
+            val exceptionHandler = CoroutineExceptionHandler { _, e ->
+                logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet" }
+                // Ved å legge til en feil på et registrert system, flippes applicationState.ready til `false`
+                mqErrors.add(e.toString())
+                applicationState.alive = false
+            }
+
             config.mqConfiguration.queues.forEach { inQueue ->
                 val consumerKey = "mq.consumer.${inQueue.key}"
                 provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.queueName) }
@@ -81,22 +91,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
                 val mottakKey = "mq.mottak.${inQueue.key}"
                 provide(mottakKey) { RapportMottak(resolve(), resolve(consumerKey), resolve()) }
 
-                provide("mq.consumejob.${inQueue.key}") {
-                        val mqErrors = mutableListOf<String>()
-                        applicationState.registerSystem("MQ") { mqErrors }
-
-                        val exceptionHandler = CoroutineExceptionHandler { _, e ->
-                            logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet" }
-                            // Ved å legge til en feil på et registrert system, flippes applicationState.ready til `false`
-                            mqErrors.add(e.toString())
-                            applicationState.alive = false
-                        }
-
-                        with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                            launch { resolve<RapportMottak>(mottakKey).run() }
-                        }
+                val job =
+                    with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
+                        launch { resolve<RapportMottak>(mottakKey).run() }
                     }
-                    .cleanup { it.cancel() }
+                provide("mq.consumejob.${inQueue.key}") { job }.cleanup { it.cancel() }
             }
         }
     }

@@ -59,14 +59,16 @@ class MqConsumer(private val config: PropertiesConfig.MqProperties, private val 
 }
 
 fun PropertiesConfig.MqProperties.connect(): Connection =
-    MQConnectionFactory()
-        .apply {
-            this.transportType = WMQConstants.WMQ_CM_CLIENT
-            this.hostName = host
-            this.port = port
-            this.channel = channel
-            this.queueManager = managerName
-            this.targetClientMatching = true
-            this.userAuthenticationMQCSP = true
-        }
-        .createConnection(username, password)
+    this.let { cfg ->
+        MQConnectionFactory()
+            .apply {
+                transportType = WMQConstants.WMQ_CM_CLIENT
+                hostName = cfg.host
+                port = cfg.port
+                channel = cfg.channel
+                queueManager = cfg.managerName
+                targetClientMatching = true
+                userAuthenticationMQCSP = true
+            }
+            .createConnection(username, password)
+    }
