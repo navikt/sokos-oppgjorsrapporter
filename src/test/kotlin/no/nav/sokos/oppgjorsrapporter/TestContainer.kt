@@ -31,5 +31,10 @@ object TestContainer {
     }
 
     private val mqImage = "icr.io/ibm-messaging/mq:9.4.0.6-r1"
-    val mq: MQContainer by lazy { MQContainer(DockerImageName.parse(mqImage)).acceptLicense().apply { start() } }
+    val mq: MQContainer by lazy {
+        MQContainer(DockerImageName.parse(mqImage)).acceptLicense().apply {
+            withReuse(System.getenv("GITHUB_ACTIONS") == null)
+            start()
+        }
+    }
 }

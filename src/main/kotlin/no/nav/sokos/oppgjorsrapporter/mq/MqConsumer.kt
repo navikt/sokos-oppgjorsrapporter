@@ -40,7 +40,7 @@ class MqConsumer(val config: PropertiesConfig.MqProperties) {
         session = connection.createSession(Session.SESSION_TRANSACTED)
 
         logger.info { "Kobler seg til MQ køen ${config.mqManagerName}" }
-        val queue = nonJmsQueue(config.mqManagerName)
+        val queue = nonJmsQueue(config.mqQueueName)
         initBlock(session, queue)
 
         connection.start()

@@ -74,22 +74,23 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
 
         if (config.mqConfiguration.enabled) {
             provide<MqConsumer> { MqConsumer(config.mqConfiguration) }
-            provide("mqJob") {
-                    val mqErrors = mutableListOf<String>()
-                    applicationState.registerSystem("MQ") { mqErrors }
+        }
+    }
 
-                    val exceptionHandler = CoroutineExceptionHandler { _, e ->
-                        logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet" }
-                        // Ved å legge til en feil på et registrert system, flippes applicationState.ready til `false`
-                        mqErrors.add(e.toString())
-                        applicationState.alive = false
-                    }
+    // Start MQ job if enabled
+    if (config.mqConfiguration.enabled) {
+        val mqErrors = mutableListOf<String>()
+        applicationState.registerSystem("MQ") { mqErrors }
 
-                    with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                        launch { RapportMottak(applicationState, resolve()).start() }
-                    }
-                }
-                .cleanup { it.cancel() }
+        val exceptionHandler = CoroutineExceptionHandler { _, e ->
+            logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet" }
+            mqErrors.add(e.toString())
+            applicationState.alive = false
+        }
+
+        CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob()).launch {
+            val mqConsumer = dependencies.resolve<MqConsumer>()
+            RapportMottak(applicationState, mqConsumer).start()
         }
     }
 
