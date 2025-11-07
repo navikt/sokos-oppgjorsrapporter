@@ -10,6 +10,7 @@ import javax.jms.TextMessage
 import kotlin.time.Duration.Companion.seconds
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
+import no.nav.sokos.oppgjorsrapporter.metrics.tellMottak
 
 class MqConsumer(private val config: PropertiesConfig.MqProperties, private val queueName: String) {
     private val logger = KotlinLogging.logger {}
@@ -45,11 +46,13 @@ class MqConsumer(private val config: PropertiesConfig.MqProperties, private val 
         try {
             if (!connected) connect()
             return when (val message = mqConsumer.receive(0.5.seconds.inWholeMilliseconds)) {
-                is TextMessage ->
-                    message.text.also {
-                        //   Metrics.orderCounter.inc()
-                    }
-                else -> null
+                is TextMessage -> {
+                    message.also { it.tellMottak(queueName) }.text
+                }
+                else -> {
+                    message?.tellMottak(queueName)
+                    null
+                }
             }
         } catch (ex: Exception) {
             connected = false
