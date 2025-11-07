@@ -5,6 +5,7 @@ import io.ktor.server.routing.RoutingContext
 import io.micrometer.core.instrument.Tag
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import javax.jms.Message
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.auth.getBruker
@@ -63,4 +64,24 @@ suspend fun RoutingContext.tellApiRequest() {
                 { "unknown" },
             )
     apiRequestsTeller.withTags(basisTags.plus(Tag.of("auth", auth))).increment()
+}
+
+private val mottatteJmsMeldingerTeller =
+    io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_received_jms_messages")
+        .description("Teller antall mottatte JMS-meldinger")
+        .withRegistry(prometheusMeterRegistry)
+
+fun Message.tellMottak(queueName: String) {
+    mottatteJmsMeldingerTeller
+        .withTags(
+            listOf(
+                Tag.of("queue", queueName),
+                Tag.of("class", this.javaClass.canonicalName),
+                Tag.of("type", this.jmsType ?: "null"),
+                Tag.of("destination", this.jmsDestination?.toString() ?: "null"),
+                Tag.of("reply_to", this.jmsReplyTo?.toString() ?: "null"),
+                Tag.of("priority", this.jmsPriority.toString()),
+            )
+        )
+        .increment()
 }
