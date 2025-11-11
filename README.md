@@ -144,7 +144,7 @@ For å kunne late som om man aksesserer applikasjonens API som et lønns- og per
  10. Lag en fork av [hag-token-tjeneste](https://github.com/navikt/hag-token-tjeneste), juster navn/scope/etc. til å matche ditt behov, og deploy denne
  11. Kopier Bruno-collection fra [hag-ulv](https://github.com/navikt/hag-ulv/tree/main/kataloger/tigersys) og juster til å matche ditt behov; for denne applikasjonen så finnes resultatet
      [her](kataloger/liksom-lps)
- 12. Importer Bruno-collectionen i [Bruno](https://www.usebruno.com/) 
+ 12. Importer Bruno-collectionen i [Bruno](https://www.usebruno.com/)
  13. Registrer et "system" i Altinns systemregister for LPSet ved å kjøre `registrer nytt system`-requesten i Bruno.
      (Senere API-kall identifiserer dette systemet med `systemId`-en som er definert som en folder-variabel, slik at man ikke trenger å huske UUIDen man får tilbake i API-responsen.)
  14. Velg en passende syntetisk organisasjon i [Tenor](https://testdata.skatteetaten.no/web/testnorge/soek/brreg-er-fr) som skal representere LPS-kunden; for "refusjon arbeidsgiver" (aka K27)
@@ -158,11 +158,15 @@ For å kunne late som om man aksesserer applikasjonens API som et lønns- og per
      Godkjenn systembrukeren.
  18. Kjør `hent rapport`-requesten i Bruno, og se at den gir forventet respons
 
+Hvis man skal gjøre slike tester flere ganger, for eksempel for å teste forskjellige variasjoner av systembruker-rettigheter, er det enklest å slette systembrukeren før man lager en ny.
+Det gjøres [herfra i TT02](https://am.ui.tt02.altinn.no/accessmanagement/ui/systemuser/overview) - logg inn som LPS-kunden og sørg for at du representerer riktig org.
+Den siden kommer forhåpentligvis å bli lettere å finne i Altinn-GUIet etterhvert, men for nå finnes den i alle fall her.
+
 # 6. Drift og støtte
 
 ### Logging
 
-Feilmeldinger og infomeldinger som ikke innheholder sensitive data logges til [Grafana Loki](https://docs.nais.io/observability/logging/#grafana-loki).  
+Feilmeldinger og infomeldinger som ikke innheholder sensitive data logges til [Grafana Loki](https://docs.nais.io/observability/logging/#grafana-loki).
 Sensitive meldinger logges til [Team Logs](https://doc.nais.io/observability/logging/how-to/team-logs/).
 
 ### Kubectl
