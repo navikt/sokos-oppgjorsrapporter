@@ -1,14 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter.config
 
-import com.natpryce.konfig.ConfigurationMap
-import com.natpryce.konfig.ConfigurationProperties
-import com.natpryce.konfig.EnvironmentVariables
-import com.natpryce.konfig.Key
-import com.natpryce.konfig.overriding
-import com.natpryce.konfig.stringType
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.config.ApplicationConfigValue
-import java.io.File
 import java.net.URI
 
 fun configFrom(config: ApplicationConfig): PropertiesConfig.Configuration {
@@ -36,35 +29,6 @@ class CompositeApplicationConfig(private val primary: ApplicationConfig, private
 }
 
 object PropertiesConfig {
-    private val defaultProperties = ConfigurationMap(mapOf("NAIS_APP_NAME" to "sokos-oppgjorsrapporter", "NAIS_NAMESPACE" to "okonomi"))
-
-    private val localDevProperties = ConfigurationMap(mapOf("APPLICATION_PROFILE" to Profile.LOCAL.toString()))
-
-    private val devProperties = ConfigurationMap(mapOf("APPLICATION_PROFILE" to Profile.DEV.toString()))
-    private val prodProperties = ConfigurationMap(mapOf("APPLICATION_PROFILE" to Profile.PROD.toString()))
-
-    private val config =
-        when (System.getenv("NAIS_CLUSTER_NAME") ?: System.getProperty("NAIS_CLUSTER_NAME")) {
-            "dev-gcp" ->
-                ConfigurationProperties.systemProperties() overriding
-                    EnvironmentVariables() overriding
-                    devProperties overriding
-                    defaultProperties
-            "prod-gcp" ->
-                ConfigurationProperties.systemProperties() overriding
-                    EnvironmentVariables() overriding
-                    prodProperties overriding
-                    defaultProperties
-            else ->
-                ConfigurationProperties.systemProperties() overriding
-                    EnvironmentVariables() overriding
-                    ConfigurationProperties.fromOptionalFile(File("defaults.properties")) overriding
-                    localDevProperties overriding
-                    defaultProperties
-        }
-
-    operator fun get(key: String): String = config[Key(key, stringType)]
-
     data class Configuration(
         val applicationProperties: ApplicationProperties,
         val securityProperties: SecurityProperties,
@@ -81,10 +45,7 @@ object PropertiesConfig {
         )
     }
 
-    data class ApplicationProperties(
-        val naisAppName: String = get("NAIS_APP_NAME"),
-        val profile: Profile = Profile.valueOf(get("APPLICATION_PROFILE")),
-    ) {
+    data class ApplicationProperties(val naisAppName: String, val profile: Profile) {
         constructor(
             source: ConfigSource
         ) : this(naisAppName = source.get("APP_NAME"), profile = Profile.valueOf(source.get("APPLICATION_PROFILE")))

@@ -88,9 +88,6 @@ dependencies {
     runtimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
     runtimeOnly("net.logstash.logback:logstash-logback-encoder:$logstashVersion")
 
-    // Config
-    implementation("com.natpryce:konfig:$konfigVersion")
-
     // Inntil vi får tenkt gjennom om vi vil gjøre serialization etc. annerledes så henter vi inn Team HAG sine utils
     implementation("no.nav.helsearbeidsgiver:utils:${utilsVersion}")
     implementation("no.nav.helsearbeidsgiver:altinn-pdp-client:${pdpClientVersion}")
