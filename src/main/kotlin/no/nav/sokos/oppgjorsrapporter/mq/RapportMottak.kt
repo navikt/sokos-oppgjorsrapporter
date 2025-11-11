@@ -5,43 +5,41 @@ package no.nav.sokos.oppgjorsrapporter.mq
 
 import java.math.BigDecimal
 import java.time.LocalDate
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
-import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
-import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 
-class RapportMottak(
-    private val applicationState: ApplicationState,
-    private val refusjonMqConsumer: MqConsumer,
-    private val rapportRepository: RapportRepository,
-) {
+class RapportMottak(private val refusjonMqConsumer: MqConsumer, private val rapportService: RapportService) {
     private val logger = KotlinLogging.logger {}
 
     suspend fun run() {
-        while (applicationState.ready) {
+        while (true) {
+            currentCoroutineContext().ensureActive()
             hentBestilling { process(it) }
         }
     }
 
-    fun process(dokument: String) {
-        val bestilling = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(dokument)
+    fun process(melding: Melding) {
+        val bestilling = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(melding.data)
         logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
-        // TODO: prosesser mottate rapporter
-        rapportRepository.lagreBestilling(bestilling)
+        rapportService.lagreBestilling(melding.kilde, RapportType.K27, melding.data)
     }
 
-    private suspend fun hentBestilling(block: suspend (String) -> Unit) {
-        refusjonMqConsumer.receive()?.let { dokument ->
-            logger.info(TEAM_LOGS_MARKER) { "Melding mottatt: $dokument" }
+    private suspend fun hentBestilling(block: suspend (Melding) -> Unit) {
+        refusjonMqConsumer.receive()?.let { melding ->
+            logger.info(TEAM_LOGS_MARKER) { "Melding mottatt: $melding" }
             try {
-                block(dokument)
+                block(melding)
                 refusjonMqConsumer.commit()
             } catch (ex: Exception) {
                 refusjonMqConsumer.rollback()

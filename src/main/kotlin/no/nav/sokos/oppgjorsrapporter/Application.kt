@@ -1,7 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter
 
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationStarted
 import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.addShutdownHook
@@ -14,10 +13,10 @@ import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.slf4j.MDCContext
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
@@ -34,12 +33,14 @@ import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
+import no.nav.sokos.oppgjorsrapporter.metrics.registerGauge
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
 import no.nav.sokos.oppgjorsrapporter.mq.RapportMottak
 import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
 private val logger = KotlinLogging.logger {}
 
@@ -91,32 +92,24 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
                 provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.queueName) }
 
                 val mottakKey = "mq.mottak.${inQueue.key}"
-                provide(mottakKey) { RapportMottak(resolve(), resolve(consumerKey), resolve()) }
+                provide(mottakKey) { RapportMottak(resolve(consumerKey), resolve()) }
 
                 val job =
                     with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                        launch(start = CoroutineStart.LAZY) { resolve<RapportMottak>(mottakKey).run() }
+                        launch { resolve<RapportMottak>(mottakKey).run() }
                     }
-                // Vent med å faktisk starte jobben til applikasjonen er ferdig startet - slik at jobben kan gå ut fra at
-                // applicationState.ready har blitt true før den starter
-                this@module.monitor.subscribe(ApplicationStarted) { job.start() }
-
-                // Hvis jobben mot formodning gjør seg ferdig (uten å ha feilet eller ha blitt kansellert, altså med cause == null) mens
-                // applikasjonen fortsatt er started, er det noe muffens på gang; det er kjipt om applikasjonen fortsetter å kjøre uten å ha
-                // noen jobb som kan ta imot nye meldinger fra MQ
-                job.invokeOnCompletion { cause ->
-                    if (cause == null && applicationState.started) {
-                        logger.error("Oops: Job for '${inQueue.key}' har gjort seg ferdig selv om applikasjonen fortsatt er 'started'")
-                    }
-                }
-
-                provide("mq.consumejob.${inQueue.key}") { job }
-                    .cleanup {
-                        it.cancel()
-                        // TODO: Dersom en jobb har mottatt en melding og holder på å prosessere den, hadde det vært fint om den fikk lov
-                        //       til å gjøre seg ferdig med prosesseringen før applikasjonen stopper.  Hvordan kan vi få til det?
-                    }
+                provide("mq.consumejob.${inQueue.key}") { job }.cleanup { it.cancel() }
             }
+        }
+    }
+
+    runBlocking {
+        RapportType.entries.forEach { t ->
+            registerGauge(
+                "uprosessert_bestilling_${t.name}",
+                stateObject = dependencies.resolve<RapportService>(),
+                valueFunction = { it.antallUprosesserteBestillinger(t).toDouble() },
+            )
         }
     }
 

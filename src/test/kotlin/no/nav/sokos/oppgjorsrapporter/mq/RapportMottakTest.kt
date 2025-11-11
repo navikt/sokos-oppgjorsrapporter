@@ -15,7 +15,7 @@ import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.config
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
-import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 
 private val logger: KLogger = KotlinLogging.logger {}
 
@@ -37,19 +37,15 @@ class RapportMottakTest :
                 }
 
             test("RapportMottak klarer å hente meldinger fra MQ") {
-                val repository: RapportRepository = mockk(relaxed = true)
-                TestUtil.withFullApplication(
-                    dbContainer = dbContainer,
-                    mqContainer = mqContainer,
-                    { dependencies.provide { repository } },
-                ) {
+                val service: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
                     // Send melding til køen RapportMottak leser fra, og verifiser at meldingen blir borte (og kanskje noe mer?)
                     val config = application.config()
                     val dokument = javaClass.getResource("/mq/refusjon_bestilling.json")?.readText()!!
 
                     sendMelding(config.mqConfiguration.queues.find { it.key == "refusjon" }?.queueName!!, dokument, config.mqConfiguration)
 
-                    eventually(5.seconds) { verify(exactly = 1) { repository.lagreBestilling(any()) } }
+                    eventually(5.seconds) { verify(exactly = 1) { service.lagreBestilling(any(), any(), any()) } }
                 }
             }
         }

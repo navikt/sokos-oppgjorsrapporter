@@ -3,91 +3,112 @@ package no.nav.sokos.oppgjorsrapporter.rapport
 import java.time.Instant
 import javax.sql.DataSource
 import kotlinx.coroutines.runBlocking
+import kotliquery.Session
+import kotliquery.TransactionalSession
 import kotliquery.sessionOf
 import kotliquery.using
 import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 
-class RapportService(private val dataSource: DataSource, private val repository: RapportRepository) {
+abstract class DatabaseSupport(private val dataSource: DataSource) {
+    protected fun <T> withSession(block: (Session) -> T): T = using(sessionOf(dataSource)) { block(it) }
+
+    protected fun <T> withTransaction(block: (TransactionalSession) -> T): T = withSession { it.transaction { tx -> block(tx) } }
+}
+
+class RapportService(dataSource: DataSource, private val repository: RapportRepository) : DatabaseSupport(dataSource) {
     private val systemBrukernavn = "system"
 
-    fun insert(rapport: UlagretRapport): Rapport =
-        using(sessionOf(dataSource)) {
-            it.transaction { tx ->
-                repository.insert(tx, rapport).also {
-                    repository.audit(
-                        tx,
-                        RapportAudit(
-                            RapportAudit.Id(0),
-                            it.id,
-                            null,
-                            Instant.now(),
-                            RapportAudit.Hendelse.RAPPORT_OPPRETTET,
-                            systemBrukernavn,
-                            null,
-                        ),
-                    )
-                }
-            }
+    fun lagreBestilling(kilde: String, rapportType: RapportType, dokument: String): RapportBestilling = withTransaction {
+        repository.lagreBestilling(
+            it,
+            UlagretRapportBestilling(mottatt = Instant.now(), mottattFra = kilde, dokument = dokument, genererSom = rapportType),
+        )
+    }
+
+    fun <T> prosesserBestilling(block: (RapportBestilling) -> T): T? = withTransaction { tx ->
+        repository.finnUprosessertBestilling(tx)?.let { bestilling ->
+            // TODO: Er det innafor å la caller bestemme hele prosesserings-oppførselen?  Det gjør jo testing lettere, men...
+            block(bestilling).also { repository.markerBestillingProsessert(tx, bestilling.id) }
         }
+    }
 
-    fun findById(id: Rapport.Id): Rapport? = using(sessionOf(dataSource)) { it.transaction { tx -> repository.findById(tx, id) } }
+    fun antallUprosesserteBestillinger(rapportType: RapportType): Long = withTransaction {
+        repository.antallUprosesserteBestillinger(it, rapportType)
+    }
 
-    fun listForOrg(orgNr: OrgNr): List<Rapport> = using(sessionOf(dataSource)) { it.transaction { tx -> repository.listForOrg(tx, orgNr) } }
-
-    fun insertVariant(variant: UlagretVariant): Variant =
-        using(sessionOf(dataSource)) {
-            it.transaction { tx ->
-                repository.insertVariant(tx, variant).also {
-                    repository.audit(
-                        tx,
-                        RapportAudit(
-                            RapportAudit.Id(0),
-                            it.rapportId,
-                            it.id,
-                            Instant.now(),
-                            RapportAudit.Hendelse.VARIANT_OPPRETTET,
-                            systemBrukernavn,
-                            null,
-                        ),
-                    )
-                }
+    fun lagreRapport(rapport: UlagretRapport): Rapport = withTransaction { tx ->
+        repository.lagreRapport(tx, rapport).also { rapport ->
+            val event =
+                RapportAudit(
+                    RapportAudit.Id(0),
+                    rapport.id,
+                    null,
+                    Instant.now(),
+                    RapportAudit.Hendelse.RAPPORT_OPPRETTET,
+                    systemBrukernavn,
+                    null,
+                )
+            repository.finnBestilling(tx, rapport.bestillingId)?.let { bestilling ->
+                repository.audit(
+                    tx,
+                    event.copy(tidspunkt = bestilling.mottatt, hendelse = RapportAudit.Hendelse.RAPPORT_BESTILLING_MOTTATT),
+                )
             }
+            repository.audit(tx, event)
         }
+    }
 
-    fun listVariants(rapportId: Rapport.Id): List<Variant> =
-        using(sessionOf(dataSource)) { it.transaction { tx -> repository.listVariants(tx, rapportId) } }
+    fun finnRapport(id: Rapport.Id): Rapport? = withTransaction { repository.finnRapport(it, id) }
+
+    fun listRapporterForOrg(orgNr: OrgNr): List<Rapport> = withTransaction { repository.listRapporterForOrg(it, orgNr) }
+
+    fun lagreVariant(variant: UlagretVariant): Variant = withTransaction { tx ->
+        repository.lagreVariant(tx, variant).also {
+            repository.audit(
+                tx,
+                RapportAudit(
+                    RapportAudit.Id(0),
+                    it.rapportId,
+                    it.id,
+                    Instant.now(),
+                    RapportAudit.Hendelse.VARIANT_OPPRETTET,
+                    systemBrukernavn,
+                    null,
+                ),
+            )
+        }
+    }
+
+    fun listVarianter(rapportId: Rapport.Id): List<Variant> = withTransaction { repository.listVarianter(it, rapportId) }
 
     fun <T : Any> hentInnhold(
         bruker: AutentisertBruker,
         rapportId: Rapport.Id,
         format: VariantFormat,
         process: suspend (Rapport, ByteArray) -> T?,
-    ): T? =
-        using(sessionOf(dataSource)) {
-            it.transaction { tx ->
-                repository.hentInnhold(tx, rapportId, format)?.let { (rapport, variantId, innhold) ->
-                    runBlocking { process(rapport, innhold) }
-                        ?.apply {
-                            // process() kan returnere null for å indikere at innholdet ikke ble sendt - f.eks. dersom den oppdaget at
-                            // brukeren ikke hadde tilgang.  Kun hvis den returnerer non-null skal vi legge inn en audit-event.
-                            repository.audit(
-                                tx,
-                                RapportAudit(
-                                    RapportAudit.Id(0),
-                                    rapport.id,
-                                    variantId,
-                                    Instant.now(),
-                                    RapportAudit.Hendelse.VARIANT_NEDLASTET,
-                                    brukernavn(bruker),
-                                    null,
-                                ),
-                            )
-                        }
+    ): T? = withTransaction { tx ->
+        repository.hentInnhold(tx, rapportId, format)?.let { (rapport, variantId, innhold) ->
+            runBlocking { process(rapport, innhold) }
+                ?.apply {
+                    // process() kan returnere null for å indikere at innholdet ikke ble sendt - f.eks. dersom den oppdaget at
+                    // brukeren ikke hadde tilgang.  Kun hvis den returnerer non-null skal vi legge inn en audit-event.
+                    repository.audit(
+                        tx,
+                        RapportAudit(
+                            RapportAudit.Id(0),
+                            rapport.id,
+                            variantId,
+                            Instant.now(),
+                            RapportAudit.Hendelse.VARIANT_NEDLASTET,
+                            brukernavn(bruker),
+                            null,
+                        ),
+                    )
                 }
-            }
         }
+    }
 
     private fun brukernavn(bruker: AutentisertBruker) =
         when (bruker) {

@@ -4,12 +4,14 @@ import java.time.Instant
 import java.time.LocalDate
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
 object TestData {
     val rapportMock =
         Rapport(
             id = Rapport.Id(123),
+            bestillingId = RapportBestilling.Id(114),
             orgNr = OrgNr("810007982"),
             type = RapportType.K27,
             tittel = "K27 for Snikende Maur 2024-11-01",

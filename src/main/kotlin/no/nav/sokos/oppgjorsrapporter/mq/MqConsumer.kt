@@ -42,12 +42,15 @@ class MqConsumer(private val config: PropertiesConfig.MqProperties, private val 
 
     fun rollback() = session.rollback()
 
-    fun receive(): String? {
+    fun receive(): Melding? {
         try {
             if (!connected) connect()
             return when (val message = mqConsumer.receive(0.5.seconds.inWholeMilliseconds)) {
                 is TextMessage -> {
-                    message.also { it.tellMottak(queueName) }.text
+                    message.text?.let {
+                        message.tellMottak(queueName)
+                        Melding("MQ manager=${config.managerName} queue=$queueName", it)
+                    }
                 }
                 else -> {
                     message?.tellMottak(queueName)
@@ -60,6 +63,8 @@ class MqConsumer(private val config: PropertiesConfig.MqProperties, private val 
         }
     }
 }
+
+data class Melding(val kilde: String, val data: String)
 
 fun PropertiesConfig.MqProperties.connect(): Connection =
     this.let { cfg ->
