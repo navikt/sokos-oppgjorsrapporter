@@ -24,3 +24,4 @@ jobs:
       - uses: sbdchd/squawk-action@v2
         with:
           files: ${{ steps.modified-migrations.outputs.file_names }}
+          config: ".squawk.toml"

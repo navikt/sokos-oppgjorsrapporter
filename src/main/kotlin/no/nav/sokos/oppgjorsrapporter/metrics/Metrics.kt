@@ -85,3 +85,6 @@ fun Message.tellMottak(queueName: String) {
         )
         .increment()
 }
+
+fun <T> registerGauge(unprefixedName: String, tags: Iterable<Tag> = emptyList(), stateObject: T, valueFunction: (T) -> Double) =
+    prometheusMeterRegistry.gauge("${NAMESPACE}_$unprefixedName", tags, stateObject, valueFunction)

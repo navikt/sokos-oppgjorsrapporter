@@ -20,7 +20,44 @@ enum class RapportType(val altinnRessurs: String) {
     T14("Ikke definert ennå"),
 }
 
+sealed interface RapportBestillingFelter {
+    val mottatt: Instant
+    val mottattFra: String
+    val dokument: String
+    val genererSom: RapportType
+}
+
+data class UlagretRapportBestilling(
+    override val mottatt: Instant,
+    override val mottattFra: String,
+    override val dokument: String,
+    override val genererSom: RapportType,
+) : RapportBestillingFelter
+
+data class RapportBestilling(
+    val id: Id,
+    override val mottatt: Instant,
+    override val mottattFra: String,
+    override val dokument: String,
+    override val genererSom: RapportType,
+    val ferdigProsessert: Instant? = null,
+) : RapportBestillingFelter {
+    @Serializable @JvmInline value class Id(val raw: Long)
+
+    constructor(
+        row: Row
+    ) : this(
+        id = Id(row.long("id")),
+        mottatt = row.instant("mottatt"),
+        mottattFra = row.string("mottatt_fra"),
+        dokument = row.string("dokument"),
+        genererSom = RapportType.valueOf(row.string("generer_som")),
+        ferdigProsessert = row.instantOrNull("ferdig_prosessert"),
+    )
+}
+
 sealed interface RapportFelter {
+    val bestillingId: RapportBestilling.Id
     val orgNr: OrgNr
     val type: RapportType
     val tittel: String
@@ -28,6 +65,7 @@ sealed interface RapportFelter {
 }
 
 data class UlagretRapport(
+    override val bestillingId: RapportBestilling.Id,
     override val orgNr: OrgNr,
     override val type: RapportType,
     override val tittel: String,
@@ -37,6 +75,7 @@ data class UlagretRapport(
 @Serializable
 data class Rapport(
     val id: Id,
+    override val bestillingId: RapportBestilling.Id,
     override val orgNr: OrgNr,
     override val type: RapportType,
     override val tittel: String,
@@ -53,6 +92,7 @@ data class Rapport(
         row: Row
     ) : this(
         id = Id(row.long("id")),
+        bestillingId = RapportBestilling.Id(row.long("bestilling_id")),
         orgNr = OrgNr(row.string("orgnr")),
         type = RapportType.valueOf(row.string("type")),
         tittel = row.string("tittel"),
@@ -123,6 +163,7 @@ data class RapportAudit(
     @JvmInline value class Id(val raw: Long)
 
     enum class Hendelse {
+        RAPPORT_BESTILLING_MOTTATT,
         RAPPORT_OPPRETTET,
         RAPPORT_ARKIVERT,
         VARIANT_OPPRETTET,

@@ -69,7 +69,7 @@ fun Route.rapportApi() {
         autentisertBruker().let { bruker ->
             if (rapporter.orgnr != null) {
                 val orgNr = OrgNr(rapporter.orgnr)
-                val rapporter = rapportService.listForOrg(orgNr)
+                val rapporter = rapportService.listRapporterForOrg(orgNr)
                 val rapportTyperMedTilgang = rapporter.map { it.type }.toSet().filter { harTilgangTilRessurs(bruker, it, orgNr) }
                 val filtrerteRapporter = rapporter.filter { rapportTyperMedTilgang.contains(it.type) }
                 call.respond(filtrerteRapporter)
@@ -83,7 +83,7 @@ fun Route.rapportApi() {
     get<ApiPaths.Rapporter.Id> { rapport ->
         tellApiRequest()
         autentisertBruker().let { bruker ->
-            val rapport = rapportService.findById(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
+            val rapport = rapportService.finnRapport(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
             if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgNr)) {
                 return@get call.respond(HttpStatusCode.NotFound)
             }

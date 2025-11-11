@@ -1,0 +1,3 @@
+# .squawk.toml
+pg_version = "17.0"
+assume_in_transaction = true
