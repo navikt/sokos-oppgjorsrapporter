@@ -5,6 +5,7 @@ package no.nav.sokos.oppgjorsrapporter.mq
 
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -55,7 +56,7 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
         return datarec.joinToString("\n") { byggCsvRad(header, it) }
     }
 
-    fun byggCsvRad(header: Header, data: Data): String {
+    private fun byggCsvRad(header: Header, data: Data): String {
         val beløpIØrer: Long = (data.belop * BigDecimal(100)).toLong()
         val beløpStr = if (beløpIØrer < 0) "${-beløpIØrer}-" else "$beløpIØrer"
         val defaultValue = "0000000000"
@@ -77,7 +78,7 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
     }
 
     fun formaterDatoForCsv(dato: LocalDate?): String {
-        return dato?.toString()?.replace("-", "") ?: ""
+        return dato?.format(DateTimeFormatter.BASIC_ISO_DATE) ?: ""
     }
 
     companion object {
