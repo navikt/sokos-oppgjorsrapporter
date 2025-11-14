@@ -51,6 +51,35 @@ class RapportMottak(private val refusjonMqConsumer: MqConsumer, private val rapp
 
 @Serializable
 data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>) {
+    fun tilCSV(): String {
+        return datarec.joinToString("\n") { byggCsvRad(header, it) }
+    }
+
+    fun byggCsvRad(header: Header, data: Data): String {
+        val beløpIØrer: Long = (data.belop * BigDecimal(100)).toLong()
+        val beløpStr = if (beløpIØrer < 0) "${-beløpIØrer}-" else "$beløpIØrer"
+        val defaultValue = "0000000000"
+        return listOf(
+                data.navenhet,
+                header.orgnr,
+                data.bedriftsnummer,
+                data.kode,
+                header.bankkonto,
+                formaterDatoForCsv(data.fraDato),
+                data.fnr,
+                data.navn,
+                formaterDatoForCsv(data.tilDato),
+                beløpStr,
+                defaultValue,
+                formaterDatoForCsv(data.maxDato),
+            )
+            .joinToString(";")
+    }
+
+    fun formaterDatoForCsv(dato: LocalDate?): String {
+        return dato?.toString()?.replace("-", "") ?: ""
+    }
+
     companion object {
         val json = Json { explicitNulls = false }
     }
