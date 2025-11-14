@@ -3,7 +3,6 @@ package no.nav.sokos.oppgjorsrapporter
 import com.ibm.mq.testcontainers.MQContainer
 import io.ktor.server.application.Application
 import io.ktor.server.config.*
-import io.ktor.server.plugins.di.DI
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.TestApplicationBuilder
 import io.ktor.server.testing.testApplication
@@ -55,9 +54,9 @@ object TestUtil {
                 val url = container.jdbcUrl
                 val prefix = if (url.contains('?')) '&' else '?'
                 val adminJdbcUrl = "${url}${prefix}user=${container.username}&password=${container.password}"
-                put("NAIS_DATABASE_SOKOS_OPPGJORSRAPPORTER_SOKOS_OPPGJORSRAPPORTER_DB_JDBC_URL", adminJdbcUrl)
+                put("db.admin_jdbc_url", adminJdbcUrl)
                 val queryJdbcUrl = "${url}${prefix}user=appbruker&password=test"
-                put("NAIS_DATABASE_APPBRUKER_SOKOS_OPPGJORSRAPPORTER_DB_JDBC_URL", queryJdbcUrl)
+                put("db.query_jdbc_url", queryJdbcUrl)
             }
             .also {
                 // Sørg for at lokal database har en egen 'appbruker'-bruker på samme måte som spesifisert i Nais-specen - slik at

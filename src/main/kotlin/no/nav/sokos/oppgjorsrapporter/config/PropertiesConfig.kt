@@ -51,19 +51,14 @@ object PropertiesConfig {
         ) : this(naisAppName = source.get("APP_NAME"), profile = Profile.valueOf(source.get("APPLICATION_PROFILE")))
     }
 
-    data class PostgresProperties(val adminJdbcUrl: String, val queryJdbcUrl: String) {
+    data class PostgresProperties(val adminJdbcUrl: String, val queryJdbcUrl: String, val databaseName: String) {
         constructor(
             source: ConfigSource
         ) : this(
-            adminJdbcUrl = source.get("${naisPrefix}_${defaultUser}_${dbName}_JDBC_URL"),
-            queryJdbcUrl = source.get("${naisPrefix}_APPBRUKER_${dbName}_JDBC_URL"),
+            adminJdbcUrl = source.get("db.admin_jdbc_url"),
+            queryJdbcUrl = source.get("db.query_jdbc_url"),
+            databaseName = source.get("db.name"),
         )
-
-        companion object {
-            private val naisPrefix = "NAIS_DATABASE"
-            private val defaultUser = "SOKOS_OPPGJORSRAPPORTER"
-            private val dbName = "SOKOS_OPPGJORSRAPPORTER_DB"
-        }
     }
 
     data class MqProperties(
