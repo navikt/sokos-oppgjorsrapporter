@@ -2,7 +2,9 @@ group = "no.nav.sokos"
 
 val flywayVersion = "11.16.0"
 val hikariVersion = "7.0.2"
+val ibmMqVersion = "9.4.4.0"
 val janinoVersion = "3.1.12"
+val jsonUnitVersion = "4.1.1"
 val konfigVersion = "1.6.10.0"
 val kotestVersion = "6.0.4"
 val kotlinLoggingVersion = "3.0.5"
@@ -14,11 +16,11 @@ val logstashVersion = "9.0"
 val micrometerVersion = "1.16.0"
 val mockOAuth2ServerVersion = "3.0.1"
 val mockkVersion = "1.14.6"
+val pdpClientVersion = "1.0.0"
 val postgresVersion = "42.7.8"
 val testcontainersVersion = "1.21.3"
 val tokenSupportVersion = "5.0.30"
 val utilsVersion = "0.10.1"
-val pdpClientVersion = "1.0.0"
 
 plugins {
     application
@@ -46,8 +48,9 @@ repositories {
 
 dependencies {
 
+
     // Ktor server
-    implementation("io.ktor:ktor-server-call-logging-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-di:$ktorVersion")
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
@@ -57,12 +60,16 @@ dependencies {
     // Ktor client
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-client-apache5-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-logging:${ktorVersion}")
 
     // Database
     implementation("com.zaxxer:HikariCP:$hikariVersion")
     implementation("org.postgresql:postgresql:$postgresVersion")
     implementation("com.github.seratch:kotliquery:$kotliqueryVersion")
     implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
+
+    // MQ
+    implementation("com.ibm.mq:com.ibm.mq.allclient:${ibmMqVersion}")
 
     // Security
     implementation("no.nav.security:token-validation-ktor-v3:${tokenSupportVersion}")
@@ -81,9 +88,6 @@ dependencies {
     runtimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
     runtimeOnly("net.logstash.logback:logstash-logback-encoder:$logstashVersion")
 
-    // Config
-    implementation("com.natpryce:konfig:$konfigVersion")
-
     // Inntil vi får tenkt gjennom om vi vil gjøre serialization etc. annerledes så henter vi inn Team HAG sine utils
     implementation("no.nav.helsearbeidsgiver:utils:${utilsVersion}")
     implementation("no.nav.helsearbeidsgiver:altinn-pdp-client:${pdpClientVersion}")
@@ -97,6 +101,9 @@ dependencies {
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
+    testImplementation("com.ibm.mq:mq-java-testcontainer:1.21.2")
+    testImplementation("net.javacrumbs.json-unit:json-unit:${jsonUnitVersion}")
+    testImplementation("net.javacrumbs.json-unit:json-unit-assertj:${jsonUnitVersion}")
 }
 
 kotlin {

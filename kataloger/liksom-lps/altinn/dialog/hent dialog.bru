@@ -1,18 +1,21 @@
 meta {
-  name: hent dialoger med tidsfilter
+  name: hent dialog
   type: http
-  seq: 5
+  seq: 1
 }
 
 get {
-  url: https://platform.tt02.altinn.no/dialogporten/api/v1/enduser/dialogs?party=urn:altinn:organization:identifier-no:{{kundeSystembrukerOrgnr}}&updatedAfter=2025-06-20T05:02:41Z
+  url: https://platform.tt02.altinn.no/dialogporten/api/v1/enduser/dialogs/{{dialogId}}
   body: none
   auth: none
 }
 
 params:query {
-  party: urn:altinn:organization:identifier-no:{{kundeSystembrukerOrgnr}}
-  updatedAfter: 2025-06-20T05:02:41Z
+  ~serviceResource: nav_sykepenger_dialogporten
+}
+
+vars:pre-request {
+  dialogId: 019a05e5-be2a-7776-a25d-cf414c35517f
 }
 
 script:pre-request {
@@ -23,7 +26,7 @@ script:pre-request {
 }
 
 docs {
-  Hent dialoger fra Dialogporten.
+  Hent dialog fra Dialogporten.
   
   Swagger: https://platform.tt02.altinn.no/dialogporten/swagger/index.html#/Enduser
 }

@@ -26,6 +26,26 @@
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${NAIS_POD_NAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
             <includeContext>false</includeContext>
+            <!--
+              I sokos-utbetaling-api har vi slitt med at logging til Team Logs
+              innimellom stopper opp.  Det kan se ut til at dette henger sammen
+              med logging av (veldig) lange meldinger - type logging av hele
+              JSON-response-body vi får fra UR, som kan være >10MB.
+
+              Det er litt uklart hva som får logging til å stoppe helt opp, men
+              kjent at Google ikke aksepterer meldinger som er >256k.
+
+              Under er det forsøkt gjort en workaround for dette - inspirert av
+              https://github.com/logfellow/logstash-logback-encoder/issues/298
+            -->
+            <!-- Turn off the default message provider. -->
+            <fieldNames>
+                <message>[ignore]</message>
+            </fieldNames>
+            <!-- Outputs the message field, while truncating long messages. -->
+            <provider class="net.logstash.logback.composite.loggingevent.LoggingEventPatternJsonProvider">
+                <pattern>{"message":"%replace(%message){'^(.{8192}).+(.{2048})$', 'TRUNCATED $1 ... $2'}"}</pattern>
+            </provider>
         </encoder>
     </appender>
 
@@ -51,7 +71,7 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <pattern>
-                %green(%d{HH:mm:ss}) %cyan([%-5.5t]) %boldCyan(%0.-5p) %yellow(%logger{36}) %cyan(%class.%M) : %m%n
+                %green(%d{HH:mm:ss}) %cyan([%t]) %boldCyan(%0.-5p) %yellow(%logger{36}) %cyan(%class.%M) : %m%n
             </pattern>
         </encoder>
     </appender>
@@ -82,5 +102,6 @@
 
     <logger name="no.nav.sokos.oppgjorsrapporter" level="INFO"/>
     <logger name="no.nav.security.token.support" level="TRACE"/>
+<!--    <logger name="io.micrometer.prometheusmetrics.PrometheusMeterRegistry" level="DEBUG"/>-->
 
 </configuration>

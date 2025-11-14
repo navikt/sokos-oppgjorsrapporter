@@ -35,17 +35,12 @@ APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening](https://github.com
 Det finnes flere alternativer til [testcontainer-kompatible container runtimes](https://java.testcontainers.org/supported_docker_environment/).
 På en Mac kan man nokså kjapt få et Docker-oppsett som er testcontainers-kompatibelt slik:
 
-1. `brew install podman-desktop`
-2. Start "Podman Desktop"-appen
-3. Gå til "Settings", velg "Preferences", og skru på "Docker Compatibility"-knappen
-4. Gå til "Dashboard"
-5. Trykk på knappen for å installere Podman, og gjennomfør installasjonen
-
-   Forhåpentligvis vil `brew install podman` også virke etterhvert, men det har vært issues i f.eks. 5.6.0 med at brew-varianten er pakket uten noen ting den trenger, så som `krunkit`...
-6. Hvis det er et spørsmål om du ønsker "Mac helper"-dingsen på Dashboard-siden, så må du takke ja til det
-7. Hvis det er en "Podman needs to be set up"-boks der, trykker du "Set up" og følger instruksjonene
-8. Nå skal det stå "Podman vX.y.z RUNNING" nederst på Dashboardet, og ting bør virke
-9. Du kan evt. også dobbeltsjekke i Settings -> Docker Compatibility at "System socket status" viser "podman is listening"
+1. Første gangs oppsett av Colima:
+   * Kjør `brew install docker colima`
+   * Kjør `./setupColimaOnMac.sh` for å få konfigurert opp Colima med en virtuell maskin det kan kjøres containere med forskjellige CPU-arkitekturer i
+   * Oppdater environment-variable (som skrevet ut av scriptet) i f.eks. ~/.zshrc, og restart tingene som trenger å restartes (kanskje til og med logge ut og inn av Macen din for å få kjørt .zshrc på ny)
+2. Hvis colima har stoppet (etter reboot e.l., sjekk med `colima status`) kan den startes igjen med `colima start`
+   * Hvis `colima start` av en eller annen grunn ikke klarer å starte colima, er antakelig den enkleste løsningen å kverke den (`colima delete`) og så starte fra punkt 1 over.
 
 ## Henvendelser
 
@@ -149,7 +144,7 @@ For å kunne late som om man aksesserer applikasjonens API som et lønns- og per
  10. Lag en fork av [hag-token-tjeneste](https://github.com/navikt/hag-token-tjeneste), juster navn/scope/etc. til å matche ditt behov, og deploy denne
  11. Kopier Bruno-collection fra [hag-ulv](https://github.com/navikt/hag-ulv/tree/main/kataloger/tigersys) og juster til å matche ditt behov; for denne applikasjonen så finnes resultatet
      [her](kataloger/liksom-lps)
- 12. Importer Bruno-collectionen i [Bruno](https://www.usebruno.com/) 
+ 12. Importer Bruno-collectionen i [Bruno](https://www.usebruno.com/)
  13. Registrer et "system" i Altinns systemregister for LPSet ved å kjøre `registrer nytt system`-requesten i Bruno.
      (Senere API-kall identifiserer dette systemet med `systemId`-en som er definert som en folder-variabel, slik at man ikke trenger å huske UUIDen man får tilbake i API-responsen.)
  14. Velg en passende syntetisk organisasjon i [Tenor](https://testdata.skatteetaten.no/web/testnorge/soek/brreg-er-fr) som skal representere LPS-kunden; for "refusjon arbeidsgiver" (aka K27)
@@ -163,11 +158,15 @@ For å kunne late som om man aksesserer applikasjonens API som et lønns- og per
      Godkjenn systembrukeren.
  18. Kjør `hent rapport`-requesten i Bruno, og se at den gir forventet respons
 
+Hvis man skal gjøre slike tester flere ganger, for eksempel for å teste forskjellige variasjoner av systembruker-rettigheter, er det enklest å slette systembrukeren før man lager en ny.
+Det gjøres [herfra i TT02](https://am.ui.tt02.altinn.no/accessmanagement/ui/systemuser/overview) - logg inn som LPS-kunden og sørg for at du representerer riktig org.
+Den siden kommer forhåpentligvis å bli lettere å finne i Altinn-GUIet etterhvert, men for nå finnes den i alle fall her.
+
 # 6. Drift og støtte
 
 ### Logging
 
-Feilmeldinger og infomeldinger som ikke innheholder sensitive data logges til [Grafana Loki](https://docs.nais.io/observability/logging/#grafana-loki).  
+Feilmeldinger og infomeldinger som ikke innheholder sensitive data logges til [Grafana Loki](https://docs.nais.io/observability/logging/#grafana-loki).
 Sensitive meldinger logges til [Team Logs](https://doc.nais.io/observability/logging/how-to/team-logs/).
 
 ### Kubectl

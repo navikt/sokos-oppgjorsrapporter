@@ -48,9 +48,9 @@ abstract class ApiTest {
     val mockedPdpService = mockk<PdpService>()
 
     val mockOAuth2Server: MockOAuth2Server = MockOAuth2Server().apply { start() }
-    val container = TestContainer.postgres
+    val dbContainer = TestContainer.postgres
     private val testApplication: TestApplication = TestApplication {
-        configureTestApplication(container, mockOAuth2Server)
+        configureTestApplication(dbContainer = dbContainer, server = mockOAuth2Server)
 
         application {
             dependencies.provide<RapportRepository> { mockedRapportRepository }
@@ -102,7 +102,7 @@ class HentApiAuthTest : ApiTest() {
     fun mockRapport(id: Long, orgnr: OrgNr): Rapport = TestData.rapportMock.medId(id).medOrgNr(orgnr)
 
     fun mockHentingAvEnkelRapport(resultat: Rapport) {
-        every { mockedRapportRepository.findById(any(), resultat.id) } returns resultat
+        every { mockedRapportRepository.finnRapport(any(), resultat.id) } returns resultat
         every { mockedRapportRepository.hentInnhold(any(), resultat.id, VariantFormat.Pdf) } returns
             Triple(resultat, Variant.Id(1), TestData.minimalPdf.encodeToByteArray())
         every { mockedRapportRepository.audit(any(), any()) } returns true

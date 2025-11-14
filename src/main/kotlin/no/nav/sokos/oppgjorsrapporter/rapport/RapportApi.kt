@@ -20,7 +20,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.auth.getBruker
 import no.nav.sokos.oppgjorsrapporter.auth.tokenValidationContext
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
-import no.nav.sokos.oppgjorsrapporter.metrics.tellApiRequest
+import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 
 private val logger = KotlinLogging.logger {}
@@ -41,6 +41,7 @@ class ApiPaths {
 fun Route.rapportApi() {
     val rapportService: RapportService by application.dependencies
     val pdpService: PdpService by application.dependencies
+    val metrics: Metrics by application.dependencies
 
     fun harTilgangTilRessurs(bruker: AutentisertBruker, rapportType: RapportType, orgNr: OrgNr): Boolean {
         logger.debug(TEAM_LOGS_MARKER) { "Skal sjekke om $bruker har tilgang til $rapportType for $orgNr" }
@@ -65,53 +66,57 @@ fun Route.rapportApi() {
     get<ApiPaths.Rapporter> { rapporter ->
         // TODO: Listen med tilgjengelige rapporter kan bli lang; trenger vi å lage noe slags paging?  La klient angi hvilken tidsperiode de
         // er interesserte i?
-        tellApiRequest()
-        val bruker = autentisertBruker()
-        if (rapporter.orgnr != null) {
-            val orgNr = OrgNr(rapporter.orgnr)
-            val rapporter = rapportService.listForOrg(orgNr)
-            val rapportTyperMedTilgang = rapporter.map { it.type }.toSet().filter { harTilgangTilRessurs(bruker, it, orgNr) }
-            val filtrerteRapporter = rapporter.filter { rapportTyperMedTilgang.contains(it.type) }
-            call.respond(filtrerteRapporter)
-        } else {
-            // TODO: Finne orgnr brukeren har rettigheter til fra MinID-token, liste for alle dem
-            call.respond(HttpStatusCode.BadRequest, "Mangler orgnr")
+        metrics.tellApiRequest(this)
+        autentisertBruker().let { bruker ->
+            if (rapporter.orgnr != null) {
+                val orgNr = OrgNr(rapporter.orgnr)
+                val rapporter = rapportService.listRapporterForOrg(orgNr)
+                val rapportTyperMedTilgang = rapporter.map { it.type }.toSet().filter { harTilgangTilRessurs(bruker, it, orgNr) }
+                val filtrerteRapporter = rapporter.filter { rapportTyperMedTilgang.contains(it.type) }
+                call.respond(filtrerteRapporter)
+            } else {
+                // TODO: Finne orgnr brukeren har rettigheter til fra MinID-token, liste for alle dem
+                call.respond(HttpStatusCode.BadRequest, "Mangler orgnr")
+            }
         }
     }
 
     get<ApiPaths.Rapporter.Id> { rapport ->
-        tellApiRequest()
-        val bruker = autentisertBruker()
-        val rapport = rapportService.findById(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
-        if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgNr)) {
-            return@get call.respond(HttpStatusCode.NotFound)
+        metrics.tellApiRequest(this)
+        autentisertBruker().let { bruker ->
+            val rapport = rapportService.finnRapport(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
+            if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgNr)) {
+                return@get call.respond(HttpStatusCode.NotFound)
+            }
+            call.respond(rapport)
         }
-        call.respond(rapport)
     }
 
     get<ApiPaths.Rapporter.Id.Innhold> { innhold ->
-        tellApiRequest()
-        val bruker = autentisertBruker()
-        val acceptItems = call.request.acceptItems()
-        val format =
-            VariantFormat.entries.find { f -> acceptItems.any { it.value == f.contentType } }
-                ?: return@get call.respond(HttpStatusCode.NotAcceptable)
-        rapportService.hentInnhold(bruker, Rapport.Id(innhold.parent.id), format) { rapport, innhold ->
-            if (harTilgangTilRessurs(bruker, rapport.type, rapport.orgNr)) {
-                call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold }
-                rapport
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-                null
+        metrics.tellApiRequest(this)
+        autentisertBruker().let { bruker ->
+            val acceptItems = call.request.acceptItems()
+            val format =
+                VariantFormat.entries.find { f -> acceptItems.any { it.value == f.contentType } }
+                    ?: return@get call.respond(HttpStatusCode.NotAcceptable)
+            rapportService.hentInnhold(bruker, Rapport.Id(innhold.parent.id), format) { rapport, innhold ->
+                if (harTilgangTilRessurs(bruker, rapport.type, rapport.orgNr)) {
+                    call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold }
+                    rapport
+                } else {
+                    call.respond(HttpStatusCode.NotFound)
+                    null
+                }
             }
         }
     }
 
     put<ApiPaths.Rapporter.Id.Arkiver> { arkiver ->
-        tellApiRequest()
-        val bruker = autentisertBruker()
-        call.respondText("sett arkivert: $arkiver")
-        TODO()
+        metrics.tellApiRequest(this)
+        autentisertBruker().let { _ ->
+            call.respondText("sett arkivert: $arkiver")
+            TODO()
+        }
     }
 }
 

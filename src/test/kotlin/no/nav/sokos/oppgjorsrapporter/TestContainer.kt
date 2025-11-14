@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter
 
+import com.ibm.mq.testcontainers.MQContainer
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
@@ -27,5 +28,16 @@ object TestContainer {
             waitingFor(Wait.defaultWaitStrategy())
             start()
         }
+    }
+
+    private val mqImage = "icr.io/ibm-messaging/mq:9.4.0.6-r1"
+    val mq: MQContainer by lazy {
+        MQContainer(DockerImageName.parse(mqImage))
+            .acceptLicense()
+            .withStartupMQSC("testcontainer-setup.mqsc")
+            .withChannel("Q1_OPPGJORSRAPPORTER")
+            //            .withReuse(System.getenv("GITHUB_ACTIONS") == null)
+            //            .withWebServer()
+            .apply { start() }
     }
 }

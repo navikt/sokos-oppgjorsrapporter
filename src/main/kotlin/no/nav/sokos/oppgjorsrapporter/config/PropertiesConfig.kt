@@ -1,14 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter.config
 
-import com.natpryce.konfig.ConfigurationMap
-import com.natpryce.konfig.ConfigurationProperties
-import com.natpryce.konfig.EnvironmentVariables
-import com.natpryce.konfig.Key
-import com.natpryce.konfig.overriding
-import com.natpryce.konfig.stringType
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.config.ApplicationConfigValue
-import java.io.File
 import java.net.URI
 
 fun configFrom(config: ApplicationConfig): PropertiesConfig.Configuration {
@@ -36,41 +29,11 @@ class CompositeApplicationConfig(private val primary: ApplicationConfig, private
 }
 
 object PropertiesConfig {
-    private val defaultProperties = ConfigurationMap(mapOf("NAIS_APP_NAME" to "sokos-oppgjorsrapporter", "NAIS_NAMESPACE" to "okonomi"))
-
-    private val localDevProperties = ConfigurationMap(mapOf("APPLICATION_PROFILE" to Profile.LOCAL.toString()))
-
-    private val devProperties = ConfigurationMap(mapOf("APPLICATION_PROFILE" to Profile.DEV.toString()))
-    private val prodProperties = ConfigurationMap(mapOf("APPLICATION_PROFILE" to Profile.PROD.toString()))
-
-    private val config =
-        when (System.getenv("NAIS_CLUSTER_NAME") ?: System.getProperty("NAIS_CLUSTER_NAME")) {
-            "dev-gcp" ->
-                ConfigurationProperties.systemProperties() overriding
-                    EnvironmentVariables() overriding
-                    devProperties overriding
-                    defaultProperties
-            "prod-gcp" ->
-                ConfigurationProperties.systemProperties() overriding
-                    EnvironmentVariables() overriding
-                    prodProperties overriding
-                    defaultProperties
-            else ->
-                ConfigurationProperties.systemProperties() overriding
-                    EnvironmentVariables() overriding
-                    ConfigurationProperties.fromOptionalFile(File("defaults.properties")) overriding
-                    localDevProperties overriding
-                    defaultProperties
-        }
-
-    operator fun get(key: String): String = config[Key(key, stringType)]
-
-    fun getOrEmpty(key: String): String = config.getOrElse(Key(key, stringType), "")
-
     data class Configuration(
         val applicationProperties: ApplicationProperties,
         val securityProperties: SecurityProperties,
         val postgresProperties: PostgresProperties,
+        val mqConfiguration: MqProperties,
     ) {
         constructor(
             source: ConfigSource
@@ -78,31 +41,52 @@ object PropertiesConfig {
             applicationProperties = ApplicationProperties(source),
             securityProperties = SecurityProperties(source),
             postgresProperties = PostgresProperties(source),
+            mqConfiguration = MqProperties(source),
         )
     }
 
-    data class ApplicationProperties(
-        val naisAppName: String = get("NAIS_APP_NAME"),
-        val profile: Profile = Profile.valueOf(get("APPLICATION_PROFILE")),
-    ) {
+    data class ApplicationProperties(val naisAppName: String, val profile: Profile) {
         constructor(
             source: ConfigSource
         ) : this(naisAppName = source.get("APP_NAME"), profile = Profile.valueOf(source.get("APPLICATION_PROFILE")))
     }
 
-    data class PostgresProperties(val adminJdbcUrl: String, val queryJdbcUrl: String) {
+    data class PostgresProperties(val adminJdbcUrl: String, val queryJdbcUrl: String, val databaseName: String) {
         constructor(
             source: ConfigSource
         ) : this(
-            adminJdbcUrl = source.get("${naisPrefix}_${defaultUser}_${dbName}_JDBC_URL"),
-            queryJdbcUrl = source.get("${naisPrefix}_APPBRUKER_${dbName}_JDBC_URL"),
+            adminJdbcUrl = source.get("db.admin_jdbc_url"),
+            queryJdbcUrl = source.get("db.query_jdbc_url"),
+            databaseName = source.get("db.name"),
         )
+    }
 
-        companion object {
-            private val naisPrefix = "NAIS_DATABASE"
-            private val defaultUser = "SOKOS_OPPGJORSRAPPORTER"
-            private val dbName = "SOKOS_OPPGJORSRAPPORTER_DB"
-        }
+    data class MqProperties(
+        val enabled: Boolean,
+        val host: String,
+        val port: Int,
+        val managerName: String,
+        val channel: String,
+        val queues: List<MqQueueProperties>,
+        val username: String,
+        val password: String,
+    ) {
+        constructor(
+            source: ConfigSource
+        ) : this(
+            enabled = source.get("mq.enabled").toBoolean(),
+            host = source.get("mq.host"),
+            port = source.get("mq.port").toInt(),
+            managerName = source.get("mq.managerName"),
+            channel = source.get("mq.channel"),
+            queues = listOf("refusjon").map { MqQueueProperties(source, it) },
+            username = source.get("mq.username"),
+            password = source.get("mq.password"),
+        )
+    }
+
+    data class MqQueueProperties(val key: String, val queueName: String) {
+        constructor(source: ConfigSource, key: String) : this(key, source.get("mq.$key.queueName"))
     }
 
     data class SecurityProperties(

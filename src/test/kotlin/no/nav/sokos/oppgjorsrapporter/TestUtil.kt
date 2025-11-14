@@ -1,8 +1,8 @@
 package no.nav.sokos.oppgjorsrapporter
 
+import com.ibm.mq.testcontainers.MQContainer
 import io.ktor.server.application.Application
 import io.ktor.server.config.*
-import io.ktor.server.plugins.di.DI
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.TestApplicationBuilder
 import io.ktor.server.testing.testApplication
@@ -13,7 +13,9 @@ import kotlinx.coroutines.test.TestResult
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.withMockOAuth2Server
-import no.nav.sokos.oppgjorsrapporter.TestUtil.getOverrides
+import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationProfile
+import no.nav.sokos.oppgjorsrapporter.TestUtil.testContainerMqOverrides
+import no.nav.sokos.oppgjorsrapporter.TestUtil.testcontainerDbOverrides
 import no.nav.sokos.oppgjorsrapporter.config.CompositeApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
 import org.testcontainers.containers.PostgreSQLContainer
@@ -22,21 +24,39 @@ private val logger = KotlinLogging.logger {}
 
 object TestUtil {
     fun withFullApplication(
-        container: PostgreSQLContainer<Nothing>,
+        dbContainer: PostgreSQLContainer<Nothing>,
+        mqContainer: MQContainer? = null,
         dependencyOverrides: Application.() -> Unit = {},
         thunk: suspend ApplicationTestBuilder.() -> Unit,
-    ): TestResult = withMockOAuth2Server { withTestApplication(container, dependencyOverrides, thunk) }
+    ): TestResult = withMockOAuth2Server {
+        withTestApplication(dbContainer = dbContainer, mqContainer = mqContainer, dependencyOverrides = dependencyOverrides, thunk = thunk)
+    }
 
-    fun getOverrides(container: PostgreSQLContainer<Nothing>): MapApplicationConfig =
+    fun testApplicationProfile() = MapApplicationConfig().apply { put("APPLICATION_PROFILE", "LOCAL") }
+
+    fun testContainerMqOverrides(container: MQContainer?) =
+        MapApplicationConfig().apply {
+            val enabled = container != null
+            put("mq.enabled", enabled.toString())
+            if (enabled) {
+                put("mq.host", container.host)
+                put("mq.port", container.port.toString())
+                put("mq.managerName", container.queueManager)
+                put("mq.channel", container.channel)
+                put("mq.username", container.appUser)
+                put("mq.password", container.appPassword)
+            }
+        }
+
+    fun testcontainerDbOverrides(container: PostgreSQLContainer<Nothing>): MapApplicationConfig =
         MapApplicationConfig()
             .apply {
                 val url = container.jdbcUrl
                 val prefix = if (url.contains('?')) '&' else '?'
                 val adminJdbcUrl = "${url}${prefix}user=${container.username}&password=${container.password}"
-                put("NAIS_DATABASE_SOKOS_OPPGJORSRAPPORTER_SOKOS_OPPGJORSRAPPORTER_DB_JDBC_URL", adminJdbcUrl)
+                put("db.admin_jdbc_url", adminJdbcUrl)
                 val queryJdbcUrl = "${url}${prefix}user=appbruker&password=test"
-                put("NAIS_DATABASE_APPBRUKER_SOKOS_OPPGJORSRAPPORTER_DB_JDBC_URL", queryJdbcUrl)
-                put("APPLICATION_PROFILE", "LOCAL")
+                put("db.query_jdbc_url", queryJdbcUrl)
             }
             .also {
                 // Sørg for at lokal database har en egen 'appbruker'-bruker på samme måte som spesifisert i Nais-specen - slik at
@@ -148,12 +168,13 @@ fun MockOAuth2Server.authConfigOverrides() =
     }
 
 fun MockOAuth2Server.withTestApplication(
-    container: PostgreSQLContainer<Nothing>,
+    dbContainer: PostgreSQLContainer<Nothing>,
+    mqContainer: MQContainer? = null,
     dependencyOverrides: Application.() -> Unit = {},
     thunk: suspend ApplicationTestBuilder.() -> Unit,
 ) {
     testApplication {
-        configureTestApplication(container, this@withTestApplication)
+        configureTestApplication(dbContainer = dbContainer, mqContainer = mqContainer, server = this@withTestApplication)
 
         application {
             dependencyOverrides()
@@ -165,19 +186,19 @@ fun MockOAuth2Server.withTestApplication(
     }
 }
 
-fun TestApplicationBuilder.configureTestApplication(container: PostgreSQLContainer<Nothing>, server: MockOAuth2Server) {
+fun TestApplicationBuilder.configureTestApplication(
+    dbContainer: PostgreSQLContainer<Nothing>,
+    mqContainer: MQContainer? = null,
+    server: MockOAuth2Server,
+) {
     environment {
-        config = CompositeApplicationConfig(getOverrides(container), server.authConfigOverrides(), ApplicationConfig("application.conf"))
-    }
-    install(DI) {
-        onShutdown = { dependencyKey, instance ->
-            when (instance) {
-                // Vi ønsker bare en DataSource i bruk for en hel test-kjøring, selv om flere tester start/stopper
-                // applikasjonen;
-                // dette er en opt-out av auto-close-greiene til Kotlins DI-extension:
-                is DataSource -> {}
-                is AutoCloseable -> instance.close()
-            }
-        }
+        config =
+            CompositeApplicationConfig(
+                testApplicationProfile(),
+                testcontainerDbOverrides(dbContainer),
+                testContainerMqOverrides(mqContainer),
+                server.authConfigOverrides(),
+                ApplicationConfig("application.conf"),
+            )
     }
 }
