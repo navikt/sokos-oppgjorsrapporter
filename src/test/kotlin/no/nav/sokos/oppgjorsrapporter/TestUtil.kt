@@ -202,15 +202,4 @@ fun TestApplicationBuilder.configureTestApplication(
                 ApplicationConfig("application.conf"),
             )
     }
-    install(DI) {
-        onShutdown = { dependencyKey, instance ->
-            when (instance) {
-                // Vi ønsker bare en DataSource i bruk for en hel test-kjøring, selv om flere tester start/stopper
-                // applikasjonen;
-                // dette er en opt-out av auto-close-greiene til Kotlins DI-extension:
-                is DataSource -> {}
-                is AutoCloseable -> instance.close()
-            }
-        }
-    }
 }
