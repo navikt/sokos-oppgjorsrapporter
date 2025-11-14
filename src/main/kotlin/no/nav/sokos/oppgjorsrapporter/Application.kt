@@ -1,14 +1,14 @@
 package no.nav.sokos.oppgjorsrapporter
 
 import io.ktor.server.application.Application
-import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.addShutdownHook
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.di.dependencies
-import io.ktor.server.resources.Resources
 import io.ktor.util.AttributeKey
+import io.micrometer.prometheusmetrics.PrometheusConfig
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -16,7 +16,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.slf4j.MDCContext
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
@@ -33,7 +32,7 @@ import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
-import no.nav.sokos.oppgjorsrapporter.metrics.registerGauge
+import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
 import no.nav.sokos.oppgjorsrapporter.mq.RapportMottak
 import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
@@ -51,22 +50,22 @@ fun main() {
 }
 
 fun Application.module(appConfig: ApplicationConfig = environment.config) {
-    val config = resolveConfig(appConfig)
-
-    // Gjør dette tidlig, så Micrometer sitt PrometheusMeterRegistry ikke skriker om at
-    // "A MeterFilter is being configured after a Meter has been registered to this registry"
-    // fordi createDataSource() registrerer Meters
-    commonConfig()
-
-    val applicationState = ApplicationState()
-    DatabaseMigrator(createDataSource(config.postgresProperties.adminJdbcUrl), applicationState)
-
-    DatabaseConfig.init(config)
-
-    install(Resources)
-
+    // For å tillate tester å overstyre dependencies, bør man først
+    // 1. gjøre `provide` av en instans med passende type og evt. navn,
+    // for så evt.
+    // 2. å hente ut den providede instansen fra DI-registeret
+    // før man bruker instansen lenger ned.
     dependencies {
-        provide { applicationState }
+        provide { this@module.resolveConfig(appConfig) }
+        val config: PropertiesConfig.Configuration by this
+
+        provide { ApplicationState() }
+        val applicationState: ApplicationState by this
+
+        DatabaseMigrator(createDataSource(config.postgresProperties.adminJdbcUrl), applicationState)
+        DatabaseConfig.init(config)
+
+        provide { Metrics(PrometheusMeterRegistry(PrometheusConfig.DEFAULT)) }
         provide<DataSource> { DatabaseConfig.dataSource }
         provide(RapportRepository::class)
         provide(RapportService::class)
@@ -89,7 +88,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
 
             config.mqConfiguration.queues.forEach { inQueue ->
                 val consumerKey = "mq.consumer.${inQueue.key}"
-                provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.queueName) }
+                provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.queueName, resolve()) }
 
                 val mottakKey = "mq.mottak.${inQueue.key}"
                 provide(mottakKey) { RapportMottak(resolve(consumerKey), resolve()) }
@@ -103,19 +102,26 @@ fun Application.module(appConfig: ApplicationConfig = environment.config) {
         }
     }
 
-    runBlocking {
-        RapportType.entries.forEach { t ->
-            registerGauge(
-                "uprosessert_bestilling_${t.name}",
-                stateObject = dependencies.resolve<RapportService>(),
-                valueFunction = { it.antallUprosesserteBestillinger(t).toDouble() },
-            )
-        }
+    // Flyttet ned hit, siden vi trenger en DataSource dersom install(MicrometerMetrics) skal inneholde PostgreSQLDatabaseMetrics
+    commonConfig()
+
+    // Bør gjøres etter install(MicrometerMetrics) i commonConfig(), for å unngå "A MeterFilter is being configured after a Meter has been
+    // registered to this registry"-warnings.
+    val metrics: Metrics by dependencies
+    DatabaseConfig.dataSource.metricRegistry = metrics.registry
+
+    val rapportService: RapportService by dependencies
+    RapportType.entries.forEach { t ->
+        metrics.registerGauge(
+            "uprosessert_bestilling_${t.name}",
+            stateObject = rapportService,
+            valueFunction = { it.antallUprosesserteBestillinger(t).toDouble() },
+        )
     }
 
-    applicationLifecycleConfig(applicationState)
-    securityConfig(config)
-    routingConfig(applicationState)
+    applicationLifecycleConfig()
+    securityConfig()
+    routingConfig()
 }
 
 val ConfigAttributeKey = AttributeKey<PropertiesConfig.Configuration>("config")

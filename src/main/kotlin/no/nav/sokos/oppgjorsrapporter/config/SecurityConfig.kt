@@ -3,6 +3,7 @@ package no.nav.sokos.oppgjorsrapporter.config
 import com.nimbusds.jose.util.DefaultResourceRetriever
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authentication
+import io.ktor.server.plugins.di.dependencies
 import no.nav.security.token.support.core.configuration.ProxyAwareResourceRetriever.Companion.DEFAULT_HTTP_CONNECT_TIMEOUT
 import no.nav.security.token.support.core.configuration.ProxyAwareResourceRetriever.Companion.DEFAULT_HTTP_READ_TIMEOUT
 import no.nav.security.token.support.core.configuration.ProxyAwareResourceRetriever.Companion.DEFAULT_HTTP_SIZE_LIMIT
@@ -19,7 +20,8 @@ enum class AuthenticationType {
     API_INTEGRASJON_ALTINN_SYSTEMBRUKER,
 }
 
-fun Application.securityConfig(config: PropertiesConfig.Configuration) {
+fun Application.securityConfig() {
+    val config: PropertiesConfig.Configuration by dependencies
     authentication {
         AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name.let { azureAd ->
             tokenValidationSupport(

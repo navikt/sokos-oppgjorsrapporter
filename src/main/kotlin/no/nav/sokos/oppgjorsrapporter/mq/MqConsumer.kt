@@ -10,9 +10,9 @@ import javax.jms.TextMessage
 import kotlin.time.Duration.Companion.seconds
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
-import no.nav.sokos.oppgjorsrapporter.metrics.tellMottak
+import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 
-class MqConsumer(private val config: PropertiesConfig.MqProperties, private val queueName: String) {
+class MqConsumer(private val config: PropertiesConfig.MqProperties, private val queueName: String, private val metrics: Metrics) {
     private val logger = KotlinLogging.logger {}
 
     private lateinit var session: Session
@@ -48,12 +48,12 @@ class MqConsumer(private val config: PropertiesConfig.MqProperties, private val 
             return when (val message = mqConsumer.receive(0.5.seconds.inWholeMilliseconds)) {
                 is TextMessage -> {
                     message.text?.let {
-                        message.tellMottak(queueName)
+                        metrics.tellMottak(message, queueName)
                         Melding("MQ manager=${config.managerName} queue=$queueName", it)
                     }
                 }
                 else -> {
-                    message?.tellMottak(queueName)
+                    message?.let { metrics.tellMottak(it, queueName) }
                     null
                 }
             }
