@@ -49,7 +49,6 @@ class RapportMottak(private val refusjonMqConsumer: MqConsumer, private val rapp
     }
 }
 
-// TODO: mulig at det kommer endringer på denne når vi vet hvordan strukturen til det Trond leverer blir
 @Serializable
 data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>) {
     companion object {
