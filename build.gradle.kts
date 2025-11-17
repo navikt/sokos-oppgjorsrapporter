@@ -1,17 +1,17 @@
 group = "no.nav.sokos"
 
-val flywayVersion = "11.16.0"
+val flywayVersion = "11.17.0"
 val hikariVersion = "7.0.2"
 val ibmMqVersion = "9.4.4.0"
 val janinoVersion = "3.1.12"
-val jsonUnitVersion = "4.1.1"
+val jsonUnitVersion = "5.1.0"
 val konfigVersion = "1.6.10.0"
 val kotestVersion = "6.0.4"
 val kotlinLoggingVersion = "3.0.5"
 val kotlinxSerializationVersion = "1.9.0"
 val kotliqueryVersion = "1.9.1"
 val ktorVersion = "3.3.2"
-val logbackVersion = "1.5.20"
+val logbackVersion = "1.5.21"
 val logstashVersion = "9.0"
 val micrometerVersion = "1.16.0"
 val mockOAuth2ServerVersion = "3.0.1"
@@ -101,7 +101,7 @@ dependencies {
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
-    testImplementation("com.ibm.mq:mq-java-testcontainer:1.21.2")
+    testImplementation("com.ibm.mq:mq-java-testcontainer:2.0.1")
     testImplementation("net.javacrumbs.json-unit:json-unit:${jsonUnitVersion}")
     testImplementation("net.javacrumbs.json-unit:json-unit-assertj:${jsonUnitVersion}")
 }
