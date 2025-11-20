@@ -20,6 +20,7 @@ import kotlinx.io.bytestring.encodeToByteString
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 
 class RapportServiceTest :
     FunSpec({
@@ -135,7 +136,8 @@ class RapportServiceTest :
 
                     val sut: RapportService = application.dependencies.resolve()
                     val orgNr = OrgNr("123456789")
-                    val rapporter = sut.listRapporterForOrg(orgNr)
+                    val rapporter =
+                        sut.listRapporter(InkluderOrgKriterier(setOf(orgNr), RapportType.entries.toSet(), heltAarDateRange(2023), false))
                     rapporter.size shouldBe 2
 
                     rapporter[0].id shouldBe Rapport.Id(1)
@@ -160,13 +162,13 @@ class RapportServiceTest :
                     varianter[0].id shouldBe Variant.Id(3)
                     varianter[0].rapportId shouldBe Rapport.Id(2)
                     varianter[0].format shouldBe VariantFormat.Pdf
-                    varianter[0].filnavn shouldBe "123456789_T14_2024-11-01.pdf"
+                    varianter[0].filnavn shouldBe "123456789_T14_2023-01-01.pdf"
                     varianter[0].bytes shouldBe 5
 
                     varianter[1].id shouldBe Variant.Id(4)
                     varianter[1].rapportId shouldBe Rapport.Id(2)
                     varianter[1].format shouldBe VariantFormat.Csv
-                    varianter[1].filnavn shouldBe "123456789_T14_2024-11-01.csv"
+                    varianter[1].filnavn shouldBe "123456789_T14_2023-01-01.csv"
                     varianter[1].bytes shouldBe 5
                 }
             }

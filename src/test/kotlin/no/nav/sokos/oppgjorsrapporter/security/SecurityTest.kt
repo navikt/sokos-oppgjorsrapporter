@@ -7,10 +7,9 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
-import no.nav.security.mock.oauth2.MockOAuth2Server
-import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
+import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
 import no.nav.sokos.oppgjorsrapporter.withTestApplication
 
 class SecurityTest :
@@ -58,6 +57,3 @@ class SecurityTest :
             }
         }
     })
-
-private fun MockOAuth2Server.tokenFromDefaultProvider(claims: Map<String, Any> = emptyMap()): String =
-    issueToken(issuerId = "default", clientId = "default", tokenCallback = DefaultOAuth2TokenCallback(claims = claims)).serialize()

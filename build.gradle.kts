@@ -16,9 +16,11 @@ val logstashVersion = "9.0"
 val micrometerVersion = "1.16.0"
 val mockOAuth2ServerVersion = "3.0.1"
 val mockkVersion = "1.14.6"
-val pdpClientVersion = "1.0.0"
+val pdpClientVersion = "1.1.0"
 val postgresVersion = "42.7.8"
+val swaggerRequestValidatorVersion = "2.46.0"
 val testcontainersVersion = "1.21.3"
+val threetenExtraVersion = "1.8.0"
 val tokenSupportVersion = "5.0.30"
 val utilsVersion = "0.10.1"
 
@@ -47,8 +49,6 @@ repositories {
 }
 
 dependencies {
-
-
     // Ktor server
     implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktorVersion")
@@ -56,6 +56,9 @@ dependencies {
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-resources:$ktorVersion")
     implementation("io.ktor:ktor-server-swagger:$ktorVersion")
+
+    // Ekstra tid/dato-klasser (utover java.time.*)
+    implementation("org.threeten:threeten-extra:$threetenExtraVersion")
 
     // Ktor client
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
@@ -100,6 +103,7 @@ dependencies {
     testImplementation("io.kotest:kotest-extensions-testcontainers:$kotestVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
+    testImplementation("com.atlassian.oai:swagger-request-validator-restassured:${swaggerRequestValidatorVersion}")
     testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
     testImplementation("com.ibm.mq:mq-java-testcontainer:2.0.1")
     testImplementation("net.javacrumbs.json-unit:json-unit:${jsonUnitVersion}")

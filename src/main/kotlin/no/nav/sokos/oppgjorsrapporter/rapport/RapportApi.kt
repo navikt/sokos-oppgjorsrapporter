@@ -12,8 +12,14 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.application
+import io.ktor.server.routing.get
 import io.ktor.server.routing.put
+import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters.firstDayOfYear
+import java.time.temporal.TemporalAdjusters.lastDayOfYear
+import kotlinx.serialization.Serializable
 import mu.KotlinLogging
+import no.nav.helsearbeidsgiver.utils.json.serializer.LocalDateSerializer
 import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
@@ -22,13 +28,24 @@ import no.nav.sokos.oppgjorsrapporter.auth.tokenValidationContext
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
+import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
+import org.threeten.extra.LocalDateRange
 
 private val logger = KotlinLogging.logger {}
 
 @Resource(path = "/api")
 class ApiPaths {
     @Resource("rapport/v1")
-    class Rapporter(val parent: ApiPaths = ApiPaths(), val inkluderArkiverte: Boolean = false, val orgnr: String? = null) {
+    class Rapporter(
+        val parent: ApiPaths = ApiPaths(),
+        val orgnr: String? = null,
+        val aar: Int? = null,
+        @Serializable(with = LocalDateSerializer::class) val fraDato: LocalDate? = null,
+        @Serializable(with = LocalDateSerializer::class) val tilDato: LocalDate? = null,
+        val rapportType: List<RapportType> =
+            emptyList(), // TODO: Får ikke OpenApiValidationFilter til å virke med array-typet spec for denne.
+        val inkluderArkiverte: Boolean = false,
+    ) {
         @Resource("{id}")
         class Id(val parent: Rapporter = Rapporter(), val id: Long) {
             @Resource("innhold") class Innhold(val parent: Id)
@@ -64,20 +81,37 @@ fun Route.rapportApi() {
     }
 
     get<ApiPaths.Rapporter> { rapporter ->
-        // TODO: Listen med tilgjengelige rapporter kan bli lang; trenger vi å lage noe slags paging?  La klient angi hvilken tidsperiode de
-        // er interesserte i?
+        // TODO: Listen med tilgjengelige rapporter kan bli lang; trenger vi å lage noe slags paging?
         metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
-            if (rapporter.orgnr != null) {
-                val orgNr = OrgNr(rapporter.orgnr)
-                val rapporter = rapportService.listRapporterForOrg(orgNr)
-                val rapportTyperMedTilgang = rapporter.map { it.type }.toSet().filter { harTilgangTilRessurs(bruker, it, orgNr) }
-                val filtrerteRapporter = rapporter.filter { rapportTyperMedTilgang.contains(it.type) }
-                call.respond(filtrerteRapporter)
-            } else {
+            val rapportTyper = rapporter.rapportType.ifEmpty { RapportType.entries }.toSet()
+            val datoRange =
+                rapporter.fraDato?.let { fraDato -> LocalDateRange.ofClosed(fraDato, rapporter.tilDato ?: fraDato.with(lastDayOfYear())) }
+                    ?: rapporter.aar?.let { heltAarDateRange(it) }
+                    ?: LocalDateRange.ofClosed(LocalDate.now().with(firstDayOfYear()), LocalDate.now())
+            val kriterier =
+                when (bruker) {
+                    is Systembruker -> {
+                        // Hvis query-param orgnr er et brukeren ikke har tilgang til, vil PDP-sjekk lenger ned filtrere dette bort
+                        val orgNr = rapporter.orgnr?.let { OrgNr(it) } ?: bruker.userOrg
+                        InkluderOrgKriterier(setOf(orgNr), rapportTyper, datoRange, rapporter.inkluderArkiverte)
+                    }
+                    is EntraId -> {
+                        // TODO: Hvordan skal "egne ansatte" håndteres?
+                        EkskluderOrgKriterier(emptySet(), rapportTyper, datoRange, rapporter.inkluderArkiverte)
+                    }
                 // TODO: Finne orgnr brukeren har rettigheter til fra MinID-token, liste for alle dem
-                call.respond(HttpStatusCode.BadRequest, "Mangler orgnr")
-            }
+                }
+
+            val rapporter = rapportService.listRapporter(kriterier)
+            val rapportTyperMedTilgang =
+                rapporter.map { it.orgNr to it.type }.toSet().filter { (orgnr, type) -> harTilgangTilRessurs(bruker, type, orgnr) }.toSet()
+            val filtrerteRapporter =
+                rapporter.filter { r ->
+                    val key = r.orgNr to r.type
+                    rapportTyperMedTilgang.contains(key)
+                }
+            call.respond(filtrerteRapporter)
         }
     }
 
