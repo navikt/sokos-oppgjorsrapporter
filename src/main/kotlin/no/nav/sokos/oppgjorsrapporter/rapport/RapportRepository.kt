@@ -107,16 +107,31 @@ class RapportRepository {
             .asSingle
             .let { tx.run(it) }
 
-    fun listRapporterForOrg(tx: TransactionalSession, orgNr: OrgNr): List<Rapport> =
-        queryOf(
-                """
-                    SELECT id, bestilling_id, orgnr, type, tittel, dato_valutert, opprettet, arkivert
-                    FROM rapport.rapport
-                    WHERE orgnr = :orgnr
-                """
-                    .trimIndent(),
-                mapOf("orgnr" to orgNr.raw),
-            )
+    fun listRapporter(tx: TransactionalSession, kriterier: RapportKriterier): List<Rapport> =
+        when (kriterier) {
+                is InkluderOrgKriterier -> "orgnr = ANY(:orgnummere)" to kriterier.inkluderte
+                is EkskluderOrgKriterier -> "(NOT orgnr = ANY(:orgnummere))" to kriterier.ekskluderte
+            }
+            .let { (orgnrWhere, orgnummere) ->
+                queryOf(
+                    """
+                            SELECT id, bestilling_id, orgnr, type, tittel, dato_valutert, opprettet, arkivert
+                            FROM rapport.rapport
+                            WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
+                              AND $orgnrWhere
+                              AND dato_valutert BETWEEN :fraDato AND :tilDato
+                              AND (arkivert IS NULL OR :inkluderArkiverte)
+                        """
+                        .trimIndent(),
+                    mapOf(
+                        "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
+                        "orgnummere" to orgnummere.map { it.raw }.toTypedArray(),
+                        "fraDato" to kriterier.periode.start,
+                        "tilDato" to kriterier.periode.end,
+                        "inkluderArkiverte" to kriterier.inkluderArkiverte,
+                    ),
+                )
+            }
             .map { row -> Rapport(row) }
             .asList
             .let { tx.run(it) }

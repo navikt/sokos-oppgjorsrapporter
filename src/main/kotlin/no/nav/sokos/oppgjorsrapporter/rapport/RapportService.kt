@@ -10,6 +10,7 @@ import kotliquery.using
 import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
+import org.threeten.extra.LocalDateRange
 
 abstract class DatabaseSupport(private val dataSource: DataSource) {
     protected fun <T> withSession(block: (Session) -> T): T = using(sessionOf(dataSource)) { block(it) }
@@ -62,7 +63,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
 
     fun finnRapport(id: Rapport.Id): Rapport? = withTransaction { repository.finnRapport(it, id) }
 
-    fun listRapporterForOrg(orgNr: OrgNr): List<Rapport> = withTransaction { repository.listRapporterForOrg(it, orgNr) }
+    fun listRapporter(kriterier: RapportKriterier): List<Rapport> = withTransaction { repository.listRapporter(it, kriterier) }
 
     fun lagreVariant(variant: UlagretVariant): Variant = withTransaction { tx ->
         repository.lagreVariant(tx, variant).also {
@@ -116,3 +117,23 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
             is Systembruker -> "systembruker:system=${bruker.systemId} org=${bruker.userOrg} id=${bruker.userId}"
         }
 }
+
+sealed interface RapportKriterier {
+    val rapportTyper: Set<RapportType>
+    val periode: LocalDateRange
+    val inkluderArkiverte: Boolean
+}
+
+data class InkluderOrgKriterier(
+    val inkluderte: Set<OrgNr>,
+    override val rapportTyper: Set<RapportType>,
+    override val periode: LocalDateRange,
+    override val inkluderArkiverte: Boolean,
+) : RapportKriterier
+
+data class EkskluderOrgKriterier(
+    val ekskluderte: Set<OrgNr>,
+    override val rapportTyper: Set<RapportType>,
+    override val periode: LocalDateRange,
+    override val inkluderArkiverte: Boolean,
+) : RapportKriterier

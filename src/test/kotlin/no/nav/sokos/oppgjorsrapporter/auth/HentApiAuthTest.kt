@@ -22,7 +22,7 @@ import no.nav.helsearbeidsgiver.utils.test.wrapper.genererGyldig
 import no.nav.helsearbeidsgiver.utils.wrapper.Orgnr
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
-import no.nav.sokos.oppgjorsrapporter.configureTestApplication
+import no.nav.sokos.oppgjorsrapporter.configureTestApplicationEnvironment
 import no.nav.sokos.oppgjorsrapporter.module
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
@@ -50,7 +50,7 @@ abstract class ApiTest {
     val mockOAuth2Server: MockOAuth2Server = MockOAuth2Server().apply { start() }
     val dbContainer = TestContainer.postgres
     private val testApplication: TestApplication = TestApplication {
-        configureTestApplication(dbContainer = dbContainer, server = mockOAuth2Server)
+        configureTestApplicationEnvironment(dbContainer = dbContainer, server = mockOAuth2Server)
 
         application {
             dependencies.provide<RapportRepository> { mockedRapportRepository }
