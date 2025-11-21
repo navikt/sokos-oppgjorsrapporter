@@ -474,4 +474,39 @@ class RapportApiTest : FullTestServer() {
                     .trimIndent()
             )
     }
+
+    @Test
+    fun `gir feilmelding GET _api_rapport_v1_$id (for id som ikke finnes)`() {
+        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        val NON_EXISTENT_ID = 4711
+        client()
+            .get("/api/rapport/v1/$NON_EXISTENT_ID")
+            .then()
+            .assertThat()
+            .statusCode(HttpStatusCode.NotFound.value)
+            .extract()
+            .response()!!
+    }
+
+    @Test
+    fun `svarer riktig på GET _api_rapport_v1_$id (for id som finnes)`() {
+        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        val response = client().get("/api/rapport/v1/2").then().assertThat().statusCode(HttpStatusCode.OK.value).extract().response()!!
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                    {
+                        "id": 2,
+                        "bestillingId": 2,
+                        "orgNr": "123456789",
+                        "type": "T14",
+                        "tittel": "T14 for Skinnende Padde 2023-01-01",
+                        "datoValutert": "2023-01-01",
+                        "opprettet": "2023-01-01T08:37:52Z",
+                        "arkivert": null
+                    }
+                """
+                    .trimIndent()
+            )
+    }
 }
