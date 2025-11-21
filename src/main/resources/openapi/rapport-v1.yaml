@@ -75,10 +75,6 @@ paths:
                   value: "Uautorisert tilgang"
         "404":
           description: Not Found
-          content:
-            '*/*':
-              schema:
-                type: object
         "200":
           description: OK
           content:
