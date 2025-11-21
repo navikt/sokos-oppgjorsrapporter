@@ -7,6 +7,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import kotlin.math.abs
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -20,6 +21,8 @@ import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
+
+const val LINJESKIFT = "\r\n"
 
 class RapportMottak(private val refusjonMqConsumer: MqConsumer, private val rapportService: RapportService) {
     private val logger = KotlinLogging.logger {}
@@ -54,7 +57,7 @@ class RapportMottak(private val refusjonMqConsumer: MqConsumer, private val rapp
 @Serializable
 data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>) {
     fun tilCSV(): String {
-        return datarec.joinToString("\r\n") { byggCsvRad(header, it) }
+        return datarec.joinToString(LINJESKIFT) { byggCsvRad(header, it) } + LINJESKIFT
     }
 
     /**
@@ -84,8 +87,8 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
 
         return listOf(
                 data.navenhet,
-                header.orgnr,
-                data.bedriftsnummer,
+                formaterOrganisasjonsnummer(header.orgnr),
+                formaterOrganisasjonsnummer(data.bedriftsnummer),
                 data.kode,
                 data.fnr,
                 formaterDatoForCsv(data.fraDato),
@@ -100,7 +103,7 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
     }
 
     private fun formaterDatoForCsv(dato: LocalDate?): String {
-        return dato?.format(DateTimeFormatter.BASIC_ISO_DATE) ?: "00000000"
+        return dato?.format(DateTimeFormatter.BASIC_ISO_DATE) ?: "0".repeat(8)
     }
 
     /**
@@ -115,14 +118,22 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
      */
     private fun formaterBeløp(belop: BigDecimal): String {
         val beløpIØrer: Long = (belop * BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).longValueExact()
-        val absolutBeløp = Math.abs(beløpIØrer)
+        val absolutBeløp = abs(beløpIØrer)
         val dkSuffiks = if (beløpIØrer < 0) "-" else " "
         return "${absolutBeløp.toString().padStart(10, '0')}$dkSuffiks"
     }
 
-    /** Formaterer navnet ved å erstatte eventuelle semikolon og linjeskift med mellomrom og padde det til 25 tegn. */
+    /** Formaterer navnet ved å erstatte eventuelle semikolon, quote og linjeskift med mellomrom og padde det til 25 tegn. */
     private fun formaterNavn(navn: String): String {
-        return navn.replace(";", " ").replace("\r\n", " ").replace("\n", " ").take(25).padEnd(25, ' ')
+        return navn.replace(Regex("[\";\n\r]+"), " ").trim().take(25).padEnd(25, ' ')
+    }
+
+    /**
+     * Formaterer organisasjonsnummer til 9 siffer ved å legge til ledende nuller om nødvendig. Dette burde egentlig fikses i UR ved at UR
+     * sender oss "nøkkel": "streng-med-tall" istedenfor "nøkkel": tall.
+     */
+    private fun formaterOrganisasjonsnummer(orgnr: Long): String {
+        return orgnr.toString().padStart(9, '0')
     }
 
     companion object {
