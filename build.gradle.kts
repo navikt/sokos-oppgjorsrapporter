@@ -21,7 +21,7 @@ val postgresVersion = "42.7.8"
 val swaggerRequestValidatorVersion = "2.46.0"
 val testcontainersVersion = "1.21.3"
 val threetenExtraVersion = "1.8.0"
-val tokenSupportVersion = "5.0.30"
+val tokenSupportVersion = "6.0.0"
 val utilsVersion = "0.10.1"
 
 plugins {
