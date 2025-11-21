@@ -5,6 +5,8 @@ import java.time.LocalDate
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import no.nav.sokos.oppgjorsrapporter.mq.Data
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.utils.TestData.createDataRec
+import no.nav.sokos.oppgjorsrapporter.utils.TestData.createRefusjonsRapportBestilling
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -73,183 +75,53 @@ class RefusjonsRapportBestillingSerializationTest {
     }
 
     @Test
-    fun `tilCsv skal generere CSV innhold med tom maxDato når maxDato feltet mangler i meldingen fra UR`() {
-        val refusjonMeldingUtenMaxdato =
-            """
-            {
-              "header": {
-                "orgnr": 974600019,
-                "bankkonto": "02470303400",
-                "sumBelop": 9093.00,
-                "valutert": "2025-10-28",
-                "linjer": 1
-              },
-              "datarec": [
-                {
-                  "navenhet": 8020,
-                  "bedriftsnummer": 933001542,
-                  "kode": "H",
-                  "tekst": "Sykepenger feriepenger",
-                  "fnr": "29070049716",
-                  "navn": "wopoj hyfom",
-                  "fraDato": "2025-05-01",
-                  "tilDato": "2025-05-31",
-                  "belop": 9905.00
-                }
-              ]
-            }
-                    """
-                .trimIndent()
+    fun `tilCsv skal generere CSV innhold med riktig format`() {
 
-        val refusjonsRapportBestilling = json.decodeFromString<RefusjonsRapportBestilling>(refusjonMeldingUtenMaxdato)
+        // maxDato (8 siffer) - Maks dato på format ÅÅÅÅMMDD. Settes til "00000000" hvis feltet mangler
+        val dataRecordUtenMaxDato = createDataRec(maxDato = null)
+        val dataRecordMedMaxDato = createDataRec(maxDato = LocalDate.parse("2026-07-31"))
 
-        val forventetCsvInnhold = "8020;974600019;933001542;H;02470303400;20250501;29070049716;wopoj hyfom;20250531;990500;0000000000;"
-        val faktiskCsvInnhold = refusjonsRapportBestilling.tilCSV()
+        // navn (25 tegn) - Navn på person, padding med mellomrom til høyre hvis kortere. Semikolon og linjeskift erstattes med mellomrom
+        val dataRecordMedNavnKortereEnn25Tegn = createDataRec(navn = "Kort navn")
+        val dataRecordMedNavnLengereEnn25Tegn = createDataRec(navn = "Dette navnet er definitivt lengre enn tjuefem tegn")
+        val dataRecordMedNavnMedSemikolon = createDataRec(navn = "Navn;med;semikolon")
+        val dataRecordMedNavnMedEksakt25Tegn = createDataRec(navn = "Navn med nøyaktig tjuefem") // 25 tegn
+        val dataRecordMedNavnMedLinjeskift = createDataRec(navn = "Navn\r\n\r\nmed\nlinjeskift")
 
-        assertThat(faktiskCsvInnhold).isEqualTo(forventetCsvInnhold)
-    }
+        // belop (11 tegn) - Beløp i ører (10 siffer + fortegn). Kreditbeløp (negative) får '-' på slutten, debetbeløp får ' ' (mellomrom)
+        // på slutten
+        val dataRecordMedKreditBeløp = createDataRec(belop = BigDecimal("-9905.00"))
+        val dataRecordMedDebitBeløp = createDataRec(belop = BigDecimal("9905.00"))
+        val dataRecordMedMerSeksDesimaler = createDataRec(belop = BigDecimal("9905.126789"))
 
-    @Test
-    fun `tilCsv skal generere CSV innhold med riktig formatert maxDato når feltet er tilstede i meldingen fra UR`() {
-        val refusjonMeldingMedMaxdato =
-            """
-            {
-              "header": {
-                "orgnr": 974600019,
-                "bankkonto": "02470303400",
-                "sumBelop": 9093.00,
-                "valutert": "2025-10-28",
-                "linjer": 1
-              },
-              "datarec": [
-                {
-                  "navenhet": 8020,
-                  "bedriftsnummer": 933001542,
-                  "kode": "H",
-                  "tekst": "Sykepenger feriepenger",
-                  "fnr": "29070049716",
-                  "navn": "wopoj hyfom",
-                  "fraDato": "2025-05-01",
-                  "tilDato": "2025-05-31",
-                  "belop": 9905.00,
-                  "maxDato": "2026-07-31"
-                }
-              ]
-            }
-                    """
-                .trimIndent()
-
-        val refusjonsRapportBestilling = json.decodeFromString<RefusjonsRapportBestilling>(refusjonMeldingMedMaxdato)
-
+        val refusjonsRapportBestilling =
+            createRefusjonsRapportBestilling(
+                datarec =
+                    listOf(
+                        dataRecordUtenMaxDato,
+                        dataRecordMedMaxDato,
+                        dataRecordMedNavnKortereEnn25Tegn,
+                        dataRecordMedNavnLengereEnn25Tegn,
+                        dataRecordMedNavnMedSemikolon,
+                        dataRecordMedNavnMedEksakt25Tegn,
+                        dataRecordMedNavnMedLinjeskift,
+                        dataRecordMedKreditBeløp,
+                        dataRecordMedDebitBeløp,
+                        dataRecordMedMerSeksDesimaler,
+                    )
+            )
         val forventetCsvInnhold =
-            "8020;974600019;933001542;H;02470303400;20250501;29070049716;wopoj hyfom;20250531;990500;0000000000;20260731"
-        val faktiskCsvInnhold = refusjonsRapportBestilling.tilCSV()
+            "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500 ;0000000000 ;00000000\r\n" +
+                "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500 ;0000000000 ;20260731\r\n" +
+                "8020;974600019;933001542;H;29070049716;20250501;02470303400;Kort navn                ;20250531;0000990500 ;0000000000 ;20260731\r\n" +
+                "8020;974600019;933001542;H;29070049716;20250501;02470303400;Dette navnet er definitiv;20250531;0000990500 ;0000000000 ;20260731\r\n" +
+                "8020;974600019;933001542;H;29070049716;20250501;02470303400;Navn med semikolon       ;20250531;0000990500 ;0000000000 ;20260731\r\n" +
+                "8020;974600019;933001542;H;29070049716;20250501;02470303400;Navn med nøyaktig tjuefem;20250531;0000990500 ;0000000000 ;20260731\r\n" +
+                "8020;974600019;933001542;H;29070049716;20250501;02470303400;Navn  med linjeskift     ;20250531;0000990500 ;0000000000 ;20260731\r\n" +
+                "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500-;0000000000 ;20260731\r\n" +
+                "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500 ;0000000000 ;20260731\r\n" +
+                "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990513 ;0000000000 ;20260731"
 
-        assertThat(faktiskCsvInnhold).isEqualTo(forventetCsvInnhold)
-    }
-
-    @Test
-    fun `tilCsv skal generere CSV innhold med minus fortegn bak beløpet i ører når beløpet er kredit`() {
-        val refusjonMeldingMedKreditBeløp =
-            """
-            {
-              "header": {
-                "orgnr": 974600019,
-                "bankkonto": "02470303400",
-                "sumBelop": 9093.00,
-                "valutert": "2025-10-28",
-                "linjer": 1
-              },
-              "datarec": [
-                {
-                  "navenhet": 8020,
-                  "bedriftsnummer": 933001542,
-                  "kode": "H",
-                  "tekst": "Sykepenger feriepenger",
-                  "fnr": "29070049716",
-                  "navn": "wopoj hyfom",
-                  "fraDato": "2025-05-01",
-                  "tilDato": "2025-05-31",
-                  "belop": 9905.00,
-                  "maxDato": "2026-07-31"
-                }
-              ]
-            }
-                    """
-                .trimIndent()
-
-        val refusjonsRapportBestilling = json.decodeFromString<RefusjonsRapportBestilling>(refusjonMeldingMedKreditBeløp)
-
-        val forventetCsvInnhold =
-            "8020;974600019;933001542;H;02470303400;20250501;29070049716;wopoj hyfom;20250531;990500;0000000000;20260731"
-        val faktiskCsvInnhold = refusjonsRapportBestilling.tilCSV()
-
-        assertThat(faktiskCsvInnhold).isEqualTo(forventetCsvInnhold)
-    }
-
-    @Test
-    fun `tilCsv skal generere CSV innhold med flere linjer når meldingen fra UR har flere linjer i datarec arrayen`() {
-        val refusjonMeldingMedKreditBeløp =
-            """
-            {
-              "header": {
-                "orgnr": 974600019,
-                "bankkonto": "02470303400",
-                "sumBelop": 9093.00,
-                "valutert": "2025-10-28",
-                "linjer": 1
-              },
-              "datarec": [
-                {
-                  "navenhet": 8020,
-                  "bedriftsnummer": 933001542,
-                  "kode": "H",
-                  "tekst": "Sykepenger feriepenger",
-                  "fnr": "29070049716",
-                  "navn": "wopoj hyfom",
-                  "fraDato": "2025-05-01",
-                  "tilDato": "2025-05-31",
-                  "belop": 9905.00
-                },
-                {
-                  "navenhet": 8020,
-                  "bedriftsnummer": 933001542,
-                  "kode": "H",
-                  "tekst": "Sykepenger feriepenger",
-                  "fnr": "29070049716",
-                  "navn": "wopoj hyfom",
-                  "fraDato": "2025-05-01",
-                  "tilDato": "2025-05-31",
-                  "belop": 9905.00,
-                  "maxDato": "2026-07-31"
-                },
-                {
-                  "navenhet": 8020,
-                  "bedriftsnummer": 933001542,
-                  "kode": "H",
-                  "tekst": "Sykepenger feriepenger",
-                  "fnr": "29070049716",
-                  "navn": "wopoj hyfom",
-                  "fraDato": "2025-05-01",
-                  "tilDato": "2025-05-31",
-                  "belop": 9905.00,
-                  "maxDato": "2026-07-31"
-                }
-                
-              ]
-            }
-                    """
-                .trimIndent()
-
-        val refusjonsRapportBestilling = json.decodeFromString<RefusjonsRapportBestilling>(refusjonMeldingMedKreditBeløp)
-
-        val forventetCsvInnhold =
-            """
-                8020;974600019;933001542;H;02470303400;20250501;29070049716;wopoj hyfom;20250531;990500;0000000000;
-                8020;974600019;933001542;H;02470303400;20250501;29070049716;wopoj hyfom;20250531;990500;0000000000;20260731
-                8020;974600019;933001542;H;02470303400;20250501;29070049716;wopoj hyfom;20250531;990500;0000000000;20260731
-            """
-                .trimIndent()
         val faktiskCsvInnhold = refusjonsRapportBestilling.tilCSV()
 
         assertThat(faktiskCsvInnhold).isEqualTo(forventetCsvInnhold)
