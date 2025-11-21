@@ -21,6 +21,7 @@ import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
 import no.nav.sokos.oppgjorsrapporter.module
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -78,6 +79,75 @@ class RapportApiTest : FullTestServer() {
             .port(embeddedServerPort)
 
     @Test
+    fun `gir feilmelding POST _api_rapport_v1 (hvis både aar og fraDato er spesifisert)`() {
+        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "aar": 2025,
+                            "fraDato": "2025-01-01"
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.BadRequest.value)
+                .extract()
+                .response()!!
+        assertThat(response.body().asString()).contains("aar kan ikke kombineres med fraDato")
+    }
+
+    @Test
+    fun `gir feilmelding POST _api_rapport_v1 (hvis både aar og tilDato er spesifisert)`() {
+        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "aar": 2025,
+                            "tilDato": "2025-01-01"
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.BadRequest.value)
+                .extract()
+                .response()!!
+        assertThat(response.body().asString()).contains("aar kan ikke kombineres med tilDato")
+    }
+
+    @Test
+    fun `gir feilmelding POST _api_rapport_v1 (hvis fraDato er etter tilDato)`() {
+        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "fraDato": "2025-01-02",
+                            "tilDato": "2025-01-01"
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.BadRequest.value)
+                .extract()
+                .response()!!
+        assertThat(response.body().asString()).contains("fraDato kan ikke være etter tilDato")
+    }
+
+    @Test
     fun `svarer riktig på POST _api_rapport_v1 (uten søkekriterier i body)`() {
         TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
         val response =
@@ -116,6 +186,247 @@ class RapportApiTest : FullTestServer() {
                             "tittel": "K27 for Luskende Ulv 2024-01-01",
                             "datoValutert": "2024-01-01",
                             "opprettet": "2023-12-31T23:13:54Z",
+                            "arkivert": null
+                        }
+                    ]
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun `svarer riktig på POST _api_rapport_v1 (hvis fraDato er lik tilDato)`() {
+        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "fraDato": "2023-01-01",
+                            "tilDato": "2023-01-01"
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                    [
+                        {
+                            "id": 1,
+                            "bestillingId": 1,
+                            "orgNr": "123456789",
+                            "type": "K27",
+                            "tittel": "K27 for Skinnende Padde 2023-01-01",
+                            "datoValutert": "2023-01-01",
+                            "opprettet": "2022-12-31T23:45:15Z",
+                            "arkivert": null
+                        },
+                        {
+                            "id": 2,
+                            "bestillingId": 2,
+                            "orgNr": "123456789",
+                            "type": "T14",
+                            "tittel": "T14 for Skinnende Padde 2023-01-01",
+                            "datoValutert": "2023-01-01",
+                            "opprettet": "2023-01-01T08:37:52Z",
+                            "arkivert": null
+                        }
+                    ]
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun `svarer riktig på POST _api_rapport_v1 (for perioden 2023-11-01 - 2023-12-31)`() {
+        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "fraDato": "2023-01-01",
+                            "tilDato": "2023-12-31"
+                         }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                    [
+                        {
+                            "id": 1,
+                            "bestillingId": 1,
+                            "orgNr": "123456789",
+                            "type": "K27",
+                            "tittel": "K27 for Skinnende Padde 2023-01-01",
+                            "datoValutert": "2023-01-01",
+                            "opprettet": "2022-12-31T23:45:15Z",
+                            "arkivert": null
+                        },
+                        {
+                            "id": 2,
+                            "bestillingId": 2,
+                            "orgNr": "123456789",
+                            "type": "T14",
+                            "tittel": "T14 for Skinnende Padde 2023-01-01",
+                            "datoValutert": "2023-01-01",
+                            "opprettet": "2023-01-01T08:37:52Z",
+                            "arkivert": null
+                        },
+                        {
+                            "id": 3,
+                            "bestillingId": 3,
+                            "orgNr": "234567890",
+                            "type": "K27",
+                            "tittel": "K27 for Humrende Elg 2023-11-01",
+                            "datoValutert": "2023-11-01",
+                            "opprettet": "2023-11-01T10:57:21Z",
+                            "arkivert": null
+                        },
+                        {
+                            "id": 5,
+                            "bestillingId": 5,
+                            "orgNr": "456789012",
+                            "type": "K27",
+                            "tittel": "K27 for Luskende Ulv 2023-12-31",
+                            "datoValutert": "2023-12-31",
+                            "opprettet": "2023-12-31T22:58:27Z",
+                            "arkivert": null
+                        },
+                        {
+                            "id": 6,
+                            "bestillingId": 6,
+                            "orgNr": "456789012",
+                            "type": "K27",
+                            "tittel": "K27 for Luskende Ulv 2024-01-01",
+                            "datoValutert": "2024-01-01",
+                            "opprettet": "2023-12-31T23:13:54Z",
+                            "arkivert": null
+                        }
+                    ]
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun `svarer riktig på POST _api_rapport_v1 (for perioden 2023-11-01 - 2023-12-31, inkludert arkiverte)`() {
+        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "fraDato": "2023-11-01",
+                            "tilDato": "2023-12-31",
+                            "inkluderArkiverte": true
+                         }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                    [
+                        {
+                            "id": 3,
+                            "bestillingId": 3,
+                            "orgNr": "234567890",
+                            "type": "K27",
+                            "tittel": "K27 for Humrende Elg 2023-11-01",
+                            "datoValutert": "2023-11-01",
+                            "opprettet": "2023-11-01T10:57:21Z",
+                            "arkivert": null
+                        },
+                        {
+                            "id": 4,
+                            "bestillingId": 4,
+                            "orgNr": "345678901",
+                            "type": "K27",
+                            "tittel": "K27 for Lummer Hummer 2023-11-01",
+                            "datoValutert": "2023-11-01",
+                            "opprettet": "2023-11-01T10:57:21Z",
+                            "arkivert": "2023-11-15T07:14:41Z"
+                        },
+                        {
+                            "id": 5,
+                            "bestillingId": 5,
+                            "orgNr": "456789012",
+                            "type": "K27",
+                            "tittel": "K27 for Luskende Ulv 2023-12-31",
+                            "datoValutert": "2023-12-31",
+                            "opprettet": "2023-12-31T22:58:27Z",
+                            "arkivert": null
+                        },
+                        {
+                            "id": 6,
+                            "bestillingId": 6,
+                            "orgNr": "456789012",
+                            "type": "K27",
+                            "tittel": "K27 for Luskende Ulv 2024-01-01",
+                            "datoValutert": "2024-01-01",
+                            "opprettet": "2023-12-31T23:13:54Z",
+                            "arkivert": null
+                        }
+                    ]
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun `svarer riktig på POST _api_rapport_v1 (for spesifikt orgnr i 2023)`() {
+        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "aar": 2023,
+                            "orgnr": "234567890"
+                         }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                    [
+                        {
+                            "id": 3,
+                            "bestillingId": 3,
+                            "orgNr": "234567890",
+                            "type": "K27",
+                            "tittel": "K27 for Humrende Elg 2023-11-01",
+                            "datoValutert": "2023-11-01",
+                            "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": null
                         }
                     ]

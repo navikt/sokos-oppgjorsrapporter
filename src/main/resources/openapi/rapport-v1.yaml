@@ -112,12 +112,8 @@ paths:
               examples:
                 Example#1:
                   value: "Uautorisert tilgang"
-        "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+        "204":
+          description: No Content
   /api/rapport/v1/{id}/innhold:
     get:
       description: >
@@ -180,7 +176,7 @@ components:
           description: >
             Returner kun rapporter utstedt i det angitte året.
 
-            Dersom "fraDato" er angitt, vil "aar" bli ignorert.
+            Dette parameteret kan ikke kombineres med "fraDato" eller "tilDato".
             Hvis verken "aar" eller "fraDato" er angitt, vil kun rapporter for inneværende år returneres.
           type: integer
           example: 2025
@@ -190,7 +186,7 @@ components:
             Returner kun rapporter utstedt på eller etter den angitte datoen.
             Når "fraDato" er angitt, kan "tilDato" også angis; er den ikke angitt, vil kun rapporter fra "fraDato" og ut samme år returneres.
 
-            Dersom "fraDato" er angitt, vil "aar" bli ignorert.
+            Dette parameteret kan ikke kombineres med "aar".
             Hvis verken "aar" eller "fraDato" er angitt, vil kun rapporter for inneværende år returneres.
           type: string
           format: date
@@ -200,6 +196,8 @@ components:
           description: >
             Returner kun rapporter utstedt før eller på den angitte datoen.
             Blir kun tatt hensyn til dersom også "fraDato" er angitt.
+
+            Dette parameteret kan ikke kombineres med "aar".
           type: string
           format: date
           example: "2025-12-24"
