@@ -2,13 +2,10 @@ package no.nav.sokos.oppgjorsrapporter.rapport
 
 import com.atlassian.oai.validator.restassured.OpenApiValidationFilter
 import io.kotest.extensions.testcontainers.toDataSource
-import io.ktor.client.request.get
-import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.port
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -16,7 +13,6 @@ import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.di.dependencies
 import io.restassured.RestAssured
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import net.javacrumbs.jsonunit.assertj.assertThatJson
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
@@ -82,19 +78,27 @@ class RapportApiTest : FullTestServer() {
             .port(embeddedServerPort)
 
     @Test
-    fun `svarer riktig på GET _api_rapport_v1 (uten query params)`() {
+    fun `svarer riktig på POST _api_rapport_v1 (uten søkekriterier i body)`() {
         TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
-        val response = client().get("/api/rapport/v1").then().assertThat().statusCode(HttpStatusCode.OK.value).extract().response()!!
+        val response =
+            client().body("{}").post("/api/rapport/v1").then().assertThat().statusCode(HttpStatusCode.OK.value).extract().response()!!
         assertThatJson(response.body().prettyPrint()).isEqualTo("[]")
     }
 
     @Test
-    fun `svarer riktig på GET _api_rapport_v1 (for 2024)`() {
+    fun `svarer riktig på POST _api_rapport_v1 (for 2024)`() {
         TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
-                .queryParam("aar", "2024")
-                .get("/api/rapport/v1")
+                .body(
+                    """
+                        {
+                            "aar": 2024
+                         }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
                 .then()
                 .assertThat()
                 .statusCode(HttpStatusCode.OK.value)
@@ -121,12 +125,19 @@ class RapportApiTest : FullTestServer() {
     }
 
     @Test
-    fun `svarer riktig på GET _api_rapport_v1 (for spesifikk rapport-type i 2023)`() {
+    fun `svarer riktig på POST _api_rapport_v1 (for spesifikk rapport-type i 2023)`() {
         val response =
             client()
-                .queryParam("aar", "2023")
-                .queryParam("rapportType", "T14")
-                .get("/api/rapport/v1")
+                .body(
+                    """
+                        {
+                            "aar": 2023,
+                            "rapportTyper": ["T14"]
+                         }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
                 .then()
                 .assertThat()
                 .statusCode(HttpStatusCode.OK.value)

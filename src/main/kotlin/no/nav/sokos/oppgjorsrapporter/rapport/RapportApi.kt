@@ -1,33 +1,28 @@
+@file:UseSerializers(LocalDateAsStringSerializer::class)
+
 package no.nav.sokos.oppgjorsrapporter.rapport
 
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.resources.Resource
-import io.ktor.server.plugins.di.dependencies
-import io.ktor.server.request.acceptItems
-import io.ktor.server.resources.get
-import io.ktor.server.response.respond
-import io.ktor.server.response.respondBytes
-import io.ktor.server.response.respondText
+import io.ktor.http.*
+import io.ktor.resources.*
+import io.ktor.server.plugins.di.*
+import io.ktor.server.request.*
+import io.ktor.server.resources.*
+import io.ktor.server.resources.put
+import io.ktor.server.response.*
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.application
-import io.ktor.server.routing.get
-import io.ktor.server.routing.put
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters.firstDayOfYear
 import java.time.temporal.TemporalAdjusters.lastDayOfYear
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import mu.KotlinLogging
-import no.nav.helsearbeidsgiver.utils.json.serializer.LocalDateSerializer
-import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
-import no.nav.sokos.oppgjorsrapporter.auth.EntraId
-import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
-import no.nav.sokos.oppgjorsrapporter.auth.getBruker
-import no.nav.sokos.oppgjorsrapporter.auth.tokenValidationContext
+import no.nav.sokos.oppgjorsrapporter.auth.*
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
+import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import org.threeten.extra.LocalDateRange
 
@@ -36,21 +31,30 @@ private val logger = KotlinLogging.logger {}
 @Resource(path = "/api")
 class ApiPaths {
     @Resource("rapport/v1")
-    class Rapporter(
-        val parent: ApiPaths = ApiPaths(),
-        val orgnr: String? = null,
-        val aar: Int? = null,
-        @Serializable(with = LocalDateSerializer::class) val fraDato: LocalDate? = null,
-        @Serializable(with = LocalDateSerializer::class) val tilDato: LocalDate? = null,
-        val rapportType: List<RapportType> =
-            emptyList(), // TODO: Får ikke OpenApiValidationFilter til å virke med array-typet spec for denne.
-        val inkluderArkiverte: Boolean = false,
-    ) {
+    class Rapporter(val parent: ApiPaths = ApiPaths()) {
         @Resource("{id}")
         class Id(val parent: Rapporter = Rapporter(), val id: Long) {
             @Resource("innhold") class Innhold(val parent: Id)
 
             @Resource("arkiver") class Arkiver(var parent: Id, val arkivert: Boolean? = true)
+        }
+    }
+}
+
+object Api {
+    @Serializable
+    data class RapportListeRequest(
+        val orgnr: String? = null,
+        val aar: Int? = null,
+        val fraDato: LocalDate? = null,
+        val tilDato: LocalDate? = null,
+        val rapportTyper: Set<RapportType> = RapportType.entries.toSet(),
+        val inkluderArkiverte: Boolean = false,
+    ) {
+        val datoRange: LocalDateRange by lazy {
+            fraDato?.let { fraDato -> LocalDateRange.ofClosed(fraDato, tilDato ?: fraDato.with(lastDayOfYear())) }
+                ?: aar?.let { heltAarDateRange(it) }
+                ?: LocalDateRange.ofClosed(LocalDate.now().with(firstDayOfYear()), LocalDate.now())
         }
     }
 }
@@ -80,25 +84,20 @@ fun Route.rapportApi() {
         return true
     }
 
-    get<ApiPaths.Rapporter> { rapporter ->
+    post<ApiPaths.Rapporter, Api.RapportListeRequest> { _, reqBody ->
         // TODO: Listen med tilgjengelige rapporter kan bli lang; trenger vi å lage noe slags paging?
         metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
-            val rapportTyper = rapporter.rapportType.ifEmpty { RapportType.entries }.toSet()
-            val datoRange =
-                rapporter.fraDato?.let { fraDato -> LocalDateRange.ofClosed(fraDato, rapporter.tilDato ?: fraDato.with(lastDayOfYear())) }
-                    ?: rapporter.aar?.let { heltAarDateRange(it) }
-                    ?: LocalDateRange.ofClosed(LocalDate.now().with(firstDayOfYear()), LocalDate.now())
             val kriterier =
                 when (bruker) {
                     is Systembruker -> {
                         // Hvis query-param orgnr er et brukeren ikke har tilgang til, vil PDP-sjekk lenger ned filtrere dette bort
-                        val orgNr = rapporter.orgnr?.let { OrgNr(it) } ?: bruker.userOrg
-                        InkluderOrgKriterier(setOf(orgNr), rapportTyper, datoRange, rapporter.inkluderArkiverte)
+                        val orgNr = reqBody.orgnr?.let { OrgNr(it) } ?: bruker.userOrg
+                        InkluderOrgKriterier(setOf(orgNr), reqBody.rapportTyper, reqBody.datoRange, reqBody.inkluderArkiverte)
                     }
                     is EntraId -> {
                         // TODO: Hvordan skal "egne ansatte" håndteres?
-                        EkskluderOrgKriterier(emptySet(), rapportTyper, datoRange, rapporter.inkluderArkiverte)
+                        EkskluderOrgKriterier(emptySet(), reqBody.rapportTyper, reqBody.datoRange, reqBody.inkluderArkiverte)
                     }
                 // TODO: Finne orgnr brukeren har rettigheter til fra MinID-token, liste for alle dem
                 }
