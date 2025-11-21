@@ -10,6 +10,7 @@ import kotlinx.serialization.json.Json
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
+import no.nav.sokos.oppgjorsrapporter.rapport.Api
 import no.nav.sokos.oppgjorsrapporter.withTestApplication
 
 class SecurityTest :
@@ -17,16 +18,16 @@ class SecurityTest :
         context("test-container") {
             val container = TestContainer.postgres
 
-            test("test http GET endepunkt uten token bør returnere 401") {
+            test("test http POST endepunkt uten token bør returnere 401") {
                 withMockOAuth2Server {
                     withTestApplication(dbContainer = container) {
-                        val response = client.get("/api/rapport/v1")
+                        val response = client.post("/api/rapport/v1")
                         response.status shouldBe HttpStatusCode.Unauthorized
                     }
                 }
             }
 
-            test("test http GET endepunkt med token bør returnere 200") {
+            test("test http POST endepunkt med token bør returnere 200") {
                 withMockOAuth2Server {
                     val mockOAuth2Server = this
                     withTestApplication(dbContainer = container) {
@@ -43,12 +44,13 @@ class SecurityTest :
                             }
                         }
                         val response =
-                            client.get("/api/rapport/v1?orgnr=987654321") {
+                            client.post("/api/rapport/v1") {
                                 header(
                                     "Authorization",
                                     "Bearer ${mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf("group")))}",
                                 )
                                 contentType(ContentType.Application.Json)
+                                setBody(Api.RapportListeRequest(orgnr = "987654321"))
                             }
 
                         response.status shouldBe HttpStatusCode.OK
