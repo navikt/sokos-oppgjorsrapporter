@@ -50,13 +50,7 @@ object Api {
         val tilDato: LocalDate? = null,
         val rapportTyper: Set<RapportType> = RapportType.entries.toSet(),
         val inkluderArkiverte: Boolean = false,
-    ) {
-        val datoRange: LocalDateRange by lazy {
-            fraDato?.let { fraDato -> LocalDateRange.ofClosed(fraDato, tilDato ?: fraDato.with(lastDayOfYear())) }
-                ?: aar?.let { heltAarDateRange(it) }
-                ?: LocalDateRange.ofClosed(LocalDate.now().with(firstDayOfYear()), LocalDate.now())
-        }
-    }
+    )
 }
 
 fun Route.rapportApi() {
@@ -88,16 +82,40 @@ fun Route.rapportApi() {
         // TODO: Listen med tilgjengelige rapporter kan bli lang; trenger vi å lage noe slags paging?
         metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
+            val datoRange =
+                with(reqBody) {
+                    fraDato?.let { fraDato ->
+                        if (aar != null) {
+                            return@post call.respond(HttpStatusCode.BadRequest, "aar kan ikke kombineres med fraDato")
+                        }
+                        val til = tilDato ?: fraDato.with(lastDayOfYear())
+                        if (fraDato.isAfter(til)) {
+                            return@post call.respond(HttpStatusCode.BadRequest, "fraDato kan ikke være etter tilDato")
+                        }
+                        LocalDateRange.ofClosed(fraDato, til)
+                    }
+                        ?: aar?.let {
+                            if (tilDato != null) {
+                                return@post call.respond(HttpStatusCode.BadRequest, "aar kan ikke kombineres med tilDato")
+                            }
+                            heltAarDateRange(it)
+                        }
+                        ?: LocalDateRange.ofClosed(LocalDate.now().with(firstDayOfYear()), LocalDate.now())
+                }
             val kriterier =
                 when (bruker) {
                     is Systembruker -> {
                         // Hvis query-param orgnr er et brukeren ikke har tilgang til, vil PDP-sjekk lenger ned filtrere dette bort
                         val orgNr = reqBody.orgnr?.let { OrgNr(it) } ?: bruker.userOrg
-                        InkluderOrgKriterier(setOf(orgNr), reqBody.rapportTyper, reqBody.datoRange, reqBody.inkluderArkiverte)
+                        InkluderOrgKriterier(setOf(orgNr), reqBody.rapportTyper, datoRange, reqBody.inkluderArkiverte)
                     }
                     is EntraId -> {
-                        // TODO: Hvordan skal "egne ansatte" håndteres?
-                        EkskluderOrgKriterier(emptySet(), reqBody.rapportTyper, reqBody.datoRange, reqBody.inkluderArkiverte)
+                        if (reqBody.orgnr == null) {
+                            // TODO: Hvordan skal "egne ansatte" håndteres?
+                            EkskluderOrgKriterier(emptySet(), reqBody.rapportTyper, datoRange, reqBody.inkluderArkiverte)
+                        } else {
+                            InkluderOrgKriterier(setOf(OrgNr(reqBody.orgnr)), reqBody.rapportTyper, datoRange, reqBody.inkluderArkiverte)
+                        }
                     }
                 // TODO: Finne orgnr brukeren har rettigheter til fra MinID-token, liste for alle dem
                 }
