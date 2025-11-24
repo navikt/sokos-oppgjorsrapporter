@@ -12,6 +12,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.application
+import java.time.Clock
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters.firstDayOfYear
 import java.time.temporal.TemporalAdjusters.lastDayOfYear
@@ -36,7 +37,7 @@ class ApiPaths {
         class Id(val parent: Rapporter = Rapporter(), val id: Long) {
             @Resource("innhold") class Innhold(val parent: Id)
 
-            @Resource("arkiver") class Arkiver(var parent: Id, val arkivert: Boolean? = true)
+            @Resource("arkiver") class Arkiver(var parent: Id, val arkivert: Boolean = true)
         }
     }
 }
@@ -54,6 +55,7 @@ object Api {
 }
 
 fun Route.rapportApi() {
+    val clock: Clock by application.dependencies
     val rapportService: RapportService by application.dependencies
     val pdpService: PdpService by application.dependencies
     val metrics: Metrics by application.dependencies
@@ -100,7 +102,7 @@ fun Route.rapportApi() {
                             }
                             heltAarDateRange(it)
                         }
-                        ?: LocalDateRange.ofClosed(LocalDate.now().with(firstDayOfYear()), LocalDate.now())
+                        ?: LocalDateRange.ofClosed(LocalDate.now(clock).with(firstDayOfYear()), LocalDate.now(clock))
                 }
             val kriterier =
                 when (bruker) {
@@ -164,9 +166,15 @@ fun Route.rapportApi() {
 
     put<ApiPaths.Rapporter.Id.Arkiver> { arkiver ->
         metrics.tellApiRequest(this)
-        autentisertBruker().let { _ ->
-            call.respondText("sett arkivert: $arkiver")
-            TODO()
+        autentisertBruker().let { bruker ->
+            rapportService.markerRapportArkivert(Rapport.Id(arkiver.parent.id)) {
+                if (harTilgangTilRessurs(bruker, it.type, it.orgNr)) {
+                    call.respond(HttpStatusCode.NoContent)
+                    arkiver.arkivert
+                } else {
+                    null
+                }
+            } ?: call.respond(HttpStatusCode.NotFound)
         }
     }
 }

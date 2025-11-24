@@ -110,6 +110,8 @@ paths:
                   value: "Uautorisert tilgang"
         "204":
           description: No Content
+        "404":
+          description: Not Found
   /api/rapport/v1/{id}/innhold:
     get:
       description: >
@@ -150,10 +152,6 @@ paths:
                 format: binary
         "404":
           description: Not Found
-          content:
-            '*/*':
-              schema:
-                type: object
 components:
   schemas:
     RapportListeRequest:

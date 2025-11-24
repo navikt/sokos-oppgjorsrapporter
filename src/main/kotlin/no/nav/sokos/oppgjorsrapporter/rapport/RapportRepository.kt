@@ -1,9 +1,11 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import java.time.Clock
+import java.time.Instant
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
 
-class RapportRepository {
+class RapportRepository(private val clock: Clock) {
     fun lagreBestilling(tx: TransactionalSession, bestilling: UlagretRapportBestilling): RapportBestilling =
         queryOf(
                 """
@@ -134,6 +136,22 @@ class RapportRepository {
             }
             .map { row -> Rapport(row) }
             .asList
+            .let { tx.run(it) }
+
+    fun markerRapportArkivert(tx: TransactionalSession, rapportId: Rapport.Id, skalArkiveres: Boolean): Int =
+        queryOf(
+                "UPDATE rapport.rapport SET arkivert = :arkivert WHERE id = :id",
+                mapOf(
+                    "id" to rapportId.raw,
+                    "arkivert" to
+                        if (skalArkiveres) {
+                            Instant.now(clock)
+                        } else {
+                            null
+                        },
+                ),
+            )
+            .asUpdate
             .let { tx.run(it) }
 
     fun lagreVariant(tx: TransactionalSession, variant: UlagretVariant): Variant =

@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import java.time.Clock
 import java.time.Instant
 import javax.sql.DataSource
 import kotlinx.coroutines.runBlocking
@@ -18,13 +19,14 @@ abstract class DatabaseSupport(private val dataSource: DataSource) {
     protected fun <T> withTransaction(block: (TransactionalSession) -> T): T = withSession { it.transaction { tx -> block(tx) } }
 }
 
-class RapportService(dataSource: DataSource, private val repository: RapportRepository) : DatabaseSupport(dataSource) {
+class RapportService(dataSource: DataSource, private val repository: RapportRepository, private val clock: Clock) :
+    DatabaseSupport(dataSource) {
     private val systemBrukernavn = "system"
 
     fun lagreBestilling(kilde: String, rapportType: RapportType, dokument: String): RapportBestilling = withTransaction {
         repository.lagreBestilling(
             it,
-            UlagretRapportBestilling(mottatt = Instant.now(), mottattFra = kilde, dokument = dokument, genererSom = rapportType),
+            UlagretRapportBestilling(mottatt = Instant.now(clock), mottattFra = kilde, dokument = dokument, genererSom = rapportType),
         )
     }
 
@@ -46,7 +48,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
                     RapportAudit.Id(0),
                     rapport.id,
                     null,
-                    Instant.now(),
+                    Instant.now(clock),
                     RapportAudit.Hendelse.RAPPORT_OPPRETTET,
                     systemBrukernavn,
                     null,
@@ -65,6 +67,18 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
 
     fun listRapporter(kriterier: RapportKriterier): List<Rapport> = withTransaction { repository.listRapporter(it, kriterier) }
 
+    fun markerRapportArkivert(id: Rapport.Id, process: suspend (Rapport) -> Boolean?): Rapport? = withTransaction { tx ->
+        repository.finnRapport(tx, id)?.let { rapport ->
+            val skalArkiveres = runBlocking { process(rapport) }
+            if (skalArkiveres != null && skalArkiveres != rapport.erArkivert) {
+                repository.markerRapportArkivert(tx, id, skalArkiveres)
+                repository.finnRapport(tx, id)
+            } else {
+                rapport
+            }
+        }
+    }
+
     fun lagreVariant(variant: UlagretVariant): Variant = withTransaction { tx ->
         repository.lagreVariant(tx, variant).also {
             repository.audit(
@@ -73,7 +87,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
                     RapportAudit.Id(0),
                     it.rapportId,
                     it.id,
-                    Instant.now(),
+                    Instant.now(clock),
                     RapportAudit.Hendelse.VARIANT_OPPRETTET,
                     systemBrukernavn,
                     null,
@@ -101,7 +115,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
                             RapportAudit.Id(0),
                             rapport.id,
                             variantId,
-                            Instant.now(),
+                            Instant.now(clock),
                             RapportAudit.Hendelse.VARIANT_NEDLASTET,
                             brukernavn(bruker),
                             null,

@@ -9,6 +9,7 @@ import io.ktor.server.plugins.di.dependencies
 import io.ktor.util.AttributeKey
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import java.time.Clock
 import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -49,13 +50,14 @@ fun main() {
         .start(true)
 }
 
-fun Application.module(appConfig: ApplicationConfig = environment.config) {
+fun Application.module(appConfig: ApplicationConfig = environment.config, clock: Clock = Clock.systemUTC()) {
     // For å tillate tester å overstyre dependencies, bør man først
     // 1. gjøre `provide` av en instans med passende type og evt. navn,
     // for så evt.
     // 2. å hente ut den providede instansen fra DI-registeret
     // før man bruker instansen lenger ned.
     dependencies {
+        provide { clock }
         provide { this@module.resolveConfig(appConfig) }
         val config: PropertiesConfig.Configuration by this
 

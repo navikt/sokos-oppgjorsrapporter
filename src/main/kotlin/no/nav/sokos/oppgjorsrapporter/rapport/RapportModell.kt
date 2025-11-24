@@ -100,6 +100,8 @@ data class Rapport(
         opprettet = row.instant("opprettet"),
         arkivert = row.instantOrNull("arkivert"),
     )
+
+    @kotlinx.serialization.Transient val erArkivert: Boolean = arkivert != null
 }
 
 enum class VariantFormat(val contentType: String) {
