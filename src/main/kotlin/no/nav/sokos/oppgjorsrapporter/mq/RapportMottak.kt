@@ -87,8 +87,8 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
 
         return listOf(
                 data.navenhet,
-                formaterOrganisasjonsnummer(header.orgnr),
-                formaterOrganisasjonsnummer(data.bedriftsnummer),
+                header.orgnr,
+                data.bedriftsnummer,
                 data.kode,
                 data.fnr,
                 formaterDatoForCsv(data.fraDato),
@@ -128,14 +128,6 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
         return navn.replace(Regex("[\";\n\r]+"), " ").trim().take(25).padEnd(25, ' ')
     }
 
-    /**
-     * Formaterer organisasjonsnummer til 9 siffer ved å legge til ledende nuller om nødvendig. Dette burde egentlig fikses i UR ved at UR
-     * sender oss "nøkkel": "streng-med-tall" istedenfor "nøkkel": tall.
-     */
-    private fun formaterOrganisasjonsnummer(orgnr: Long): String {
-        return orgnr.toString().padStart(9, '0')
-    }
-
     companion object {
         val json = Json { explicitNulls = false }
     }
@@ -143,7 +135,7 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
 
 @Serializable
 data class Header(
-    val orgnr: Long,
+    val orgnr: String,
     val bankkonto: String,
     val sumBelop: BigDecimal,
     val valutert: LocalDate,
@@ -155,7 +147,7 @@ data class Header(
 @Serializable
 data class Data(
     val navenhet: Int,
-    val bedriftsnummer: Long,
+    val bedriftsnummer: String,
     val kode: String,
     val tekst: String,
     val fnr: String,

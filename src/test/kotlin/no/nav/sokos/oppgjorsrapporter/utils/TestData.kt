@@ -92,7 +92,7 @@ startxref
 
     fun createDataRec(
         navenhet: Int = 8020,
-        bedriftsnummer: Long = 933001542,
+        bedriftsnummer: String = "933001542",
         kode: String = "H",
         tekst: String = "Sykepenger feriepenger",
         fnr: String = "29070049716",
@@ -118,7 +118,7 @@ startxref
     }
 
     fun createRefusjonsRapportBestilling(
-        headerOrgnr: Long = 974600019,
+        headerOrgnr: String = "974600019",
         headerBankkonto: String = "02470303400",
         headerSumBelop: BigDecimal = BigDecimal.valueOf(9093.00),
         headerValutert: LocalDate = LocalDate.parse("2025-10-28"),

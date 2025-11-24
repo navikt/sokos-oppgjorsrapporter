@@ -4,7 +4,6 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import no.nav.sokos.oppgjorsrapporter.mq.Data
-import no.nav.sokos.oppgjorsrapporter.mq.LINJESKIFT
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.utils.TestData.createDataRec
 import no.nav.sokos.oppgjorsrapporter.utils.TestData.createRefusjonsRapportBestilling
@@ -21,7 +20,7 @@ class RefusjonsRapportBestillingSerializationTest {
             """
                 {
                     "navenhet": 1,
-                    "bedriftsnummer": 123456789,
+                    "bedriftsnummer": "123456789",
                     "kode": "A",
                     "tekst": "Test",
                     "fnr": "12345678901",
@@ -44,7 +43,7 @@ class RefusjonsRapportBestillingSerializationTest {
         val data =
             Data(
                 navenhet = 1,
-                bedriftsnummer = 123456789,
+                bedriftsnummer = "123456789",
                 kode = "A",
                 tekst = "Test",
                 fnr = "12345678901",
@@ -61,7 +60,7 @@ class RefusjonsRapportBestillingSerializationTest {
                 """
                 {
                     "navenhet": 1,
-                    "bedriftsnummer": 123456789,
+                    "bedriftsnummer": "123456789",
                     "kode": "A",
                     "tekst": "Test",
                     "fnr": "12345678901",
@@ -88,7 +87,7 @@ class RefusjonsRapportBestillingSerializationTest {
         val dataRecordMedNavnLengereEnn25Tegn = createDataRec(navn = "Dette navnet er definitivt lengre enn tjuefem tegn")
         val dataRecordMedNavnMedSemikolon = createDataRec(navn = "Navn;med;semikolon")
         val dataRecordMedNavnMedEksakt25Tegn = createDataRec(navn = "Navn med nøyaktig tjuefem") // 25 tegn
-        val dataRecordMedNavnMedLinjeskift = createDataRec(navn = "Navn${LINJESKIFT}${LINJESKIFT}med\nlinjeskift")
+        val dataRecordMedNavnMedLinjeskift = createDataRec(navn = "Navn\r\n\r\nmed\nlinjeskift")
 
         // belop (11 tegn) - Beløp i ører (10 siffer + fortegn). Kreditbeløp (negative) får '-' på slutten, debetbeløp får ' ' (mellomrom)
         // på slutten
@@ -125,7 +124,7 @@ class RefusjonsRapportBestillingSerializationTest {
                     "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500 ;0000000000 ;20260731",
                     "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990513 ;0000000000 ;20260731",
                 )
-                .joinToString(LINJESKIFT) + LINJESKIFT
+                .joinToString("\r\n") + "\r\n"
 
         val faktiskCsvInnhold = refusjonsRapportBestilling.tilCSV()
 
@@ -134,12 +133,12 @@ class RefusjonsRapportBestillingSerializationTest {
 
     @Test
     fun `tilCsv skal formatere orgnr og bedriftsnummer med ledende 0-er dersom de er kortere enn 9 siffer`() {
-        val dataRecordMedOrgnrMedLedende0 = createDataRec(bedriftsnummer = 12345678)
+        val dataRecordMedOrgnrMedLedende0 = createDataRec(bedriftsnummer = "012345678")
         val refusjonsRapportBestilling =
-            createRefusjonsRapportBestilling(headerOrgnr = 12345678, datarec = listOf(dataRecordMedOrgnrMedLedende0))
+            createRefusjonsRapportBestilling(headerOrgnr = "012345678", datarec = listOf(dataRecordMedOrgnrMedLedende0))
 
         val forventetCsvInnhold =
-            "8020;012345678;012345678;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500 ;0000000000 ;20260731${LINJESKIFT}"
+            "8020;012345678;012345678;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500 ;0000000000 ;20260731\r\n"
 
         val faktiskCsvInnhold = refusjonsRapportBestilling.tilCSV()
 
