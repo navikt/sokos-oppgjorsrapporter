@@ -1,7 +1,11 @@
 package no.nav.sokos.oppgjorsrapporter.utils
 
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import no.nav.sokos.oppgjorsrapporter.mq.Data
+import no.nav.sokos.oppgjorsrapporter.mq.Header
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportBestilling
@@ -85,4 +89,52 @@ trailer <<
 startxref
 478
 %%EOF"""
+
+    fun createDataRec(
+        navenhet: Int = 8020,
+        bedriftsnummer: String = "933001542",
+        kode: String = "H",
+        tekst: String = "Sykepenger feriepenger",
+        fnr: String = "29070049716",
+        navn: String = "wopoj hyfom",
+        fraDato: LocalDate = LocalDate.parse("2025-05-01"),
+        tilDato: LocalDate = LocalDate.parse("2025-05-31"),
+        belop: BigDecimal = BigDecimal.valueOf(9905.00),
+        maxDato: LocalDate? = LocalDate.parse("2026-07-31"),
+    ): Data {
+
+        return Data(
+            navenhet = navenhet,
+            bedriftsnummer = bedriftsnummer,
+            kode = kode,
+            tekst = tekst,
+            fnr = fnr,
+            navn = navn,
+            fraDato = fraDato,
+            tilDato = tilDato,
+            belop = belop,
+            maxDato = maxDato,
+        )
+    }
+
+    fun createRefusjonsRapportBestilling(
+        headerOrgnr: String = "974600019",
+        headerBankkonto: String = "02470303400",
+        headerSumBelop: BigDecimal = BigDecimal.valueOf(9093.00),
+        headerValutert: LocalDate = LocalDate.parse("2025-10-28"),
+        headerLinjer: Long = 1,
+        datarec: List<Data> = listOf(createDataRec()),
+    ): RefusjonsRapportBestilling {
+        return RefusjonsRapportBestilling(
+            header =
+                Header(
+                    orgnr = headerOrgnr,
+                    bankkonto = headerBankkonto,
+                    sumBelop = headerSumBelop,
+                    valutert = headerValutert,
+                    linjer = headerLinjer,
+                ),
+            datarec = datarec,
+        )
+    }
 }
