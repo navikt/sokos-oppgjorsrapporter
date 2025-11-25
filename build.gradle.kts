@@ -1,12 +1,12 @@
 group = "no.nav.sokos"
 
-val flywayVersion = "11.17.0"
+val flywayVersion = "11.17.2"
 val hikariVersion = "7.0.2"
 val ibmMqVersion = "9.4.4.0"
 val janinoVersion = "3.1.12"
 val jsonUnitVersion = "5.1.0"
 val konfigVersion = "1.6.10.0"
-val kotestVersion = "6.0.4"
+val kotestVersion = "6.0.5"
 val kotlinLoggingVersion = "3.0.5"
 val kotlinxSerializationVersion = "1.9.0"
 val kotliqueryVersion = "1.9.1"
@@ -28,7 +28,7 @@ plugins {
     application
     kotlin("jvm") version "2.2.21"
     kotlin("plugin.serialization") version "2.2.21"
-    id("com.diffplug.spotless") version "8.0.0"
+    id("com.diffplug.spotless") version "8.1.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.3"
 }
 
