@@ -74,20 +74,20 @@ class RapportServiceTest :
                     val sut: RapportService = application.dependencies.resolve()
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
 
-                    val låsTattLatch = CountDownLatch(1)
+                    val laasTattLatch = CountDownLatch(1)
                     val prosesseringKanStarteLatch = CountDownLatch(1)
                     val prosesseringFerdigLatch = CountDownLatch(1)
 
                     val prosessertId = async {
                         sut.prosesserBestilling {
-                                låsTattLatch.countDown()
+                                laasTattLatch.countDown()
                                 prosesseringKanStarteLatch.await()
                                 it.id
                             }
                             .also { prosesseringFerdigLatch.countDown() }
                     }
 
-                    låsTattLatch.await()
+                    laasTattLatch.await()
                     sut.prosesserBestilling { it.id } shouldBe null
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
 
