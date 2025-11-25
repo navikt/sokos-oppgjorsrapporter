@@ -220,4 +220,25 @@ class RapportRepository(private val clock: Clock) {
                 ),
             )
         )
+
+    fun hentAuditlog(tx: TransactionalSession, kriterier: RapportAuditKriterier): List<RapportAudit> =
+        queryOf(
+                """
+                    SELECT * FROM rapport.rapport_audit
+                    WHERE rapport_id = :rapportId
+                      AND ( (:variantId :: BIGINT) IS NULL OR variant_id = :variantId )
+                      AND ( (:start :: TIMESTAMPTZ) IS NULL OR tidspunkt BETWEEN :start AND :end )
+                    ORDER BY id ASC
+                """
+                    .trimIndent(),
+                mapOf(
+                    "rapportId" to kriterier.rapportId.raw,
+                    "variantId" to kriterier.variantId?.raw,
+                    "start" to kriterier.periode?.start,
+                    "end" to kriterier.periode?.end,
+                ),
+            )
+            .map { RapportAudit(it) }
+            .asList
+            .let { tx.run(it) }
 }

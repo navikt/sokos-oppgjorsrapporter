@@ -11,6 +11,7 @@ import kotliquery.using
 import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
+import org.threeten.extra.Interval
 import org.threeten.extra.LocalDateRange
 
 abstract class DatabaseSupport(private val dataSource: DataSource) {
@@ -43,7 +44,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
 
     fun lagreRapport(rapport: UlagretRapport): Rapport = withTransaction { tx ->
         repository.lagreRapport(tx, rapport).also { rapport ->
-            val event =
+            val rapportEvent =
                 RapportAudit(
                     RapportAudit.Id(0),
                     rapport.id,
@@ -54,12 +55,11 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
                     null,
                 )
             repository.finnBestilling(tx, rapport.bestillingId)?.let { bestilling ->
-                repository.audit(
-                    tx,
-                    event.copy(tidspunkt = bestilling.mottatt, hendelse = RapportAudit.Hendelse.RAPPORT_BESTILLING_MOTTATT),
-                )
+                val bestillingEvent =
+                    rapportEvent.copy(tidspunkt = bestilling.mottatt, hendelse = RapportAudit.Hendelse.RAPPORT_BESTILLING_MOTTATT)
+                repository.audit(tx, bestillingEvent)
             }
-            repository.audit(tx, event)
+            repository.audit(tx, rapportEvent)
         }
     }
 
@@ -67,17 +67,34 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
 
     fun listRapporter(kriterier: RapportKriterier): List<Rapport> = withTransaction { repository.listRapporter(it, kriterier) }
 
-    fun markerRapportArkivert(id: Rapport.Id, process: suspend (Rapport) -> Boolean?): Rapport? = withTransaction { tx ->
-        repository.finnRapport(tx, id)?.let { rapport ->
-            val skalArkiveres = runBlocking { process(rapport) }
-            if (skalArkiveres != null && skalArkiveres != rapport.erArkivert) {
-                repository.markerRapportArkivert(tx, id, skalArkiveres)
-                repository.finnRapport(tx, id)
-            } else {
-                rapport
+    fun markerRapportArkivert(id: Rapport.Id, bruker: AutentisertBruker, process: suspend (Rapport) -> Boolean?): Rapport? =
+        withTransaction { tx ->
+            repository.finnRapport(tx, id)?.let { rapport ->
+                val skalArkiveres = runBlocking { process(rapport) }
+                if (skalArkiveres != null && skalArkiveres != rapport.erArkivert) {
+                    repository.markerRapportArkivert(tx, id, skalArkiveres)
+                    repository.audit(
+                        tx,
+                        RapportAudit(
+                            RapportAudit.Id(0),
+                            rapport.id,
+                            null,
+                            Instant.now(clock),
+                            if (skalArkiveres) {
+                                RapportAudit.Hendelse.RAPPORT_ARKIVERT
+                            } else {
+                                RapportAudit.Hendelse.RAPPORT_DEARKIVERT
+                            },
+                            brukernavn(bruker),
+                            null,
+                        ),
+                    )
+                    repository.finnRapport(tx, id)
+                } else {
+                    rapport
+                }
             }
         }
-    }
 
     fun lagreVariant(variant: UlagretVariant): Variant = withTransaction { tx ->
         repository.lagreVariant(tx, variant).also {
@@ -125,6 +142,8 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
         }
     }
 
+    fun hentAuditLog(kriterier: RapportAuditKriterier): List<RapportAudit> = withTransaction { repository.hentAuditlog(it, kriterier) }
+
     private fun brukernavn(bruker: AutentisertBruker) =
         when (bruker) {
             is EntraId -> "azure:NAVident=${bruker.navIdent}"
@@ -151,3 +170,5 @@ data class EkskluderOrgKriterier(
     override val periode: LocalDateRange,
     override val inkluderArkiverte: Boolean,
 ) : RapportKriterier
+
+data class RapportAuditKriterier(val rapportId: Rapport.Id, val variantId: Variant.Id? = null, val periode: Interval? = null)

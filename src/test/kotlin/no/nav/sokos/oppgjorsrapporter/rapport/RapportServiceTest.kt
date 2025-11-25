@@ -2,13 +2,15 @@ package no.nav.sokos.oppgjorsrapporter.rapport
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.extensions.testcontainers.toDataSource
+import io.kotest.matchers.collections.shouldContainInOrder
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.date.before
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.ktor.server.plugins.di.*
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.verify
 import java.time.Instant
 import java.time.LocalDate
@@ -114,6 +116,12 @@ class RapportServiceTest :
                     rapport.id shouldBe Rapport.Id(2)
                     rapport.orgNr shouldBe ulagret.orgNr
                     rapport.type shouldBe ulagret.type
+
+                    val auditLog = sut.hentAuditLog(RapportAuditKriterier(rapport.id))
+                    auditLog shouldHaveSize (2)
+                    auditLog.map { it.hendelse } shouldContainInOrder
+                        listOf(RapportAudit.Hendelse.RAPPORT_BESTILLING_MOTTATT, RapportAudit.Hendelse.RAPPORT_OPPRETTET)
+                    auditLog.map { it.brukernavn }.toSet().single() shouldBe "system"
                 }
             }
 
@@ -147,6 +155,49 @@ class RapportServiceTest :
                     rapporter[1].id shouldBe Rapport.Id(2)
                     rapporter[1].orgNr shouldBe orgNr
                     rapporter[1].type shouldBe RapportType.T14
+                }
+            }
+
+            test("kan arkivere og de-arkivere en rapport i databasen") {
+                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+
+                    val sut: RapportService = application.dependencies.resolve()
+                    val bruker = EntraId("enBruker", listOf("group"))
+                    val rapportId = Rapport.Id(1)
+
+                    val arkivert = sut.markerRapportArkivert(rapportId, bruker) { true }.shouldNotBeNull()
+                    arkivert.id shouldBe rapportId
+                    arkivert.erArkivert shouldBe true
+
+                    val arkivertLog = sut.hentAuditLog(RapportAuditKriterier(rapportId)).single()
+                    arkivertLog.hendelse shouldBe RapportAudit.Hendelse.RAPPORT_ARKIVERT
+                    arkivertLog.brukernavn shouldBe "azure:NAVident=enBruker"
+
+                    val dearkivert = sut.markerRapportArkivert(rapportId, bruker) { false }.shouldNotBeNull()
+                    dearkivert.id shouldBe rapportId
+                    dearkivert.erArkivert shouldBe false
+
+                    val dearkivertLog = sut.hentAuditLog(RapportAuditKriterier(rapportId)).filterNot { it == arkivertLog }.single()
+                    dearkivertLog.hendelse shouldBe RapportAudit.Hendelse.RAPPORT_DEARKIVERT
+                    dearkivertLog.brukernavn shouldBe "azure:NAVident=enBruker"
+                }
+            }
+
+            test("vil ikke audit-logge forsøk på å de-arkivere en ikke-arkivert rapport") {
+                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+
+                    val sut: RapportService = application.dependencies.resolve()
+                    val bruker = EntraId("navIdent", listOf("group"))
+                    val rapportId = Rapport.Id(1)
+
+                    val dearkivert = sut.markerRapportArkivert(rapportId, bruker) { false }.shouldNotBeNull()
+                    dearkivert.id shouldBe rapportId
+                    dearkivert.erArkivert shouldBe false
+
+                    val dearkivertLog = sut.hentAuditLog(RapportAuditKriterier(rapportId))
+                    dearkivertLog shouldBe emptyList()
                 }
             }
 
@@ -197,22 +248,20 @@ class RapportServiceTest :
                     variant.format shouldBe VariantFormat.Pdf
                     variant.filnavn shouldBe "39487569_K27_2023-07-14.pdf"
                     variant.bytes shouldBe 36
+
+                    val auditLog = sut.hentAuditLog(RapportAuditKriterier(variant.rapportId, variantId = variant.id)).single()
+                    auditLog.hendelse shouldBe RapportAudit.Hendelse.VARIANT_OPPRETTET
+                    auditLog.brukernavn shouldBe "system"
                 }
             }
 
             test("kan hente innholdet fra en variant") {
-                val mockedRepository = mockk<RapportRepository>()
-                TestUtil.withFullApplication(
-                    dbContainer = dbContainer,
-                    dependencyOverrides = { dependencies.provide<RapportRepository> { mockedRepository } },
-                ) {
+                TestUtil.withFullApplication(dbContainer = dbContainer) {
                     TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
-                    every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
-                    every { mockedRepository.audit(any(), any()) } answers { callOriginal() }
-                    val sut: RapportService = application.dependencies.resolve()
 
-                    val innhold =
-                        sut.hentInnhold(EntraId("navIdent", listOf("group")), Rapport.Id(4), VariantFormat.Pdf) { _, data -> data }
+                    val sut: RapportService = application.dependencies.resolve()
+                    val rapportId = Rapport.Id(4)
+                    val innhold = sut.hentInnhold(EntraId("navIdent", listOf("group")), rapportId, VariantFormat.Pdf) { _, data -> data }
 
                     val expected =
                         buildByteString {
@@ -223,12 +272,11 @@ class RapportServiceTest :
                             .toByteArray()
                     innhold shouldBe expected
 
-                    val auditSlot = slot<RapportAudit>()
-                    verify(exactly = 1) { mockedRepository.audit(any(), capture(auditSlot)) }
-                    val audit = auditSlot.captured
-                    audit.rapportId shouldBe Rapport.Id(4)
-                    audit.variantId shouldBe Variant.Id(7)
-                    audit.hendelse shouldBe RapportAudit.Hendelse.VARIANT_NEDLASTET
+                    val auditLog = sut.hentAuditLog(RapportAuditKriterier(rapportId)).single()
+                    auditLog.rapportId shouldBe rapportId
+                    auditLog.variantId shouldBe Variant.Id(7)
+                    auditLog.hendelse shouldBe RapportAudit.Hendelse.VARIANT_NEDLASTET
+                    auditLog.brukernavn shouldBe "azure:NAVident=navIdent"
                 }
             }
 

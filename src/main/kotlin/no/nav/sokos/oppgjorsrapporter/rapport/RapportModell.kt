@@ -164,10 +164,23 @@ data class RapportAudit(
 ) {
     @JvmInline value class Id(val raw: Long)
 
+    constructor(
+        row: Row
+    ) : this(
+        id = Id(row.long("id")),
+        rapportId = Rapport.Id(row.long("rapport_id")),
+        variantId = row.longOrNull("variant_id")?.let { Variant.Id(it) },
+        tidspunkt = row.instant("tidspunkt"),
+        hendelse = Hendelse.valueOf(row.string("hendelse")),
+        brukernavn = row.string("brukernavn"),
+        tekst = row.stringOrNull("tekst"),
+    )
+
     enum class Hendelse {
         RAPPORT_BESTILLING_MOTTATT,
         RAPPORT_OPPRETTET,
         RAPPORT_ARKIVERT,
+        RAPPORT_DEARKIVERT,
         VARIANT_OPPRETTET,
         VARIANT_NEDLASTET,
     }

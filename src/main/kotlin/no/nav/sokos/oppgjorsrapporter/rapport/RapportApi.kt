@@ -167,7 +167,7 @@ fun Route.rapportApi() {
     put<ApiPaths.Rapporter.Id.Arkiver> { arkiver ->
         metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
-            rapportService.markerRapportArkivert(Rapport.Id(arkiver.parent.id)) {
+            rapportService.markerRapportArkivert(Rapport.Id(arkiver.parent.id), bruker) {
                 if (harTilgangTilRessurs(bruker, it.type, it.orgNr)) {
                     call.respond(HttpStatusCode.NoContent)
                     arkiver.arkivert
