@@ -1,9 +1,11 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import java.time.Clock
+import java.time.Instant
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
 
-class RapportRepository {
+class RapportRepository(private val clock: Clock) {
     fun lagreBestilling(tx: TransactionalSession, bestilling: UlagretRapportBestilling): RapportBestilling =
         queryOf(
                 """
@@ -107,18 +109,49 @@ class RapportRepository {
             .asSingle
             .let { tx.run(it) }
 
-    fun listRapporterForOrg(tx: TransactionalSession, orgNr: OrgNr): List<Rapport> =
-        queryOf(
-                """
-                    SELECT id, bestilling_id, orgnr, type, tittel, dato_valutert, opprettet, arkivert
-                    FROM rapport.rapport
-                    WHERE orgnr = :orgnr
-                """
-                    .trimIndent(),
-                mapOf("orgnr" to orgNr.raw),
-            )
+    fun listRapporter(tx: TransactionalSession, kriterier: RapportKriterier): List<Rapport> =
+        when (kriterier) {
+                is InkluderOrgKriterier -> "orgnr = ANY(:orgnummere)" to kriterier.inkluderte
+                is EkskluderOrgKriterier -> "(NOT orgnr = ANY(:orgnummere))" to kriterier.ekskluderte
+            }
+            .let { (orgnrWhere, orgnummere) ->
+                queryOf(
+                    """
+                            SELECT id, bestilling_id, orgnr, type, tittel, dato_valutert, opprettet, arkivert
+                            FROM rapport.rapport
+                            WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
+                              AND $orgnrWhere
+                              AND dato_valutert BETWEEN :fraDato AND :tilDato
+                              AND (arkivert IS NULL OR :inkluderArkiverte)
+                        """
+                        .trimIndent(),
+                    mapOf(
+                        "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
+                        "orgnummere" to orgnummere.map { it.raw }.toTypedArray(),
+                        "fraDato" to kriterier.periode.start,
+                        "tilDato" to kriterier.periode.end,
+                        "inkluderArkiverte" to kriterier.inkluderArkiverte,
+                    ),
+                )
+            }
             .map { row -> Rapport(row) }
             .asList
+            .let { tx.run(it) }
+
+    fun markerRapportArkivert(tx: TransactionalSession, rapportId: Rapport.Id, skalArkiveres: Boolean): Int =
+        queryOf(
+                "UPDATE rapport.rapport SET arkivert = :arkivert WHERE id = :id",
+                mapOf(
+                    "id" to rapportId.raw,
+                    "arkivert" to
+                        if (skalArkiveres) {
+                            Instant.now(clock)
+                        } else {
+                            null
+                        },
+                ),
+            )
+            .asUpdate
             .let { tx.run(it) }
 
     fun lagreVariant(tx: TransactionalSession, variant: UlagretVariant): Variant =
@@ -187,4 +220,25 @@ class RapportRepository {
                 ),
             )
         )
+
+    fun hentAuditlog(tx: TransactionalSession, kriterier: RapportAuditKriterier): List<RapportAudit> =
+        queryOf(
+                """
+                    SELECT * FROM rapport.rapport_audit
+                    WHERE rapport_id = :rapportId
+                      AND ( (:variantId :: BIGINT) IS NULL OR variant_id = :variantId )
+                      AND ( (:start :: TIMESTAMPTZ) IS NULL OR tidspunkt BETWEEN :start AND :end )
+                    ORDER BY id ASC
+                """
+                    .trimIndent(),
+                mapOf(
+                    "rapportId" to kriterier.rapportId.raw,
+                    "variantId" to kriterier.variantId?.raw,
+                    "start" to kriterier.periode?.start,
+                    "end" to kriterier.periode?.end,
+                ),
+            )
+            .map { RapportAudit(it) }
+            .asList
+            .let { tx.run(it) }
 }

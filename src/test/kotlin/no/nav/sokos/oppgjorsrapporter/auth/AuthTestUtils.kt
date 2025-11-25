@@ -1,7 +1,11 @@
 package no.nav.sokos.oppgjorsrapporter.auth
 
 import no.nav.security.mock.oauth2.MockOAuth2Server
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
+
+fun MockOAuth2Server.tokenFromDefaultProvider(claims: Map<String, Any> = emptyMap()): String =
+    issueToken(issuerId = "default", clientId = "default", tokenCallback = DefaultOAuth2TokenCallback(claims = claims)).serialize()
 
 fun MockOAuth2Server.hentToken(claims: Map<String, Any>): String =
     this.issueToken(issuerId = "maskinporten", audience = "nav:utbetaling/oppgjorsrapporter", claims = claims).serialize()

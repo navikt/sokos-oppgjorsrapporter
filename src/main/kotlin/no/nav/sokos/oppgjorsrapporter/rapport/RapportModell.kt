@@ -15,9 +15,9 @@ import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 @Serializable @JvmInline value class OrgNr(val raw: String)
 
 enum class RapportType(val altinnRessurs: String) {
-    K27("nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver"),
-    T12("Ikke definert ennå"),
-    T14("Ikke definert ennå"),
+    K27("nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver"), // Ny kode: "refusjon"?
+    T12("Ikke definert ennå"), // Ny kode: "trekkhendelser"?
+    T14("Ikke definert ennå"), // Ny kode: "trekk"?
 }
 
 sealed interface RapportBestillingFelter {
@@ -100,6 +100,8 @@ data class Rapport(
         opprettet = row.instant("opprettet"),
         arkivert = row.instantOrNull("arkivert"),
     )
+
+    @kotlinx.serialization.Transient val erArkivert: Boolean = arkivert != null
 }
 
 enum class VariantFormat(val contentType: String) {
@@ -162,10 +164,23 @@ data class RapportAudit(
 ) {
     @JvmInline value class Id(val raw: Long)
 
+    constructor(
+        row: Row
+    ) : this(
+        id = Id(row.long("id")),
+        rapportId = Rapport.Id(row.long("rapport_id")),
+        variantId = row.longOrNull("variant_id")?.let { Variant.Id(it) },
+        tidspunkt = row.instant("tidspunkt"),
+        hendelse = Hendelse.valueOf(row.string("hendelse")),
+        brukernavn = row.string("brukernavn"),
+        tekst = row.stringOrNull("tekst"),
+    )
+
     enum class Hendelse {
         RAPPORT_BESTILLING_MOTTATT,
         RAPPORT_OPPRETTET,
         RAPPORT_ARKIVERT,
+        RAPPORT_DEARKIVERT,
         VARIANT_OPPRETTET,
         VARIANT_NEDLASTET,
     }

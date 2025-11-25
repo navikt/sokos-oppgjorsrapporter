@@ -13,9 +13,7 @@ import kotlinx.coroutines.test.TestResult
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.withMockOAuth2Server
-import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationProfile
-import no.nav.sokos.oppgjorsrapporter.TestUtil.testContainerMqOverrides
-import no.nav.sokos.oppgjorsrapporter.TestUtil.testcontainerDbOverrides
+import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.CompositeApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
 import org.testcontainers.containers.PostgreSQLContainer
@@ -31,6 +29,19 @@ object TestUtil {
     ): TestResult = withMockOAuth2Server {
         withTestApplication(dbContainer = dbContainer, mqContainer = mqContainer, dependencyOverrides = dependencyOverrides, thunk = thunk)
     }
+
+    fun testApplicationConfig(
+        dbContainer: PostgreSQLContainer<Nothing>,
+        mqContainer: MQContainer?,
+        server: MockOAuth2Server,
+    ): CompositeApplicationConfig =
+        CompositeApplicationConfig(
+            testApplicationProfile(),
+            testcontainerDbOverrides(dbContainer),
+            testContainerMqOverrides(mqContainer),
+            server.authConfigOverrides(),
+            ApplicationConfig("application.conf"),
+        )
 
     fun testApplicationProfile() = MapApplicationConfig().apply { put("APPLICATION_PROFILE", "LOCAL") }
 
@@ -174,7 +185,7 @@ fun MockOAuth2Server.withTestApplication(
     thunk: suspend ApplicationTestBuilder.() -> Unit,
 ) {
     testApplication {
-        configureTestApplication(dbContainer = dbContainer, mqContainer = mqContainer, server = this@withTestApplication)
+        configureTestApplicationEnvironment(dbContainer = dbContainer, mqContainer = mqContainer, server = this@withTestApplication)
 
         application {
             dependencyOverrides()
@@ -186,19 +197,10 @@ fun MockOAuth2Server.withTestApplication(
     }
 }
 
-fun TestApplicationBuilder.configureTestApplication(
+fun TestApplicationBuilder.configureTestApplicationEnvironment(
     dbContainer: PostgreSQLContainer<Nothing>,
     mqContainer: MQContainer? = null,
     server: MockOAuth2Server,
 ) {
-    environment {
-        config =
-            CompositeApplicationConfig(
-                testApplicationProfile(),
-                testcontainerDbOverrides(dbContainer),
-                testContainerMqOverrides(mqContainer),
-                server.authConfigOverrides(),
-                ApplicationConfig("application.conf"),
-            )
-    }
+    environment { config = testApplicationConfig(dbContainer, mqContainer, server) }
 }

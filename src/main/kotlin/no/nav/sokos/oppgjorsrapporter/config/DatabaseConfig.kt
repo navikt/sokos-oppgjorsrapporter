@@ -5,9 +5,7 @@ import com.zaxxer.hikari.HikariDataSource
 
 object DatabaseConfig {
     private lateinit var dataSourcePriv: HikariDataSource
-
-    val dataSource: HikariDataSource
-        get() = dataSourcePriv
+    val dataSource: HikariDataSource by this::dataSourcePriv
 
     // Skal kun overstyres fra tester; nødvendig for å opprette "appbruker"-rollen som ved deploy lages av Nais
     var migrationInitSql: String? = null
