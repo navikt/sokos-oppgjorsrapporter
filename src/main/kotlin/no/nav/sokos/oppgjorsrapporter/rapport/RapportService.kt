@@ -8,9 +8,11 @@ import kotliquery.Session
 import kotliquery.TransactionalSession
 import kotliquery.sessionOf
 import kotliquery.using
+import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
+import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import org.threeten.extra.Interval
 import org.threeten.extra.LocalDateRange
 
@@ -22,6 +24,7 @@ abstract class DatabaseSupport(private val dataSource: DataSource) {
 
 class RapportService(dataSource: DataSource, private val repository: RapportRepository, private val clock: Clock) :
     DatabaseSupport(dataSource) {
+    private val logger = KotlinLogging.logger {}
     private val systemBrukernavn = "system"
 
     fun lagreBestilling(kilde: String, rapportType: RapportType, dokument: String): RapportBestilling = withTransaction {
@@ -34,7 +37,13 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
     fun <T> prosesserBestilling(block: (RapportBestilling) -> T): T? = withTransaction { tx ->
         repository.finnUprosessertBestilling(tx)?.let { bestilling ->
             // TODO: Er det innafor å la caller bestemme hele prosesserings-oppførselen?  Det gjør jo testing lettere, men...
-            block(bestilling).also { repository.markerBestillingProsessert(tx, bestilling.id) }
+            try {
+                block(bestilling).also { repository.markerBestillingProsessert(tx, bestilling.id) }
+            } catch (e: Exception) {
+                logger.error(TEAM_LOGS_MARKER, e) { "Prosessering av $bestilling feilet" }
+                repository.markerBestillingProsesseringFeilet(tx, bestilling.id)
+                null
+            }
         }
     }
 

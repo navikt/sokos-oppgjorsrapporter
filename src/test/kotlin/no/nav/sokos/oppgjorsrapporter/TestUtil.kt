@@ -91,23 +91,27 @@ object TestUtil {
     fun readFile(fileName: String): String =
         this::class.java.classLoader.getResourceAsStream(fileName)?.bufferedReader()?.readLines()?.joinToString(separator = "\n")!!
 
-    fun loadDataSet(fileToLoad: String, dataSource: DataSource) {
+    fun <T> withEmptyDatabase(dataSource: DataSource, block: () -> T): T {
         deleteAllTables(dataSource) // Vi vil alltid helst starte med en kjent databasetilstand.
-
-        val sql = readFile(fileToLoad)
-        val connection = dataSource.connection
-        try {
-            connection.transactionIsolation = TRANSACTION_SERIALIZABLE
-            connection.autoCommit = false
-            logger.debug { "Loading data set from $fileToLoad" }
-            connection.prepareStatement(sql).execute()
-            connection.commit()
-        } finally {
-            connection.close()
-        }
-
+        val res = block()
         updateAutoincrementSequences(dataSource)
+        return res
     }
+
+    fun loadDataSet(fileToLoad: String, dataSource: DataSource) =
+        withEmptyDatabase(dataSource) {
+            val sql = readFile(fileToLoad)
+            val connection = dataSource.connection
+            try {
+                connection.transactionIsolation = TRANSACTION_SERIALIZABLE
+                connection.autoCommit = false
+                logger.debug { "Loading data set from $fileToLoad" }
+                connection.prepareStatement(sql).execute()
+                connection.commit()
+            } finally {
+                connection.close()
+            }
+        }
 
     fun deleteAllTables(dataSource: DataSource) =
         dataSource.connection.use { connection ->

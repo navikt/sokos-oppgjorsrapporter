@@ -84,7 +84,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `POST _api_rapport_v1 (med både aar og fraDato spesifisert) gir feilmelding`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
                 .body(
@@ -107,7 +107,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `POST _api_rapport_v1 (med både aar og tilDato spesifisert) gir feilmelding`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
                 .body(
@@ -130,7 +130,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `POST _api_rapport_v1 (hvis fraDato er etter tilDato) gir feilmelding`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
                 .body(
@@ -153,7 +153,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `POST _api_rapport_v1 (uten søkekriterier i body) svarer riktig`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client().body("{}").post("/api/rapport/v1").then().assertThat().statusCode(HttpStatusCode.OK.value).extract().response()!!
         assertThatJson(response.body().prettyPrint()).isEqualTo("[]")
@@ -161,7 +161,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `POST _api_rapport_v1 (for 2024) svarer riktig`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
                 .body(
@@ -200,7 +200,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `POST _api_rapport_v1 (med fraDato lik tilDato) svarer riktig`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
                 .body(
@@ -250,7 +250,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `POST _api_rapport_v1 (for perioden 2023-11-01 - 2023-12-31) svarer riktig`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
                 .body(
@@ -330,7 +330,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `POST _api_rapport_v1 (for perioden 2023-11-01 - 2023-12-31, inkludert arkiverte) svarer riktig`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
                 .body(
@@ -401,7 +401,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `POST _api_rapport_v1 (for spesifikt orgnr i 2023) svarer riktig`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
                 .body(
@@ -458,7 +458,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                 .statusCode(HttpStatusCode.OK.value)
                 .extract()
                 .response()!!
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
@@ -481,7 +481,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `GET _api_rapport_v1_$id (for id som ikke finnes) gir feilmelding`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val NON_EXISTENT_ID = 4711
         client()
             .get("/api/rapport/v1/$NON_EXISTENT_ID")
@@ -494,7 +494,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `GET _api_rapport_v1_$id (for id som finnes) svarer riktig`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response = client().get("/api/rapport/v1/2").then().assertThat().statusCode(HttpStatusCode.OK.value).extract().response()!!
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
@@ -516,7 +516,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `GET _api_rapport_v1_$id_innhold (for id som ikke finnes) gir feilmelding`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val NON_EXISTENT_ID = 4711
         client()
             .accept(ContentType.Text.CSV.toString())
@@ -530,7 +530,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `GET _api_rapport_v1_$id_innhold (for CSV-variant av id som finnes) svarer riktig`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
                 .accept(ContentType.Text.CSV.toString())
@@ -553,7 +553,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `GET _api_rapport_v1_$id_innhold (for PDF-variant av id som finnes) svarer riktig`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
             client()
                 .accept(ContentType.Application.Pdf.toString())
@@ -576,7 +576,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `GET _api_rapport_v1_$id_innhold (for ukjent variant av id som finnes) gir feilmelding`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         // Ønsker å teste at requests som ber om en respons-type som ikke tillates i OpenAPI-specen vår likevel ender opp med å gi en saklig
         // (feil-)respons
         client(validationFilter = null)
@@ -591,7 +591,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `PUT _api_rapport_v1_$id_arkiver (for id som ikke finnes) gir feilmelding`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val NON_EXISTENT_ID = 4711
         client()
             .put("/api/rapport/v1/$NON_EXISTENT_ID/arkiver")
@@ -604,7 +604,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     @Test
     fun `PUT _api_rapport_v1_$id_arkiver (for id som finnes) svarer riktig`() {
-        TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
 
         assertThatJson(
                 client()

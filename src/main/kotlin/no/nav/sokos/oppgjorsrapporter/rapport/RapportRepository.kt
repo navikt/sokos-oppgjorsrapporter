@@ -37,6 +37,8 @@ class RapportRepository(private val clock: Clock) {
                     SELECT *
                     FROM rapport.rapport_bestilling
                     WHERE ferdig_prosessert IS NULL
+                      AND ( prosessering_feilet IS NULL OR
+                            prosessering_feilet + '1 day'::interval <= now() )
                     ORDER BY id
                     LIMIT 1
                     FOR NO KEY UPDATE SKIP LOCKED
@@ -45,6 +47,19 @@ class RapportRepository(private val clock: Clock) {
             )
             .map { RapportBestilling(it) }
             .asSingle
+            .let { tx.run(it) }
+
+    fun markerBestillingProsesseringFeilet(tx: TransactionalSession, id: RapportBestilling.Id) =
+        queryOf(
+                """
+                    UPDATE rapport.rapport_bestilling
+                    SET prosessering_feilet = now()
+                    WHERE id = :id AND ferdig_prosessert IS NULL
+                """
+                    .trimIndent(),
+                mapOf("id" to id.raw),
+            )
+            .asUpdate
             .let { tx.run(it) }
 
     fun markerBestillingProsessert(tx: TransactionalSession, id: RapportBestilling.Id) =

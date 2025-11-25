@@ -1,7 +1,7 @@
 SET SEARCH_PATH TO rapport;
 
-INSERT INTO rapport_bestilling (id, mottatt, mottatt_fra, dokument, generer_som, ferdig_prosessert)
-VALUES (1, '2024-11-01T13:15:01+0100', 'MQ', 'todo', 'K27', NULL)
+INSERT INTO rapport_bestilling (id, mottatt, mottatt_fra, dokument, generer_som, ferdig_prosessert, prosessering_feilet)
+VALUES (1, '2024-11-01T13:15:01+0100', 'MQ', 'todo', 'K27', '2024-11-01T13:15:02+0100', NULL)
 ;
 
 INSERT INTO rapport (id, bestilling_id, orgnr, type, tittel, dato_valutert, opprettet, arkivert)

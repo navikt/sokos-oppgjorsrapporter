@@ -38,6 +38,7 @@ import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
 import no.nav.sokos.oppgjorsrapporter.mq.RapportMottak
 import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
+import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
@@ -102,6 +103,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 provide("mq.consumejob.${inQueue.key}") { job }.cleanup { it.cancel() }
             }
         }
+
+        provide(BestillingProsessor::class)
+        val prosesserBestillingerJob =
+            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
+        provide("job.prosesserBestillinger") { prosesserBestillingerJob }.cleanup { it.cancel() }
     }
 
     // Flyttet ned hit, siden vi trenger en DataSource dersom install(MicrometerMetrics) skal inneholde PostgreSQLDatabaseMetrics
