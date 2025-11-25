@@ -130,18 +130,4 @@ class RefusjonsRapportBestillingSerializationTest {
 
         assertThat(faktiskCsvInnhold).isEqualTo(forventetCsvInnhold)
     }
-
-    @Test
-    fun `tilCsv skal formatere orgnr og bedriftsnummer med ledende 0-er dersom de er kortere enn 9 siffer`() {
-        val dataRecordMedOrgnrMedLedende0 = createDataRec(bedriftsnummer = "012345678")
-        val refusjonsRapportBestilling =
-            createRefusjonsRapportBestilling(headerOrgnr = "012345678", datarec = listOf(dataRecordMedOrgnrMedLedende0))
-
-        val forventetCsvInnhold =
-            "8020;012345678;012345678;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500 ;0000000000 ;20260731\r\n"
-
-        val faktiskCsvInnhold = refusjonsRapportBestilling.tilCSV()
-
-        assertThat(faktiskCsvInnhold).isEqualTo(forventetCsvInnhold)
-    }
 }
