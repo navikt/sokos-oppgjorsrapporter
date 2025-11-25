@@ -15,7 +15,8 @@ servers:
     description: prod
 
 security:
-  - bearerAuth: []
+  - Systembruker: []
+  - EntraId: []
 
 paths:
   /api/rapport/v1:
@@ -259,13 +260,18 @@ components:
         - "opprettet"
 
   securitySchemes:
-    bearerAuth:
+    Systembruker:
       type: http
       scheme: bearer
       bearerFormat: JWT
       description: |
-        Kan bruke [Altinn systembruker](https://docs.altinn.studio/nb/authorization/guides/system-vendor/system-user/), eller [Entra ID](https://docs.nais.io/auth/entra-id/) til autentisering.
-        Token må ha `audience` satt til `[cluster]:okonomi:sokos-oppgjorsrapporter`.
+        Kan bruke [Altinn systembruker](https://docs.altinn.studio/nb/authorization/guides/system-vendor/system-user/); se [dokumentasjon] for hvordan det kan settes opp.
+    EntraId:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Kan bruke [Entra ID](https://docs.nais.io/auth/entra-id/) til autentisering.  Token må ha `audience` satt til `[cluster]:okonomi:sokos-oppgjorsrapporter`.
         
         For å teste APIet kan du lage et gyldig OBO-token ved å bruke wonderwall:
         - [dev-gcp](https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp:okonomi:sokos-oppgjorsrapporter)
