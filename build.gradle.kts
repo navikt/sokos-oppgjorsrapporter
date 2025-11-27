@@ -6,11 +6,11 @@ val ibmMqVersion = "9.4.4.0"
 val janinoVersion = "3.1.12"
 val jsonUnitVersion = "5.1.0"
 val konfigVersion = "1.6.10.0"
-val kotestVersion = "6.0.4"
+val kotestVersion = "6.0.5"
 val kotlinLoggingVersion = "3.0.5"
 val kotlinxSerializationVersion = "1.9.0"
 val kotliqueryVersion = "1.9.1"
-val ktorVersion = "3.3.2"
+val ktorVersion = "3.3.3"
 val logbackVersion = "1.5.21"
 val logstashVersion = "9.0"
 val micrometerVersion = "1.16.0"
@@ -28,7 +28,7 @@ plugins {
     application
     kotlin("jvm") version "2.2.21"
     kotlin("plugin.serialization") version "2.2.21"
-    id("com.diffplug.spotless") version "8.0.0"
+    id("com.diffplug.spotless") version "8.1.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.3"
 }
 
