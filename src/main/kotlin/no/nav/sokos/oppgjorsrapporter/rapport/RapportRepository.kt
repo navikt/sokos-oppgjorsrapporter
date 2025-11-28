@@ -37,6 +37,8 @@ class RapportRepository(private val clock: Clock) {
                     SELECT *
                     FROM rapport.rapport_bestilling
                     WHERE ferdig_prosessert IS NULL
+                      AND ( prosessering_feilet IS NULL OR
+                            prosessering_feilet + '1 day'::interval <= now() )
                     ORDER BY id
                     LIMIT 1
                     FOR NO KEY UPDATE SKIP LOCKED
@@ -45,6 +47,19 @@ class RapportRepository(private val clock: Clock) {
             )
             .map { RapportBestilling(it) }
             .asSingle
+            .let { tx.run(it) }
+
+    fun markerBestillingProsesseringFeilet(tx: TransactionalSession, id: RapportBestilling.Id) =
+        queryOf(
+                """
+                    UPDATE rapport.rapport_bestilling
+                    SET prosessering_feilet = now()
+                    WHERE id = :id AND ferdig_prosessert IS NULL
+                """
+                    .trimIndent(),
+                mapOf("id" to id.raw),
+            )
+            .asUpdate
             .let { tx.run(it) }
 
     fun markerBestillingProsessert(tx: TransactionalSession, id: RapportBestilling.Id) =
@@ -78,8 +93,8 @@ class RapportRepository(private val clock: Clock) {
     fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         queryOf(
                 """
-                    INSERT INTO rapport.rapport(bestilling_id, orgnr, type, tittel, dato_valutert)
-                    VALUES (:bestilling_id, :orgnr, CAST(:type AS rapport.rapport_type), :tittel, :dato_valutert)
+                    INSERT INTO rapport.rapport(bestilling_id, orgnr, type, dato_valutert)
+                    VALUES (:bestilling_id, :orgnr, CAST(:type AS rapport.rapport_type), :dato_valutert)
                     RETURNING *
                 """
                     .trimIndent(),
@@ -87,7 +102,6 @@ class RapportRepository(private val clock: Clock) {
                     "bestilling_id" to rapport.bestillingId.raw,
                     "orgnr" to rapport.orgNr.raw,
                     "type" to rapport.type.name,
-                    "tittel" to rapport.tittel,
                     "dato_valutert" to rapport.datoValutert,
                 ),
             )
@@ -98,7 +112,7 @@ class RapportRepository(private val clock: Clock) {
     fun finnRapport(tx: TransactionalSession, id: Rapport.Id): Rapport? =
         queryOf(
                 """
-                    SELECT id, bestilling_id, orgnr, type, tittel, dato_valutert, opprettet, arkivert
+                    SELECT id, bestilling_id, orgnr, type, dato_valutert, opprettet, arkivert
                     FROM rapport.rapport
                     WHERE id = :id
                 """
@@ -117,7 +131,7 @@ class RapportRepository(private val clock: Clock) {
             .let { (orgnrWhere, orgnummere) ->
                 queryOf(
                     """
-                            SELECT id, bestilling_id, orgnr, type, tittel, dato_valutert, opprettet, arkivert
+                            SELECT id, bestilling_id, orgnr, type, dato_valutert, opprettet, arkivert
                             FROM rapport.rapport
                             WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                               AND $orgnrWhere

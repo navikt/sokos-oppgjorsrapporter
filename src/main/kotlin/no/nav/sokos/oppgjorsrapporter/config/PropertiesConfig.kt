@@ -45,10 +45,14 @@ object PropertiesConfig {
         )
     }
 
-    data class ApplicationProperties(val naisAppName: String, val profile: Profile) {
+    data class ApplicationProperties(val naisAppName: String, val profile: Profile, val disableBackgroundJobs: Boolean) {
         constructor(
             source: ConfigSource
-        ) : this(naisAppName = source.get("APP_NAME"), profile = Profile.valueOf(source.get("APPLICATION_PROFILE")))
+        ) : this(
+            naisAppName = source.get("APP_NAME"),
+            profile = Profile.valueOf(source.get("APPLICATION_PROFILE")),
+            disableBackgroundJobs = source.get("application.disable_background_jobs").toBoolean(),
+        )
     }
 
     data class PostgresProperties(val adminJdbcUrl: String, val queryJdbcUrl: String, val databaseName: String) {

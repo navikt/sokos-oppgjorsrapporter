@@ -16,13 +16,13 @@ import no.nav.security.mock.oauth2.withMockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.CompositeApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.postgresql.PostgreSQLContainer
 
 private val logger = KotlinLogging.logger {}
 
 object TestUtil {
     fun withFullApplication(
-        dbContainer: PostgreSQLContainer<Nothing>,
+        dbContainer: PostgreSQLContainer,
         mqContainer: MQContainer? = null,
         dependencyOverrides: Application.() -> Unit = {},
         thunk: suspend ApplicationTestBuilder.() -> Unit,
@@ -31,7 +31,7 @@ object TestUtil {
     }
 
     fun testApplicationConfig(
-        dbContainer: PostgreSQLContainer<Nothing>,
+        dbContainer: PostgreSQLContainer,
         mqContainer: MQContainer?,
         server: MockOAuth2Server,
     ): CompositeApplicationConfig =
@@ -43,7 +43,11 @@ object TestUtil {
             ApplicationConfig("application.conf"),
         )
 
-    fun testApplicationProfile() = MapApplicationConfig().apply { put("APPLICATION_PROFILE", "LOCAL") }
+    fun testApplicationProfile() =
+        MapApplicationConfig().apply {
+            put("APPLICATION_PROFILE", "LOCAL")
+            put("application.disable_background_jobs", "true")
+        }
 
     fun testContainerMqOverrides(container: MQContainer?) =
         MapApplicationConfig().apply {
@@ -59,7 +63,7 @@ object TestUtil {
             }
         }
 
-    fun testcontainerDbOverrides(container: PostgreSQLContainer<Nothing>): MapApplicationConfig =
+    fun testcontainerDbOverrides(container: PostgreSQLContainer): MapApplicationConfig =
         MapApplicationConfig()
             .apply {
                 val url = container.jdbcUrl
@@ -91,23 +95,27 @@ object TestUtil {
     fun readFile(fileName: String): String =
         this::class.java.classLoader.getResourceAsStream(fileName)?.bufferedReader()?.readLines()?.joinToString(separator = "\n")!!
 
-    fun loadDataSet(fileToLoad: String, dataSource: DataSource) {
+    fun <T> withEmptyDatabase(dataSource: DataSource, block: () -> T): T {
         deleteAllTables(dataSource) // Vi vil alltid helst starte med en kjent databasetilstand.
-
-        val sql = readFile(fileToLoad)
-        val connection = dataSource.connection
-        try {
-            connection.transactionIsolation = TRANSACTION_SERIALIZABLE
-            connection.autoCommit = false
-            logger.debug { "Loading data set from $fileToLoad" }
-            connection.prepareStatement(sql).execute()
-            connection.commit()
-        } finally {
-            connection.close()
-        }
-
+        val res = block()
         updateAutoincrementSequences(dataSource)
+        return res
     }
+
+    fun loadDataSet(fileToLoad: String, dataSource: DataSource) =
+        withEmptyDatabase(dataSource) {
+            val sql = readFile(fileToLoad)
+            val connection = dataSource.connection
+            try {
+                connection.transactionIsolation = TRANSACTION_SERIALIZABLE
+                connection.autoCommit = false
+                logger.debug { "Loading data set from $fileToLoad" }
+                connection.prepareStatement(sql).execute()
+                connection.commit()
+            } finally {
+                connection.close()
+            }
+        }
 
     fun deleteAllTables(dataSource: DataSource) =
         dataSource.connection.use { connection ->
@@ -179,7 +187,7 @@ fun MockOAuth2Server.authConfigOverrides() =
     }
 
 fun MockOAuth2Server.withTestApplication(
-    dbContainer: PostgreSQLContainer<Nothing>,
+    dbContainer: PostgreSQLContainer,
     mqContainer: MQContainer? = null,
     dependencyOverrides: Application.() -> Unit = {},
     thunk: suspend ApplicationTestBuilder.() -> Unit,
@@ -198,7 +206,7 @@ fun MockOAuth2Server.withTestApplication(
 }
 
 fun TestApplicationBuilder.configureTestApplicationEnvironment(
-    dbContainer: PostgreSQLContainer<Nothing>,
+    dbContainer: PostgreSQLContainer,
     mqContainer: MQContainer? = null,
     server: MockOAuth2Server,
 ) {

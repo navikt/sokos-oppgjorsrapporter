@@ -22,7 +22,9 @@ import kotlinx.io.bytestring.encodeToByteString
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
+import no.nav.sokos.oppgjorsrapporter.utils.TestData
 
 class RapportServiceTest :
     FunSpec({
@@ -31,7 +33,7 @@ class RapportServiceTest :
 
             test("kan lagre en rapport-bestilling i databasen") {
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val bestilling = sut.lagreBestilling("MQ: refusjon-bestilling-queue", RapportType.K27, "verbatim TextMessage contents")
@@ -46,32 +48,40 @@ class RapportServiceTest :
 
             test("kan telle antall uprosesserte rapport-bestillinger") {
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
+                    sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 0
+
+                    val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
+                    sut.lagreBestilling("test", RapportType.K27, dokument)
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
                 }
             }
 
             test("kan prosessere en rapport-bestilling") {
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
+                    val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
+                    val bestilling = sut.lagreBestilling("test", RapportType.K27, dokument)
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
 
                     val prosessertId = sut.prosesserBestilling { it.id }
 
-                    prosessertId shouldBe RapportBestilling.Id(1)
+                    prosessertId shouldBe bestilling.id
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 0
                 }
             }
 
             test("prøver ikke å prosessere en rapport-bestilling som allerede er under prosessering") {
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
+                    val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
+                    val bestilling = sut.lagreBestilling("test", RapportType.K27, dokument)
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
 
                     val laasTattLatch = CountDownLatch(1)
@@ -94,23 +104,22 @@ class RapportServiceTest :
                     prosesseringKanStarteLatch.countDown()
                     prosesseringFerdigLatch.await()
 
-                    prosessertId.await() shouldBe RapportBestilling.Id(1)
+                    prosessertId.await() shouldBe bestilling.id
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 0
                 }
             }
 
             test("kan lagre en rapport i databasen") {
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val ulagret =
                         UlagretRapport(
-                            RapportBestilling.Id(1),
-                            OrgNr("39487569"),
-                            RapportType.K27,
-                            "K27 for Ulende Gås 2023-07-14",
-                            LocalDate.of(2023, 7, 14),
+                            bestillingId = RapportBestilling.Id(1),
+                            orgNr = OrgNr("39487569"),
+                            type = RapportType.K27,
+                            datoValutert = LocalDate.of(2023, 7, 14),
                         )
                     val rapport = sut.lagreRapport(ulagret)
                     rapport.id shouldBe Rapport.Id(2)
@@ -127,7 +136,7 @@ class RapportServiceTest :
 
             test("kan hente en gitt rapport fra databasen") {
                 TestUtil.withFullApplication(dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val rapport = sut.finnRapport(Rapport.Id(1))
@@ -140,7 +149,7 @@ class RapportServiceTest :
 
             test("kan hente en liste med rapporter for en organisasjon") {
                 TestUtil.withFullApplication(dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val orgNr = OrgNr("123456789")
@@ -160,7 +169,7 @@ class RapportServiceTest :
 
             test("kan arkivere og de-arkivere en rapport i databasen") {
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val bruker = EntraId("enBruker", listOf("group"))
@@ -186,7 +195,7 @@ class RapportServiceTest :
 
             test("vil ikke audit-logge forsøk på å de-arkivere en ikke-arkivert rapport") {
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val bruker = EntraId("navIdent", listOf("group"))
@@ -203,7 +212,7 @@ class RapportServiceTest :
 
             test("kan liste variantene av en rapport") {
                 TestUtil.withFullApplication(dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val varianter = sut.listVarianter(Rapport.Id(2))
@@ -226,16 +235,15 @@ class RapportServiceTest :
 
             test("kan lagre en rapport-variant i databasen") {
                 TestUtil.withFullApplication(dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/simple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val ulagretRapport =
                         UlagretRapport(
-                            RapportBestilling.Id(1),
-                            OrgNr("39487569"),
-                            RapportType.K27,
-                            "K27 for Ulende Gås 2023-07-14",
-                            LocalDate.of(2023, 7, 14),
+                            bestillingId = RapportBestilling.Id(1),
+                            orgNr = OrgNr("39487569"),
+                            type = RapportType.K27,
+                            datoValutert = LocalDate.of(2023, 7, 14),
                         )
                     val rapport = sut.lagreRapport(ulagretRapport)
 
@@ -257,7 +265,7 @@ class RapportServiceTest :
 
             test("kan hente innholdet fra en variant") {
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
                     val rapportId = Rapport.Id(4)
@@ -283,7 +291,7 @@ class RapportServiceTest :
             test("vil ikke audit-logge forsøk på å hente innholdet fra en variant hvis innholdet ikke returneres til klienten") {
                 val mockedRepository = mockk<RapportRepository>()
                 TestUtil.withFullApplication(dbContainer) {
-                    TestUtil.loadDataSet("db/RapportServiceTest/multiple.sql", dbContainer.toDataSource())
+                    TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
                     every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
                     val sut: RapportService = application.dependencies.resolve()
 

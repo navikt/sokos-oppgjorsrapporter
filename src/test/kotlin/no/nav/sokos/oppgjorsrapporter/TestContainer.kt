@@ -1,14 +1,14 @@
 package no.nav.sokos.oppgjorsrapporter
 
 import com.ibm.mq.testcontainers.MQContainer
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.Wait
+import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 
 object TestContainer {
     private val postgresImage = "postgres:17"
-    val postgres: PostgreSQLContainer<Nothing> by lazy {
-        PostgreSQLContainer<Nothing>(DockerImageName.parse(postgresImage)).apply {
+    val postgres: PostgreSQLContainer by lazy {
+        PostgreSQLContainer(DockerImageName.parse(postgresImage)).apply {
             // Med 'reuse' påskrudd forblir containeren med databasen levende etter at testene har kjørt.
             // Dette kan være nyttig når man kjører testene lokalt, siden man da kan gjøre ting som:
             //  * peke IDEen sin på databasen (slik at den kan hente ned skjemaet og hjelpe med skriving av spørringer/migreringer),
