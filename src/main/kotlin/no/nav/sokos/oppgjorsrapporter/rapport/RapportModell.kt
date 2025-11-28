@@ -1,4 +1,5 @@
 @file:UseSerializers(LocalDateAsStringSerializer::class, InstantAsStringSerializer::class)
+@file:OptIn(ExperimentalSerializationApi::class)
 
 package no.nav.sokos.oppgjorsrapporter.rapport
 
@@ -6,8 +7,10 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlinx.io.bytestring.ByteString
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.json.JsonNames
 import kotliquery.Row
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
@@ -15,9 +18,9 @@ import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 @Serializable @JvmInline value class OrgNr(val raw: String)
 
 enum class RapportType(val altinnRessurs: String) {
-    K27("nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver"), // Ny kode: "refusjon"?
-    T12("Ikke definert ennå"), // Ny kode: "trekkhendelser"?
-    T14("Ikke definert ennå"), // Ny kode: "trekk"?
+    @JsonNames("K27") `ref-arbg`("nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver"),
+    @JsonNames("T12") `trekk-hend`("Ikke definert ennå"),
+    @JsonNames("T14") `trekk-kred`("Ikke definert ennå"),
 }
 
 sealed interface RapportBestillingFelter {

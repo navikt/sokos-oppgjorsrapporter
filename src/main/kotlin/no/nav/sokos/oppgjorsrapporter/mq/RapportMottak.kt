@@ -37,7 +37,7 @@ class RapportMottak(private val refusjonMqConsumer: MqConsumer, private val rapp
     fun process(melding: Melding) {
         val bestilling = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(melding.data)
         logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
-        rapportService.lagreBestilling(melding.kilde, RapportType.K27, melding.data)
+        rapportService.lagreBestilling(melding.kilde, RapportType.`ref-arbg`, melding.data)
     }
 
     private suspend fun hentBestilling(block: suspend (Melding) -> Unit) {

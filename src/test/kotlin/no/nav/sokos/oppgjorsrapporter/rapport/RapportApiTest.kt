@@ -186,7 +186,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 6,
                             "bestillingId": 6,
                             "orgNr": "456789012",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2024-01-01",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
@@ -225,7 +225,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 1,
                             "bestillingId": 1,
                             "orgNr": "123456789",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2023-01-01",
                             "opprettet": "2022-12-31T23:45:15Z",
                             "arkivert": null
@@ -234,7 +234,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 2,
                             "bestillingId": 2,
                             "orgNr": "123456789",
-                            "type": "T14",
+                            "type": "trekk-kred",
                             "datoValutert": "2023-01-01",
                             "opprettet": "2023-01-01T08:37:52Z",
                             "arkivert": null
@@ -273,7 +273,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 1,
                             "bestillingId": 1,
                             "orgNr": "123456789",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2023-01-01",
                             "opprettet": "2022-12-31T23:45:15Z",
                             "arkivert": null
@@ -282,7 +282,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 2,
                             "bestillingId": 2,
                             "orgNr": "123456789",
-                            "type": "T14",
+                            "type": "trekk-kred",
                             "datoValutert": "2023-01-01",
                             "opprettet": "2023-01-01T08:37:52Z",
                             "arkivert": null
@@ -291,7 +291,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 3,
                             "bestillingId": 3,
                             "orgNr": "234567890",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2023-11-01",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": null
@@ -300,7 +300,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 5,
                             "bestillingId": 5,
                             "orgNr": "456789012",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2023-12-31",
                             "opprettet": "2023-12-31T22:58:27Z",
                             "arkivert": null
@@ -309,7 +309,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 6,
                             "bestillingId": 6,
                             "orgNr": "456789012",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2024-01-01",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
@@ -349,7 +349,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 3,
                             "bestillingId": 3,
                             "orgNr": "234567890",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2023-11-01",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": null
@@ -358,7 +358,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 4,
                             "bestillingId": 4,
                             "orgNr": "345678901",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2023-11-01",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": "2023-11-15T07:14:41Z"
@@ -367,7 +367,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 5,
                             "bestillingId": 5,
                             "orgNr": "456789012",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2023-12-31",
                             "opprettet": "2023-12-31T22:58:27Z",
                             "arkivert": null
@@ -376,7 +376,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 6,
                             "bestillingId": 6,
                             "orgNr": "456789012",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2024-01-01",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
@@ -415,7 +415,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 3,
                             "bestillingId": 3,
                             "orgNr": "234567890",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2023-11-01",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": null
@@ -430,6 +430,45 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
     fun `POST _api_rapport_v1 (for spesifikk rapport-type i 2023) svarer riktig`() {
         val response =
             client()
+                .body(
+                    """
+                        {
+                            "aar": 2023,
+                            "rapportTyper": ["trekk-kred"]
+                         }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                    [
+                        {
+                            "id": 2,
+                            "bestillingId": 2,
+                            "orgNr": "123456789",
+                            "type": "trekk-kred",
+                            "datoValutert": "2023-01-01",
+                            "opprettet": "2023-01-01T08:37:52Z",
+                            "arkivert": null
+                        }
+                    ]
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun `POST _api_rapport_v1 (for gammel spesifikk rapport-type i 2023) svarer riktig`() {
+        val response =
+            client(validationFilter = null)
                 .body(
                     """
                         {
@@ -454,7 +493,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 2,
                             "bestillingId": 2,
                             "orgNr": "123456789",
-                            "type": "T14",
+                            "type": "trekk-kred",
                             "datoValutert": "2023-01-01",
                             "opprettet": "2023-01-01T08:37:52Z",
                             "arkivert": null
@@ -489,7 +528,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "id": 2,
                         "bestillingId": 2,
                         "orgNr": "123456789",
-                        "type": "T14",
+                        "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": null
@@ -608,7 +647,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "id": 2,
                         "bestillingId": 2,
                         "orgNr": "123456789",
-                        "type": "T14",
+                        "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": null
@@ -636,7 +675,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "id": 2,
                         "bestillingId": 2,
                         "orgNr": "123456789",
-                        "type": "T14",
+                        "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": "2025-11-22T12:00:00Z"
@@ -671,7 +710,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "id": 2,
                         "bestillingId": 2,
                         "orgNr": "123456789",
-                        "type": "T14",
+                        "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": null
