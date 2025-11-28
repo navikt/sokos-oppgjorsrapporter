@@ -60,7 +60,6 @@ sealed interface RapportFelter {
     val bestillingId: RapportBestilling.Id
     val orgNr: OrgNr
     val type: RapportType
-    val tittel: String
     val datoValutert: LocalDate
 }
 
@@ -68,7 +67,6 @@ data class UlagretRapport(
     override val bestillingId: RapportBestilling.Id,
     override val orgNr: OrgNr,
     override val type: RapportType,
-    override val tittel: String,
     override val datoValutert: LocalDate,
 ) : RapportFelter
 
@@ -78,7 +76,6 @@ data class Rapport(
     override val bestillingId: RapportBestilling.Id,
     override val orgNr: OrgNr,
     override val type: RapportType,
-    override val tittel: String,
     override val datoValutert: LocalDate,
     val opprettet: Instant,
     val arkivert: Instant? = null,
@@ -95,7 +92,6 @@ data class Rapport(
         bestillingId = RapportBestilling.Id(row.long("bestilling_id")),
         orgNr = OrgNr(row.string("orgnr")),
         type = RapportType.valueOf(row.string("type")),
-        tittel = row.string("tittel"),
         datoValutert = row.localDate("dato_valutert"),
         opprettet = row.instant("opprettet"),
         arkivert = row.instantOrNull("arkivert"),

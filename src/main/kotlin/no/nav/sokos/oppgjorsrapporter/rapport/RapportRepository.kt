@@ -93,8 +93,8 @@ class RapportRepository(private val clock: Clock) {
     fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         queryOf(
                 """
-                    INSERT INTO rapport.rapport(bestilling_id, orgnr, type, tittel, dato_valutert)
-                    VALUES (:bestilling_id, :orgnr, CAST(:type AS rapport.rapport_type), :tittel, :dato_valutert)
+                    INSERT INTO rapport.rapport(bestilling_id, orgnr, type, dato_valutert)
+                    VALUES (:bestilling_id, :orgnr, CAST(:type AS rapport.rapport_type), :dato_valutert)
                     RETURNING *
                 """
                     .trimIndent(),
@@ -102,7 +102,6 @@ class RapportRepository(private val clock: Clock) {
                     "bestilling_id" to rapport.bestillingId.raw,
                     "orgnr" to rapport.orgNr.raw,
                     "type" to rapport.type.name,
-                    "tittel" to rapport.tittel,
                     "dato_valutert" to rapport.datoValutert,
                 ),
             )
@@ -113,7 +112,7 @@ class RapportRepository(private val clock: Clock) {
     fun finnRapport(tx: TransactionalSession, id: Rapport.Id): Rapport? =
         queryOf(
                 """
-                    SELECT id, bestilling_id, orgnr, type, tittel, dato_valutert, opprettet, arkivert
+                    SELECT id, bestilling_id, orgnr, type, dato_valutert, opprettet, arkivert
                     FROM rapport.rapport
                     WHERE id = :id
                 """
@@ -132,7 +131,7 @@ class RapportRepository(private val clock: Clock) {
             .let { (orgnrWhere, orgnummere) ->
                 queryOf(
                     """
-                            SELECT id, bestilling_id, orgnr, type, tittel, dato_valutert, opprettet, arkivert
+                            SELECT id, bestilling_id, orgnr, type, dato_valutert, opprettet, arkivert
                             FROM rapport.rapport
                             WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                               AND $orgnrWhere

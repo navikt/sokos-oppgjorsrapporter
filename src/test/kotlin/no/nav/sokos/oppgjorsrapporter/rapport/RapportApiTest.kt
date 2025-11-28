@@ -187,7 +187,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 6,
                             "orgNr": "456789012",
                             "type": "K27",
-                            "tittel": "K27 for Luskende Ulv 2024-01-01",
                             "datoValutert": "2024-01-01",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
@@ -227,7 +226,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 1,
                             "orgNr": "123456789",
                             "type": "K27",
-                            "tittel": "K27 for Skinnende Padde 2023-01-01",
                             "datoValutert": "2023-01-01",
                             "opprettet": "2022-12-31T23:45:15Z",
                             "arkivert": null
@@ -237,7 +235,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 2,
                             "orgNr": "123456789",
                             "type": "T14",
-                            "tittel": "T14 for Skinnende Padde 2023-01-01",
                             "datoValutert": "2023-01-01",
                             "opprettet": "2023-01-01T08:37:52Z",
                             "arkivert": null
@@ -277,7 +274,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 1,
                             "orgNr": "123456789",
                             "type": "K27",
-                            "tittel": "K27 for Skinnende Padde 2023-01-01",
                             "datoValutert": "2023-01-01",
                             "opprettet": "2022-12-31T23:45:15Z",
                             "arkivert": null
@@ -287,7 +283,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 2,
                             "orgNr": "123456789",
                             "type": "T14",
-                            "tittel": "T14 for Skinnende Padde 2023-01-01",
                             "datoValutert": "2023-01-01",
                             "opprettet": "2023-01-01T08:37:52Z",
                             "arkivert": null
@@ -297,7 +292,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 3,
                             "orgNr": "234567890",
                             "type": "K27",
-                            "tittel": "K27 for Humrende Elg 2023-11-01",
                             "datoValutert": "2023-11-01",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": null
@@ -307,7 +301,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 5,
                             "orgNr": "456789012",
                             "type": "K27",
-                            "tittel": "K27 for Luskende Ulv 2023-12-31",
                             "datoValutert": "2023-12-31",
                             "opprettet": "2023-12-31T22:58:27Z",
                             "arkivert": null
@@ -317,7 +310,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 6,
                             "orgNr": "456789012",
                             "type": "K27",
-                            "tittel": "K27 for Luskende Ulv 2024-01-01",
                             "datoValutert": "2024-01-01",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
@@ -358,7 +350,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 3,
                             "orgNr": "234567890",
                             "type": "K27",
-                            "tittel": "K27 for Humrende Elg 2023-11-01",
                             "datoValutert": "2023-11-01",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": null
@@ -368,7 +359,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 4,
                             "orgNr": "345678901",
                             "type": "K27",
-                            "tittel": "K27 for Lummer Hummer 2023-11-01",
                             "datoValutert": "2023-11-01",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": "2023-11-15T07:14:41Z"
@@ -378,7 +368,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 5,
                             "orgNr": "456789012",
                             "type": "K27",
-                            "tittel": "K27 for Luskende Ulv 2023-12-31",
                             "datoValutert": "2023-12-31",
                             "opprettet": "2023-12-31T22:58:27Z",
                             "arkivert": null
@@ -388,7 +377,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 6,
                             "orgNr": "456789012",
                             "type": "K27",
-                            "tittel": "K27 for Luskende Ulv 2024-01-01",
                             "datoValutert": "2024-01-01",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
@@ -428,7 +416,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 3,
                             "orgNr": "234567890",
                             "type": "K27",
-                            "tittel": "K27 for Humrende Elg 2023-11-01",
                             "datoValutert": "2023-11-01",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": null
@@ -468,7 +455,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "bestillingId": 2,
                             "orgNr": "123456789",
                             "type": "T14",
-                            "tittel": "T14 for Skinnende Padde 2023-01-01",
                             "datoValutert": "2023-01-01",
                             "opprettet": "2023-01-01T08:37:52Z",
                             "arkivert": null
@@ -504,7 +490,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "bestillingId": 2,
                         "orgNr": "123456789",
                         "type": "T14",
-                        "tittel": "T14 for Skinnende Padde 2023-01-01",
                         "datoValutert": "2023-01-01",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": null
@@ -624,7 +609,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "bestillingId": 2,
                         "orgNr": "123456789",
                         "type": "T14",
-                        "tittel": "T14 for Skinnende Padde 2023-01-01",
                         "datoValutert": "2023-01-01",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": null
@@ -653,7 +637,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "bestillingId": 2,
                         "orgNr": "123456789",
                         "type": "T14",
-                        "tittel": "T14 for Skinnende Padde 2023-01-01",
                         "datoValutert": "2023-01-01",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": "2025-11-22T12:00:00Z"
@@ -689,7 +672,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "bestillingId": 2,
                         "orgNr": "123456789",
                         "type": "T14",
-                        "tittel": "T14 for Skinnende Padde 2023-01-01",
                         "datoValutert": "2023-01-01",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": null

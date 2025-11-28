@@ -22,7 +22,9 @@ import kotlinx.io.bytestring.encodeToByteString
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
+import no.nav.sokos.oppgjorsrapporter.utils.TestData
 
 class RapportServiceTest :
     FunSpec({
@@ -49,6 +51,10 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
+                    sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 0
+
+                    val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
+                    sut.lagreBestilling("test", RapportType.K27, dokument)
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
                 }
             }
@@ -58,11 +64,13 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
+                    val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
+                    val bestilling = sut.lagreBestilling("test", RapportType.K27, dokument)
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
 
                     val prosessertId = sut.prosesserBestilling { it.id }
 
-                    prosessertId shouldBe RapportBestilling.Id(1)
+                    prosessertId shouldBe bestilling.id
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 0
                 }
             }
@@ -72,6 +80,8 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
+                    val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
+                    val bestilling = sut.lagreBestilling("test", RapportType.K27, dokument)
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
 
                     val laasTattLatch = CountDownLatch(1)
@@ -94,7 +104,7 @@ class RapportServiceTest :
                     prosesseringKanStarteLatch.countDown()
                     prosesseringFerdigLatch.await()
 
-                    prosessertId.await() shouldBe RapportBestilling.Id(1)
+                    prosessertId.await() shouldBe bestilling.id
                     sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 0
                 }
             }
@@ -106,11 +116,10 @@ class RapportServiceTest :
                     val sut: RapportService = application.dependencies.resolve()
                     val ulagret =
                         UlagretRapport(
-                            RapportBestilling.Id(1),
-                            OrgNr("39487569"),
-                            RapportType.K27,
-                            "K27 for Ulende Gås 2023-07-14",
-                            LocalDate.of(2023, 7, 14),
+                            bestillingId = RapportBestilling.Id(1),
+                            orgNr = OrgNr("39487569"),
+                            type = RapportType.K27,
+                            datoValutert = LocalDate.of(2023, 7, 14),
                         )
                     val rapport = sut.lagreRapport(ulagret)
                     rapport.id shouldBe Rapport.Id(2)
@@ -231,11 +240,10 @@ class RapportServiceTest :
                     val sut: RapportService = application.dependencies.resolve()
                     val ulagretRapport =
                         UlagretRapport(
-                            RapportBestilling.Id(1),
-                            OrgNr("39487569"),
-                            RapportType.K27,
-                            "K27 for Ulende Gås 2023-07-14",
-                            LocalDate.of(2023, 7, 14),
+                            bestillingId = RapportBestilling.Id(1),
+                            orgNr = OrgNr("39487569"),
+                            type = RapportType.K27,
+                            datoValutert = LocalDate.of(2023, 7, 14),
                         )
                     val rapport = sut.lagreRapport(ulagretRapport)
 

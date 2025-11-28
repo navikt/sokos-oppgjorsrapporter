@@ -18,7 +18,6 @@ object TestData {
             bestillingId = RapportBestilling.Id(114),
             orgNr = OrgNr("810007982"),
             type = RapportType.K27,
-            tittel = "K27 for Snikende Maur 2024-11-01",
             datoValutert = LocalDate.parse("2024-11-01"),
             opprettet = Instant.parse("2024-11-01T12:15:02Z"),
             arkivert = null,

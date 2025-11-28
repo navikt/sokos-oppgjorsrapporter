@@ -240,8 +240,6 @@ components:
           type: "string"
         type:
           $ref: "#/components/schemas/RapportType"
-        tittel:
-          type: "string"
         datoValutert:
           type: "string"
           format: "date"
@@ -255,7 +253,6 @@ components:
         - "bestillingId"
         - "orgNr"
         - "type"
-        - "tittel"
         - "datoValutert"
         - "opprettet"
 

@@ -62,14 +62,18 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         provide { this@module.resolveConfig(appConfig) }
         val config: PropertiesConfig.Configuration by this
 
-        provide { ApplicationState() }
+        provide { ApplicationState(disableBackgroundJobs = config.applicationProperties.disableBackgroundJobs) }
         val applicationState: ApplicationState by this
 
-        DatabaseMigrator(createDataSource(config.postgresProperties.adminJdbcUrl), applicationState)
+        // Vi vil helst ikke registrere denne dataSourcen i DI-registeret, siden den ikke skal brukes til noe annet enn Flyway.  Samtidig er
+        // det fint om testene husker å lukke denne dataSourcen også når en testApplication avsluttes; se .cleanup() på
+        // DataSource-registreringen under.
+        val adminDataSource = createDataSource(config.postgresProperties.adminJdbcUrl)
+        DatabaseMigrator(adminDataSource, applicationState)
         DatabaseConfig.init(config)
 
         provide { Metrics(PrometheusMeterRegistry(PrometheusConfig.DEFAULT)) }
-        provide<DataSource> { DatabaseConfig.dataSource }
+        provide<DataSource> { DatabaseConfig.dataSource }.cleanup { adminDataSource.close() }
         provide(RapportRepository::class)
         provide(RapportService::class)
         provide<AuthClient> {
