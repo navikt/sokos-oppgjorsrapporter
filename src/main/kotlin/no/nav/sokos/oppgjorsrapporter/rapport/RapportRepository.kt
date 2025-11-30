@@ -125,28 +125,51 @@ class RapportRepository(private val clock: Clock) {
 
     fun listRapporter(tx: TransactionalSession, kriterier: RapportKriterier): List<Rapport> =
         when (kriterier) {
-                is InkluderOrgKriterier -> "orgnr = ANY(:orgnummere)" to kriterier.inkluderte
-                is EkskluderOrgKriterier -> "(NOT orgnr = ANY(:orgnummere))" to kriterier.ekskluderte
-            }
-            .let { (orgnrWhere, orgnummere) ->
-                queryOf(
-                    """
+                is DatoRangeKriterier -> {
+                    val (orgNrWhere, orgnummere) =
+                        when (kriterier) {
+                            is InkluderOrgKriterier -> "orgnr = ANY(:orgnummere)" to kriterier.inkluderte
+                            is EkskluderOrgKriterier -> "(NOT orgnr = ANY(:orgnummere))" to kriterier.ekskluderte
+                        }
+                    queryOf(
+                        """
                             SELECT id, bestilling_id, orgnr, type, dato_valutert, opprettet, arkivert
                             FROM rapport.rapport
                             WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
-                              AND $orgnrWhere
-                              AND dato_valutert BETWEEN :fraDato AND :tilDato
                               AND (arkivert IS NULL OR :inkluderArkiverte)
+                              AND $orgNrWhere
+                              AND dato_valutert BETWEEN :fraDato AND :tilDato
                         """
-                        .trimIndent(),
-                    mapOf(
-                        "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
-                        "orgnummere" to orgnummere.map { it.raw }.toTypedArray(),
-                        "fraDato" to kriterier.periode.start,
-                        "tilDato" to kriterier.periode.end,
-                        "inkluderArkiverte" to kriterier.inkluderArkiverte,
-                    ),
-                )
+                            .trimIndent(),
+                        mapOf(
+                            "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
+                            "inkluderArkiverte" to kriterier.inkluderArkiverte,
+                            "orgnummere" to orgnummere.map { it.raw }.toTypedArray(),
+                            "fraDato" to kriterier.periode.start,
+                            "tilDato" to kriterier.periode.end,
+                        ),
+                    )
+                }
+
+                is EtterIdKriterier -> {
+                    queryOf(
+                        """
+                            SELECT id, bestilling_id, orgnr, type, dato_valutert, opprettet, arkivert
+                            FROM rapport.rapport
+                            WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
+                              AND (arkivert IS NULL OR :inkluderArkiverte)
+                              AND orgnr = :orgnummer
+                              AND id > :etter_id
+                        """
+                            .trimIndent(),
+                        mapOf(
+                            "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
+                            "inkluderArkiverte" to kriterier.inkluderArkiverte,
+                            "orgnummer" to kriterier.orgnr.raw,
+                            "etter_id" to kriterier.etterId.raw,
+                        ),
+                    )
+                }
             }
             .map { row -> Rapport(row) }
             .asList

@@ -46,6 +46,7 @@ object Api {
     @Serializable
     data class RapportListeRequest(
         val orgnr: String? = null,
+        val etterId: Long? = null,
         val aar: Int? = null,
         val fraDato: LocalDate? = null,
         val tilDato: LocalDate? = null,
@@ -90,6 +91,9 @@ fun Route.rapportApi() {
                         if (aar != null) {
                             return@post call.respond(HttpStatusCode.BadRequest, "aar kan ikke kombineres med fraDato")
                         }
+                        if (etterId != null) {
+                            return@post call.respond(HttpStatusCode.BadRequest, "etterId kan ikke kombineres med fraDato")
+                        }
                         val til = tilDato ?: fraDato.with(lastDayOfYear())
                         if (fraDato.isAfter(til)) {
                             return@post call.respond(HttpStatusCode.BadRequest, "fraDato kan ikke være etter tilDato")
@@ -100,27 +104,49 @@ fun Route.rapportApi() {
                             if (tilDato != null) {
                                 return@post call.respond(HttpStatusCode.BadRequest, "aar kan ikke kombineres med tilDato")
                             }
+                            if (etterId != null) {
+                                return@post call.respond(HttpStatusCode.BadRequest, "aar kan ikke kombineres med etterId")
+                            }
                             heltAarDateRange(it)
+                        }
+                        ?: tilDato?.let {
+                            return@post call.respond(HttpStatusCode.BadRequest, "tilDato kan ikke angis uten fraDato")
                         }
                         ?: LocalDateRange.ofClosed(LocalDate.now(clock).with(firstDayOfYear()), LocalDate.now(clock))
                 }
+            val orgNr = reqBody.orgnr?.let { OrgNr(it) } ?: (bruker as? Systembruker)?.userOrg
+            // TODO: Hvordan skal "egne ansatte" håndteres?  Både her (for å ikke hente ut unødvendig mye data fra databasen) og i
+            //       harTilgangTilRessurs() (for å begrense søk med eksplisitt orgnr)?
             val kriterier =
-                when (bruker) {
-                    is Systembruker -> {
-                        // Hvis query-param orgnr er et brukeren ikke har tilgang til, vil PDP-sjekk lenger ned filtrere dette bort
-                        val orgNr = reqBody.orgnr?.let { OrgNr(it) } ?: bruker.userOrg
-                        InkluderOrgKriterier(setOf(orgNr), reqBody.rapportTyper, datoRange, reqBody.inkluderArkiverte)
+                if (reqBody.etterId != null) {
+                    if (orgNr == null) {
+                        return@post call.respond(HttpStatusCode.BadRequest, "etterId krever at orgnr er angitt")
                     }
-                    is EntraId -> {
-                        if (reqBody.orgnr == null) {
-                            // TODO: Hvordan skal "egne ansatte" håndteres?
-                            EkskluderOrgKriterier(emptySet(), reqBody.rapportTyper, datoRange, reqBody.inkluderArkiverte)
-                        } else {
-                            InkluderOrgKriterier(setOf(OrgNr(reqBody.orgnr)), reqBody.rapportTyper, datoRange, reqBody.inkluderArkiverte)
-                        }
-                    }
-                // TODO: Finne orgnr brukeren har rettigheter til fra MinID-token, liste for alle dem
+                    EtterIdKriterier(
+                        orgnr = orgNr,
+                        etterId = Rapport.Id(reqBody.etterId),
+                        rapportTyper = reqBody.rapportTyper,
+                        inkluderArkiverte = reqBody.inkluderArkiverte,
+                    )
+                } else if (orgNr != null) {
+                    // Enten eksplisitt reqBody.orgnr eller implisitt orgnr fra Systembruker-autentisering
+                    InkluderOrgKriterier(
+                        inkluderte = setOf(orgNr),
+                        rapportTyper = reqBody.rapportTyper,
+                        periode = datoRange,
+                        inkluderArkiverte = reqBody.inkluderArkiverte,
+                    )
+                } else {
+                    // Må være EntraId-bruker uten reqBody.orgnr
+                    EkskluderOrgKriterier(
+                        ekskluderte = emptySet(),
+                        rapportTyper = reqBody.rapportTyper,
+                        periode = datoRange,
+                        inkluderArkiverte = reqBody.inkluderArkiverte,
+                    )
                 }
+            // TODO: Håndtere MinID-autentisering: Bruke token med arbeidsgiver-altinn-tilganger for å finne virksomhetene brukeren har
+            //       rettigheter, liste for alle dem
 
             val rapporter = rapportService.listRapporter(kriterier)
             val rapportTyperMedTilgang =

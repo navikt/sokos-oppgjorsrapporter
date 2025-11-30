@@ -162,8 +162,11 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
 
 sealed interface RapportKriterier {
     val rapportTyper: Set<RapportType>
-    val periode: LocalDateRange
     val inkluderArkiverte: Boolean
+}
+
+sealed interface DatoRangeKriterier : RapportKriterier {
+    val periode: LocalDateRange
 }
 
 data class InkluderOrgKriterier(
@@ -171,12 +174,19 @@ data class InkluderOrgKriterier(
     override val rapportTyper: Set<RapportType>,
     override val periode: LocalDateRange,
     override val inkluderArkiverte: Boolean,
-) : RapportKriterier
+) : DatoRangeKriterier
 
 data class EkskluderOrgKriterier(
     val ekskluderte: Set<OrgNr>,
     override val rapportTyper: Set<RapportType>,
     override val periode: LocalDateRange,
+    override val inkluderArkiverte: Boolean,
+) : DatoRangeKriterier
+
+data class EtterIdKriterier(
+    val orgnr: OrgNr,
+    val etterId: Rapport.Id,
+    override val rapportTyper: Set<RapportType>,
     override val inkluderArkiverte: Boolean,
 ) : RapportKriterier
 

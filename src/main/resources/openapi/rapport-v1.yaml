@@ -27,7 +27,7 @@ paths:
   /api/rapport/v1:
     post:
       description: |
-        Hent liste med metadata om oppgjørsrapportene brukeren har tilgang til.
+        Søk etter oppgjørsrapporter brukeren har tilgang til.
       requestBody:
         content:
           application/json:
@@ -195,12 +195,26 @@ components:
         tilDato:
           description: |
             Returner kun rapporter utstedt før eller på den angitte datoen.
-            Blir kun tatt hensyn til dersom også `fraDato` er angitt.
 
+            Kan kun angis hvis også `fraDato` er angitt.
             Dette parameteret kan ikke kombineres med `aar`.
           type: string
           format: date
           example: "2025-12-24"
+          nullable: true
+        etterId:
+          description: |
+            Returner kun rapporter hvis "id" er større enn det angitte tallet.
+
+            Når `etterId` er angitt, må søket være begrenset til ett spesifikt organisasjonsnr.
+            Det kan enten gjøres ved at `orgnr` angis eksplisitt (uansett autentiseringsmetode),
+            eller implisitt ved systembruker-autentisering (hvor manglende `orgnr` vil begrense
+            søket til systembrukerens sluttbruker-organisasjon).
+
+            Dette parameteret kan ikke kombineres med `aar`, `fraDato` eller `tilDato`.
+
+          type: integer
+          example: 17
           nullable: true
         rapportTyper:
           description: |
