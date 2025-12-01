@@ -505,7 +505,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "id": 6,
                             "bestillingId": 6,
                             "orgNr": "456789012",
-                            "type": "K27",
+                            "type": "ref-arbg",
                             "datoValutert": "2024-01-01",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
