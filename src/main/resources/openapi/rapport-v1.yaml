@@ -212,7 +212,6 @@ components:
             søket til systembrukerens sluttbruker-organisasjon).
 
             Dette parameteret kan ikke kombineres med `aar`, `fraDato` eller `tilDato`.
-
           type: integer
           example: 17
           nullable: true

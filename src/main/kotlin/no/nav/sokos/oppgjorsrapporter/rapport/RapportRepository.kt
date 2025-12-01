@@ -126,29 +126,29 @@ class RapportRepository(private val clock: Clock) {
     fun listRapporter(tx: TransactionalSession, kriterier: RapportKriterier): List<Rapport> =
         when (kriterier) {
                 is DatoRangeKriterier -> {
-                    val (orgNrWhere, orgnummere) =
-                        when (kriterier) {
-                            is InkluderOrgKriterier -> "orgnr = ANY(:orgnummere)" to kriterier.inkluderte
-                            is EkskluderOrgKriterier -> "(NOT orgnr = ANY(:orgnummere))" to kriterier.ekskluderte
-                        }
-                    queryOf(
-                        """
+                    when (kriterier) {
+                        is InkluderOrgKriterier -> "orgnr = ANY(:orgnummere)" to kriterier.inkluderte
+                        is EkskluderOrgKriterier -> "(NOT orgnr = ANY(:orgnummere))" to kriterier.ekskluderte
+                    }.let { (orgnrWhere, orgnummere) ->
+                        queryOf(
+                            """
                             SELECT id, bestilling_id, orgnr, type, dato_valutert, opprettet, arkivert
                             FROM rapport.rapport
                             WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                               AND (arkivert IS NULL OR :inkluderArkiverte)
-                              AND $orgNrWhere
+                              AND $orgnrWhere
                               AND dato_valutert BETWEEN :fraDato AND :tilDato
                         """
-                            .trimIndent(),
-                        mapOf(
-                            "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
-                            "inkluderArkiverte" to kriterier.inkluderArkiverte,
-                            "orgnummere" to orgnummere.map { it.raw }.toTypedArray(),
-                            "fraDato" to kriterier.periode.start,
-                            "tilDato" to kriterier.periode.end,
-                        ),
-                    )
+                                .trimIndent(),
+                            mapOf(
+                                "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
+                                "inkluderArkiverte" to kriterier.inkluderArkiverte,
+                                "orgnummere" to orgnummere.map { it.raw }.toTypedArray(),
+                                "fraDato" to kriterier.periode.start,
+                                "tilDato" to kriterier.periode.end,
+                            ),
+                        )
+                    }
                 }
 
                 is EtterIdKriterier -> {
