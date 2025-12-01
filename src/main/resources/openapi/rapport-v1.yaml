@@ -4,8 +4,13 @@ tags:
 
 info:
   title: Oppgjørsrapporter API
-  description: >
-    API for oppgjørsrapporter: Refusjon arbeidsgiver (K27), Trekkoppgjør kreditor (T14), Trekkhendelser (T12)
+  description: |
+    API for oppgjørsrapporter
+    
+    APIet tilgjengeliggjør oppgjørsrapporter av følgende typer:
+    * Oppgjørsrapport arbeidsgiver - refusjoner fra Nav (tidl. K27),
+    * Trekkoppgjør kreditor (tidl. T14), og
+    * Trekkhendelser (tidl. T12)
   version: 1.0.0
 
 servers:
@@ -21,7 +26,7 @@ security:
 paths:
   /api/rapport/v1:
     post:
-      description: >
+      description: |
         Hent liste med metadata om oppgjørsrapportene brukeren har tilgang til.
       requestBody:
         content:
@@ -55,7 +60,7 @@ paths:
                 type: string
   /api/rapport/v1/{id}:
     get:
-      description: >
+      description: |
         Hent metadata om en spesifikk rapport.
       parameters:
         - name: id
@@ -84,7 +89,7 @@ paths:
                 $ref: "#/components/schemas/Rapport"
   /api/rapport/v1/{id}/arkiver:
     put:
-      description: >
+      description: |
         Skru av/på arkivert-statusen til en spesifikk rapport.
       parameters:
         - name: id
@@ -115,7 +120,7 @@ paths:
           description: Not Found
   /api/rapport/v1/{id}/innhold:
     get:
-      description: >
+      description: |
         Hent innhold i en spesifikk rapport.
       parameters:
         - name: id
@@ -159,57 +164,57 @@ components:
       type: object
       properties:
         orgnr:
-          description: >
+          description: |
             Returner kun rapporter utstedt til det angitte organisasjonsnummeret.
 
-            Hvis 'orgnr' ikke er angitt, avgjøres hvilke orgnummer det skal returneres rapporter for av hvordan brukeren er autentisert.
+            Hvis `orgnr` ikke er angitt, avgjøres hvilke orgnummer det skal returneres rapporter for av hvordan brukeren er autentisert.
             For systembruker-autentisering brukes orgnummeret systembrukeren agerer på vegne av ('systemuser_org').
           type: string
           example: "983887457"
           nullable: true
         aar:
-          description: >
+          description: |
             Returner kun rapporter utstedt i det angitte året.
 
-            Dette parameteret kan ikke kombineres med "fraDato" eller "tilDato".
-            Hvis verken "aar" eller "fraDato" er angitt, vil kun rapporter for inneværende år returneres.
+            Dette parameteret kan ikke kombineres med `fraDato` eller `tilDato`.
+            Hvis verken `aar` eller `fraDato` er angitt, vil kun rapporter for inneværende år returneres.
           type: integer
           example: 2025
           nullable: true
         fraDato:
-          description: >
+          description: |
             Returner kun rapporter utstedt på eller etter den angitte datoen.
-            Når "fraDato" er angitt, kan "tilDato" også angis; er den ikke angitt, vil kun rapporter fra "fraDato" og ut samme år returneres.
+            Når `fraDato` er angitt, kan `tilDato` også angis; er den ikke angitt, vil kun rapporter fra `fraDato` og ut samme år returneres.
 
-            Dette parameteret kan ikke kombineres med "aar".
-            Hvis verken "aar" eller "fraDato" er angitt, vil kun rapporter for inneværende år returneres.
+            Dette parameteret kan ikke kombineres med `aar`.
+            Hvis verken `aar` eller `fraDato` er angitt, vil kun rapporter for inneværende år returneres.
           type: string
           format: date
           example: "2025-11-17"
           nullable: true
         tilDato:
-          description: >
+          description: |
             Returner kun rapporter utstedt før eller på den angitte datoen.
-            Blir kun tatt hensyn til dersom også "fraDato" er angitt.
+            Blir kun tatt hensyn til dersom også `fraDato` er angitt.
 
-            Dette parameteret kan ikke kombineres med "aar".
+            Dette parameteret kan ikke kombineres med `aar`.
           type: string
           format: date
           example: "2025-12-24"
           nullable: true
         rapportTyper:
-          description: >
+          description: |
             Returner kun rapporter av de angitte typene.
 
-            Hvis "rapportTyper" ikke er angitt, vil rapporter av alle typer returneres.
+            Hvis `rapportTyper` ikke er angitt, vil rapporter av alle typer returneres.
           type: array
           items:
             $ref: "#/components/schemas/RapportType"
           default: Alle rapport-typer
           uniqueItems: true
-          example: '["K27"]'
+          example: ["ref-arbg"]
         inkluderArkiverte:
-          description: >
+          description: |
             Sett til `true` dersom også arkiverte rapporter skal returneres.
 
             Hvis ikke satt, eller satt til `false`, vil arkiverte rapporter utelates fra den returnerte lista.
@@ -219,13 +224,19 @@ components:
     RapportType:
       type: string
       enum:
-        - K27
-        - T12
-        - T14
+        - "ref-arbg"
+        - "trekk-hend"
+        - "trekk-kred"
+      description: |
+        Inntil videre støtter APIet også input som bruker de gamle type-navnene:
+        * "K27" for "ref-arbg"
+        * "T12" for "trekk-hend
+        * "T14" for "trekk-kred"
 
     Instant:
       type: string
       format: date-time
+      example: "2025-11-26T12:34:56Z"
 
     Rapport:
       type: "object"
@@ -262,13 +273,14 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        Kan bruke [Altinn systembruker](https://docs.altinn.studio/nb/authorization/guides/system-vendor/system-user/); se [dokumentasjon] for hvordan det kan settes opp.
+        Kan bruke [Altinn systembruker](https://docs.altinn.studio/nb/authorization/guides/system-vendor/system-user/);
+        se [dokumentasjon](https://github.com/navikt/sokos-oppgjorsrapporter/wiki/Autentisering-og-autorisasjon) for hvordan dette kan settes opp.
     EntraId:
       type: http
       scheme: bearer
       bearerFormat: JWT
       description: |
-        Kan bruke [Entra ID](https://docs.nais.io/auth/entra-id/) til autentisering.  Token må ha `audience` satt til `[cluster]:okonomi:sokos-oppgjorsrapporter`.
+        For Nav-intern bruk: Bruk [Entra ID](https://docs.nais.io/auth/entra-id/) til autentisering.  Token må ha `audience` satt til `[cluster]:okonomi:sokos-oppgjorsrapporter`.
         
         For å teste APIet kan du lage et gyldig OBO-token ved å bruke wonderwall:
         - [dev-gcp](https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp:okonomi:sokos-oppgjorsrapporter)

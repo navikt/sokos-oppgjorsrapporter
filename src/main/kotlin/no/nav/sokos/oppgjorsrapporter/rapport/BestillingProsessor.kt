@@ -43,7 +43,7 @@ class BestillingProsessor(val rapportService: RapportService, val applicationSta
         rapportService.prosesserBestilling { bestilling ->
             val (ulagret: UlagretRapport?, generator: ((VariantFormat) -> ByteString?)) =
                 when (bestilling.genererSom) {
-                    RapportType.K27 -> {
+                    RapportType.`ref-arbg` -> {
                         val data = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
                         Pair(
                             UlagretRapport(bestilling.id, OrgNr(data.header.orgnr), bestilling.genererSom, data.header.valutert),

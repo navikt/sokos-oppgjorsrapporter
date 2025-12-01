@@ -36,12 +36,13 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
-                    val bestilling = sut.lagreBestilling("MQ: refusjon-bestilling-queue", RapportType.K27, "verbatim TextMessage contents")
+                    val bestilling =
+                        sut.lagreBestilling("MQ: refusjon-bestilling-queue", RapportType.`ref-arbg`, "verbatim TextMessage contents")
                     bestilling.id shouldBe RapportBestilling.Id(2)
                     bestilling.mottatt shouldBe before(Instant.now())
                     bestilling.mottattFra shouldBe "MQ: refusjon-bestilling-queue"
                     bestilling.dokument shouldBe "verbatim TextMessage contents"
-                    bestilling.genererSom shouldBe RapportType.K27
+                    bestilling.genererSom shouldBe RapportType.`ref-arbg`
                     bestilling.ferdigProsessert shouldBe null
                 }
             }
@@ -51,11 +52,11 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
-                    sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 0
+                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 0
 
                     val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
-                    sut.lagreBestilling("test", RapportType.K27, dokument)
-                    sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
+                    sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
+                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 1
                 }
             }
 
@@ -65,13 +66,13 @@ class RapportServiceTest :
 
                     val sut: RapportService = application.dependencies.resolve()
                     val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
-                    val bestilling = sut.lagreBestilling("test", RapportType.K27, dokument)
-                    sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
+                    val bestilling = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
+                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 1
 
                     val prosessertId = sut.prosesserBestilling { it.id }
 
                     prosessertId shouldBe bestilling.id
-                    sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 0
+                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 0
                 }
             }
 
@@ -81,8 +82,8 @@ class RapportServiceTest :
 
                     val sut: RapportService = application.dependencies.resolve()
                     val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
-                    val bestilling = sut.lagreBestilling("test", RapportType.K27, dokument)
-                    sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
+                    val bestilling = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
+                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 1
 
                     val laasTattLatch = CountDownLatch(1)
                     val prosesseringKanStarteLatch = CountDownLatch(1)
@@ -99,13 +100,13 @@ class RapportServiceTest :
 
                     laasTattLatch.await()
                     sut.prosesserBestilling { it.id } shouldBe null
-                    sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 1
+                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 1
 
                     prosesseringKanStarteLatch.countDown()
                     prosesseringFerdigLatch.await()
 
                     prosessertId.await() shouldBe bestilling.id
-                    sut.antallUprosesserteBestillinger(RapportType.K27) shouldBe 0
+                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 0
                 }
             }
 
@@ -118,7 +119,7 @@ class RapportServiceTest :
                         UlagretRapport(
                             bestillingId = RapportBestilling.Id(1),
                             orgNr = OrgNr("39487569"),
-                            type = RapportType.K27,
+                            type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
                         )
                     val rapport = sut.lagreRapport(ulagret)
@@ -143,7 +144,7 @@ class RapportServiceTest :
                     rapport shouldNotBe null
                     rapport!!.id shouldBe Rapport.Id(1)
                     rapport.orgNr shouldBe OrgNr("123456789")
-                    rapport.type shouldBe RapportType.K27
+                    rapport.type shouldBe RapportType.`ref-arbg`
                 }
             }
 
@@ -159,11 +160,11 @@ class RapportServiceTest :
 
                     rapporter[0].id shouldBe Rapport.Id(1)
                     rapporter[0].orgNr shouldBe orgNr
-                    rapporter[0].type shouldBe RapportType.K27
+                    rapporter[0].type shouldBe RapportType.`ref-arbg`
 
                     rapporter[1].id shouldBe Rapport.Id(2)
                     rapporter[1].orgNr shouldBe orgNr
-                    rapporter[1].type shouldBe RapportType.T14
+                    rapporter[1].type shouldBe RapportType.`trekk-kred`
                 }
             }
 
@@ -222,13 +223,13 @@ class RapportServiceTest :
                     varianter[0].id shouldBe Variant.Id(3)
                     varianter[0].rapportId shouldBe Rapport.Id(2)
                     varianter[0].format shouldBe VariantFormat.Pdf
-                    varianter[0].filnavn shouldBe "123456789_T14_2023-01-01.pdf"
+                    varianter[0].filnavn shouldBe "123456789_trekk-kred_2023-01-01.pdf"
                     varianter[0].bytes shouldBe 5
 
                     varianter[1].id shouldBe Variant.Id(4)
                     varianter[1].rapportId shouldBe Rapport.Id(2)
                     varianter[1].format shouldBe VariantFormat.Csv
-                    varianter[1].filnavn shouldBe "123456789_T14_2023-01-01.csv"
+                    varianter[1].filnavn shouldBe "123456789_trekk-kred_2023-01-01.csv"
                     varianter[1].bytes shouldBe 5
                 }
             }
@@ -242,7 +243,7 @@ class RapportServiceTest :
                         UlagretRapport(
                             bestillingId = RapportBestilling.Id(1),
                             orgNr = OrgNr("39487569"),
-                            type = RapportType.K27,
+                            type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
                         )
                     val rapport = sut.lagreRapport(ulagretRapport)
@@ -254,7 +255,7 @@ class RapportServiceTest :
                     variant.id shouldBe Variant.Id(3)
                     variant.rapportId shouldBe rapport.id
                     variant.format shouldBe VariantFormat.Pdf
-                    variant.filnavn shouldBe "39487569_K27_2023-07-14.pdf"
+                    variant.filnavn shouldBe "39487569_ref-arbg_2023-07-14.pdf"
                     variant.bytes shouldBe 36
 
                     val auditLog = sut.hentAuditLog(RapportAuditKriterier(variant.rapportId, variantId = variant.id)).single()

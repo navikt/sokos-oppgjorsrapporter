@@ -46,7 +46,11 @@ class BestillingProsessorTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                     val rapportService: RapportService = application.dependencies.resolve()
                     val bestilling = TestData.createRefusjonsRapportBestilling()
-                    rapportService.lagreBestilling("test", RapportType.K27, RefusjonsRapportBestilling.json.encodeToString((bestilling)))
+                    rapportService.lagreBestilling(
+                        "test",
+                        RapportType.`ref-arbg`,
+                        RefusjonsRapportBestilling.json.encodeToString((bestilling)),
+                    )
 
                     val sut: BestillingProsessor = application.dependencies.resolve()
 
@@ -72,9 +76,17 @@ class BestillingProsessorTest :
                     val before = rapportService.listRapporter(kriterier)
 
                     val bestilling1 = TestData.createRefusjonsRapportBestilling(headerOrgnr = "123456789", headerValutert = LocalDate.now())
-                    rapportService.lagreBestilling("test", RapportType.K27, RefusjonsRapportBestilling.json.encodeToString((bestilling1)))
+                    rapportService.lagreBestilling(
+                        "test",
+                        RapportType.`ref-arbg`,
+                        RefusjonsRapportBestilling.json.encodeToString((bestilling1)),
+                    )
                     val bestilling2 = TestData.createRefusjonsRapportBestilling(headerOrgnr = "987654321", headerValutert = LocalDate.now())
-                    rapportService.lagreBestilling("test", RapportType.K27, RefusjonsRapportBestilling.json.encodeToString((bestilling2)))
+                    rapportService.lagreBestilling(
+                        "test",
+                        RapportType.`ref-arbg`,
+                        RefusjonsRapportBestilling.json.encodeToString((bestilling2)),
+                    )
 
                     val applicationState: ApplicationState = application.dependencies.resolve()
                     val preDisabled = applicationState.disableBackgroundJobs
