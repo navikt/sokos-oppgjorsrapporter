@@ -152,6 +152,96 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
     }
 
     @Test
+    fun `POST _api_rapport_v1 (med tilDato men uten fraDato) gir feilmelding`() {
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "tilDato": "2025-01-01"
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.BadRequest.value)
+                .extract()
+                .response()!!
+        assertThat(response.body().asString()).contains("tilDato kan ikke angis uten fraDato")
+    }
+
+    @Test
+    fun `POST _api_rapport_v1 (med etterId men uten orgnr) gir feilmelding`() {
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "etterId": 5
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.BadRequest.value)
+                .extract()
+                .response()!!
+        assertThat(response.body().asString()).contains("etterId krever at orgnr er angitt")
+    }
+
+    @Test
+    fun `POST _api_rapport_v1 (med både etterId og aar) gir feilmelding`() {
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "aar": 2025,
+                            "etterId": 5
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.BadRequest.value)
+                .extract()
+                .response()!!
+        assertThat(response.body().asString()).contains("aar kan ikke kombineres med etterId")
+    }
+
+    @Test
+    fun `POST _api_rapport_v1 (med både etterId og fraDato) gir feilmelding`() {
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "fraDato": "2025-01-01",
+                            "etterId": 5
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.BadRequest.value)
+                .extract()
+                .response()!!
+        assertThat(response.body().asString()).contains("etterId kan ikke kombineres med fraDato")
+    }
+
+    @Test
     fun `POST _api_rapport_v1 (uten søkekriterier i body) svarer riktig`() {
         TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
@@ -372,6 +462,45 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             "opprettet": "2023-12-31T22:58:27Z",
                             "arkivert": null
                         },
+                        {
+                            "id": 6,
+                            "bestillingId": 6,
+                            "orgNr": "456789012",
+                            "type": "ref-arbg",
+                            "datoValutert": "2024-01-01",
+                            "opprettet": "2023-12-31T23:13:54Z",
+                            "arkivert": null
+                        }
+                    ]
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun `POST _api_rapport_v1 (for ID etter 5) svarer riktig`() {
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "orgnr": "456789012",
+                            "etterId": 5
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                    [
                         {
                             "id": 6,
                             "bestillingId": 6,
