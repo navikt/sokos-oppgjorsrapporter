@@ -174,10 +174,16 @@ data class InkluderOrgKriterier(
     override val rapportTyper: Set<RapportType>,
     override val periode: LocalDateRange,
     override val inkluderArkiverte: Boolean,
-) : DatoRangeKriterier
+) : DatoRangeKriterier {
+    init {
+        require(inkluderte.isNotEmpty(), { "Mangler organisasjon" })
+        require(rapportTyper.isNotEmpty(), { "Mangler rapporttype" })
+    }
+}
 
 data class EkskluderOrgKriterier(
     val ekskluderte: Set<OrgNr>,
+    val bankkonto: Bankkonto?,
     override val rapportTyper: Set<RapportType>,
     override val periode: LocalDateRange,
     override val inkluderArkiverte: Boolean,

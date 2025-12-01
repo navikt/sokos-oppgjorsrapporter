@@ -45,8 +45,9 @@ class ApiPaths {
 object Api {
     @Serializable
     data class RapportListeRequest(
-        val orgnr: String? = null,
-        val etterId: Long? = null,
+        val orgnr: OrgNr? = null,
+        val bankkonto: Bankkonto? = null,
+        val etterId: Rapport.Id? = null,
         val aar: Int? = null,
         val fraDato: LocalDate? = null,
         val tilDato: LocalDate? = null,
@@ -87,13 +88,13 @@ fun Route.rapportApi() {
     val pdpService: PdpService by application.dependencies
     val metrics: Metrics by application.dependencies
 
-    fun harTilgangTilRessurs(bruker: AutentisertBruker, rapportType: RapportType, orgNr: OrgNr): Boolean {
-        logger.debug(TEAM_LOGS_MARKER) { "Skal sjekke om $bruker har tilgang til $rapportType for $orgNr" }
+    fun harTilgangTilRessurs(bruker: AutentisertBruker, rapportType: RapportType, orgnr: OrgNr): Boolean {
+        logger.debug(TEAM_LOGS_MARKER) { "Skal sjekke om $bruker har tilgang til $rapportType for $orgnr" }
         when (bruker) {
             is Systembruker -> {
-                if (!pdpService.harTilgang(bruker, setOf(orgNr), rapportType.altinnRessurs)) {
+                if (!pdpService.harTilgang(bruker, setOf(orgnr), rapportType.altinnRessurs)) {
                     logger.info(TEAM_LOGS_MARKER) {
-                        "Systembruker $bruker har forsøkt å aksessere rapport $rapportType for $orgNr, men PDP gir ikke tilgang"
+                        "Systembruker $bruker har forsøkt å aksessere rapport $rapportType for $orgnr, men PDP gir ikke tilgang"
                     }
                     return false
                 }
@@ -117,24 +118,35 @@ fun Route.rapportApi() {
                 } catch (e: IllegalArgumentException) {
                     return@post call.respond(HttpStatusCode.BadRequest, e.message ?: "Ukjent feil")
                 }
-            val orgNr = reqBody.orgnr?.let { OrgNr(it) } ?: (bruker as? Systembruker)?.userOrg
+            if (reqBody.bankkonto != null) {
+                if (bruker is Systembruker) {
+                    return@post call.respond(HttpStatusCode.BadRequest, "søk på bankkonto tillates ikke for systembrukere")
+                }
+                if (reqBody.orgnr != null) {
+                    return@post call.respond(HttpStatusCode.BadRequest, "bankkonto kan ikke kombineres med orgnr")
+                }
+            }
+            val orgnr = reqBody.orgnr ?: (bruker as? Systembruker)?.userOrg
             // TODO: Hvordan skal "egne ansatte" håndteres?  Både her (for å ikke hente ut unødvendig mye data fra databasen) og i
             //       harTilgangTilRessurs() (for å begrense søk med eksplisitt orgnr)?
             val kriterier =
                 if (reqBody.etterId != null) {
-                    if (orgNr == null) {
+                    if (orgnr == null) {
                         return@post call.respond(HttpStatusCode.BadRequest, "etterId krever at orgnr er angitt")
                     }
+                    // Her må orgnr være angitt, enten eksplisitt eller implisitt.  Siden kombinasjonen orgnr og bankkonto skal være
+                    // ugyldig, legger vi ikke inn støtte for filtrering på bankkonto i EtterIdKriterier
                     EtterIdKriterier(
-                        orgnr = orgNr,
-                        etterId = Rapport.Id(reqBody.etterId),
+                        orgnr = orgnr,
+                        etterId = reqBody.etterId,
                         rapportTyper = reqBody.rapportTyper,
                         inkluderArkiverte = reqBody.inkluderArkiverte,
                     )
-                } else if (orgNr != null) {
+                } else if (orgnr != null) {
                     // Enten eksplisitt reqBody.orgnr eller implisitt orgnr fra Systembruker-autentisering
+                    // Siden vi her vet at orgnr er angitt, får heller ikke InkluderOrgKriterier støtte for filtering på bankkonto
                     InkluderOrgKriterier(
-                        inkluderte = setOf(orgNr),
+                        inkluderte = setOf(orgnr),
                         rapportTyper = reqBody.rapportTyper,
                         periode = datoRange,
                         inkluderArkiverte = reqBody.inkluderArkiverte,
@@ -143,6 +155,7 @@ fun Route.rapportApi() {
                     // Må være EntraId-bruker uten reqBody.orgnr
                     EkskluderOrgKriterier(
                         ekskluderte = emptySet(),
+                        bankkonto = reqBody.bankkonto,
                         rapportTyper = reqBody.rapportTyper,
                         periode = datoRange,
                         inkluderArkiverte = reqBody.inkluderArkiverte,
@@ -153,10 +166,10 @@ fun Route.rapportApi() {
 
             val rapporter = rapportService.listRapporter(kriterier)
             val rapportTyperMedTilgang =
-                rapporter.map { it.orgNr to it.type }.toSet().filter { (orgnr, type) -> harTilgangTilRessurs(bruker, type, orgnr) }.toSet()
+                rapporter.map { it.orgnr to it.type }.toSet().filter { (orgnr, type) -> harTilgangTilRessurs(bruker, type, orgnr) }.toSet()
             val filtrerteRapporter =
                 rapporter.filter { r ->
-                    val key = r.orgNr to r.type
+                    val key = r.orgnr to r.type
                     rapportTyperMedTilgang.contains(key)
                 }
             call.respond(filtrerteRapporter)
@@ -167,7 +180,7 @@ fun Route.rapportApi() {
         metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
             val rapport = rapportService.finnRapport(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
-            if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgNr)) {
+            if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
                 return@get call.respond(HttpStatusCode.NotFound)
             }
             call.respond(rapport)
@@ -182,7 +195,7 @@ fun Route.rapportApi() {
                 VariantFormat.entries.find { f -> acceptItems.any { it.value == f.contentType } }
                     ?: return@get call.respond(HttpStatusCode.NotAcceptable)
             rapportService.hentInnhold(bruker, Rapport.Id(innhold.parent.id), format) { rapport, innhold ->
-                if (harTilgangTilRessurs(bruker, rapport.type, rapport.orgNr)) {
+                if (harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
                     call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold }
                     rapport
                 } else {
@@ -197,7 +210,7 @@ fun Route.rapportApi() {
         metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
             rapportService.markerRapportArkivert(Rapport.Id(arkiver.parent.id), bruker) {
-                if (harTilgangTilRessurs(bruker, it.type, it.orgNr)) {
+                if (harTilgangTilRessurs(bruker, it.type, it.orgnr)) {
                     call.respond(HttpStatusCode.NoContent)
                     arkiver.arkivert
                 } else {

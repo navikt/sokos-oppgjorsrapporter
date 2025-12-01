@@ -37,6 +37,7 @@ import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
 import no.nav.sokos.oppgjorsrapporter.mq.RapportMottak
 import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
+import no.nav.sokos.oppgjorsrapporter.pdp.LocalhostPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
@@ -76,11 +77,16 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         provide<DataSource> { DatabaseConfig.dataSource }.cleanup { adminDataSource.close() }
         provide(RapportRepository::class)
         provide(RapportService::class)
-        provide<AuthClient> {
-            if (config.applicationProperties.profile == PropertiesConfig.Profile.LOCAL) NoOpAuthClient()
-            else DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.maskinportenProperties.altinn3BaseUrl)
+
+        if (config.applicationProperties.profile == PropertiesConfig.Profile.LOCAL) {
+            provide<AuthClient> { NoOpAuthClient() }
+            provide<PdpService> { LocalhostPdpService }
+        } else {
+            provide<AuthClient> {
+                DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.maskinportenProperties.altinn3BaseUrl)
+            }
+            provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
         }
-        provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
 
         if (config.mqConfiguration.enabled) {
             val mqErrors = mutableListOf<String>()

@@ -11,6 +11,7 @@ import no.nav.security.mock.oauth2.withMockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
 import no.nav.sokos.oppgjorsrapporter.rapport.Api
+import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.withTestApplication
 
 class SecurityTest :
@@ -50,7 +51,7 @@ class SecurityTest :
                                     "Bearer ${mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf("group")))}",
                                 )
                                 contentType(ContentType.Application.Json)
-                                setBody(Api.RapportListeRequest(orgnr = "987654321"))
+                                setBody(Api.RapportListeRequest(orgnr = OrgNr("987654321")))
                             }
 
                         response.status shouldBe HttpStatusCode.OK

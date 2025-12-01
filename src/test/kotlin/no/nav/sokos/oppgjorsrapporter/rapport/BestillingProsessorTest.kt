@@ -69,6 +69,7 @@ class BestillingProsessorTest :
                     val kriterier =
                         EkskluderOrgKriterier(
                             ekskluderte = emptySet(),
+                            bankkonto = null,
                             rapportTyper = RapportType.entries.toSet(),
                             periode = LocalDateRange.of(LocalDate.now().minusDays(1), Period.ofDays(2)),
                             inkluderArkiverte = false,
@@ -103,8 +104,8 @@ class BestillingProsessorTest :
                                 // TODO: Oppdatere test til å verifisere at PDF-variant er på plass når vi har laget det
                                 varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv)
                             }
-                            nye.forExactly(1) { it.orgNr.raw shouldBe bestilling1.header.orgnr }
-                            nye.forExactly(1) { it.orgNr.raw shouldBe bestilling2.header.orgnr }
+                            nye.forExactly(1) { it.orgnr.raw shouldBe bestilling1.header.orgnr }
+                            nye.forExactly(1) { it.orgnr.raw shouldBe bestilling2.header.orgnr }
                         }
                     } finally {
                         applicationState.disableBackgroundJobs = preDisabled

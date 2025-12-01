@@ -46,7 +46,13 @@ class BestillingProsessor(val rapportService: RapportService, val applicationSta
                     RapportType.`ref-arbg` -> {
                         val data = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
                         Pair(
-                            UlagretRapport(bestilling.id, OrgNr(data.header.orgnr), bestilling.genererSom, data.header.valutert),
+                            UlagretRapport(
+                                bestillingId = bestilling.id,
+                                orgnr = OrgNr(data.header.orgnr),
+                                type = bestilling.genererSom,
+                                datoValutert = data.header.valutert,
+                                bankkonto = Bankkonto(data.header.bankkonto),
+                            ),
                             { variant: VariantFormat ->
                                 when (variant) {
                                     VariantFormat.Pdf -> null
@@ -67,7 +73,7 @@ class BestillingProsessor(val rapportService: RapportService, val applicationSta
                             UlagretVariant(
                                 rapport.id,
                                 format,
-                                "${rapport.orgNr.raw}_${rapport.type.name}_${rapport.datoValutert}.${format.name.lowercase()}",
+                                "${rapport.orgnr.raw}_${rapport.type.name}_${rapport.datoValutert}.${format.name.lowercase()}",
                                 bytes,
                             )
                         )

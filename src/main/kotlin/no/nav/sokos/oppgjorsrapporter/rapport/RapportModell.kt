@@ -17,6 +17,8 @@ import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 
 @Serializable @JvmInline value class OrgNr(val raw: String)
 
+@Serializable @JvmInline value class Bankkonto(val raw: String)
+
 enum class RapportType(val altinnRessurs: String) {
     @JsonNames("K27") `ref-arbg`("nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver"),
     @JsonNames("T12") `trekk-hend`("Ikke definert ennå"),
@@ -61,30 +63,33 @@ data class RapportBestilling(
 
 sealed interface RapportFelter {
     val bestillingId: RapportBestilling.Id
-    val orgNr: OrgNr
+    val orgnr: OrgNr
     val type: RapportType
     val datoValutert: LocalDate
+    val bankkonto: Bankkonto?
 }
 
 data class UlagretRapport(
     override val bestillingId: RapportBestilling.Id,
-    override val orgNr: OrgNr,
+    override val orgnr: OrgNr,
     override val type: RapportType,
     override val datoValutert: LocalDate,
+    override val bankkonto: Bankkonto?,
 ) : RapportFelter
 
 @Serializable
 data class Rapport(
     val id: Id,
     override val bestillingId: RapportBestilling.Id,
-    override val orgNr: OrgNr,
+    override val orgnr: OrgNr,
     override val type: RapportType,
     override val datoValutert: LocalDate,
+    override val bankkonto: Bankkonto?,
     val opprettet: Instant,
     val arkivert: Instant? = null,
 ) : RapportFelter {
     fun filnavn(format: VariantFormat): String =
-        "${orgNr.raw}_${type.name}_${DateTimeFormatter.ISO_LOCAL_DATE.format(datoValutert)}.${format.extension()}"
+        "${orgnr.raw}_${type.name}_${DateTimeFormatter.ISO_LOCAL_DATE.format(datoValutert)}.${format.extension()}"
 
     @Serializable @JvmInline value class Id(val raw: Long)
 
@@ -93,9 +98,10 @@ data class Rapport(
     ) : this(
         id = Id(row.long("id")),
         bestillingId = RapportBestilling.Id(row.long("bestilling_id")),
-        orgNr = OrgNr(row.string("orgnr")),
+        orgnr = OrgNr(row.string("orgnr")),
         type = RapportType.valueOf(row.string("type")),
         datoValutert = row.localDate("dato_valutert"),
+        bankkonto = row.stringOrNull("bankkonto")?.let { Bankkonto(it) },
         opprettet = row.instant("opprettet"),
         arkivert = row.instantOrNull("arkivert"),
     )

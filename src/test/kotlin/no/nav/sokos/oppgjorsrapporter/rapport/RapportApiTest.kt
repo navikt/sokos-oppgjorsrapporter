@@ -21,6 +21,7 @@ import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationConfig
+import no.nav.sokos.oppgjorsrapporter.auth.gyldigSystembrukerAuthToken
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
 import no.nav.sokos.oppgjorsrapporter.module
 import org.assertj.core.api.Assertions.assertThat
@@ -71,7 +72,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
 
     val openApiValidationFilter = OpenApiValidationFilter("openapi/rapport-v1.yaml")
 
-    fun client(validationFilter: OpenApiValidationFilter? = openApiValidationFilter) =
+    fun client(validationFilter: OpenApiValidationFilter? = openApiValidationFilter, authToken: String = tokenFromDefaultProvider()) =
         RestAssured.given()
             .apply {
                 if (validationFilter != null) {
@@ -79,7 +80,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                 }
             }
             .header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            .header(HttpHeaders.Authorization, "Bearer ${tokenFromDefaultProvider()}")
+            .header(HttpHeaders.Authorization, "Bearer $authToken")
             .port(embeddedServerPort)
 
     @Test
@@ -242,6 +243,51 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
     }
 
     @Test
+    fun `POST _api_rapport_v1 (med bankkonto og systembruker-auth) gir feilmelding`() {
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client(authToken = mockOAuth2Server.gyldigSystembrukerAuthToken(OrgNr("123456789")))
+                .body(
+                    """
+                        {
+                            "bankkonto": "12345678901"
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.BadRequest.value)
+                .extract()
+                .response()!!
+        assertThat(response.body().asString()).contains("søk på bankkonto tillates ikke for systembrukere")
+    }
+
+    @Test
+    fun `POST _api_rapport_v1 (med både bankkonto og orgnr) gir feilmelding`() {
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "bankkonto": "12345678901",
+                            "orgnr": "123456789"
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.BadRequest.value)
+                .extract()
+                .response()!!
+        assertThat(response.body().asString()).contains("bankkonto kan ikke kombineres med orgnr")
+    }
+
+    @Test
     fun `POST _api_rapport_v1 (uten søkekriterier i body) svarer riktig`() {
         TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val response =
@@ -275,9 +321,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 6,
                             "bestillingId": 6,
-                            "orgNr": "456789012",
+                            "orgnr": "456789012",
                             "type": "ref-arbg",
                             "datoValutert": "2024-01-01",
+                            "bankkonto": "45678901234",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
                         }
@@ -314,18 +361,20 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 1,
                             "bestillingId": 1,
-                            "orgNr": "123456789",
+                            "orgnr": "123456789",
                             "type": "ref-arbg",
                             "datoValutert": "2023-01-01",
+                            "bankkonto": "12345678901",
                             "opprettet": "2022-12-31T23:45:15Z",
                             "arkivert": null
                         },
                         {
                             "id": 2,
                             "bestillingId": 2,
-                            "orgNr": "123456789",
+                            "orgnr": "123456789",
                             "type": "trekk-kred",
                             "datoValutert": "2023-01-01",
+                            "bankkonto": "12345678901",
                             "opprettet": "2023-01-01T08:37:52Z",
                             "arkivert": null
                         }
@@ -362,45 +411,50 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 1,
                             "bestillingId": 1,
-                            "orgNr": "123456789",
+                            "orgnr": "123456789",
                             "type": "ref-arbg",
                             "datoValutert": "2023-01-01",
+                            "bankkonto": "12345678901",
                             "opprettet": "2022-12-31T23:45:15Z",
                             "arkivert": null
                         },
                         {
                             "id": 2,
                             "bestillingId": 2,
-                            "orgNr": "123456789",
+                            "orgnr": "123456789",
                             "type": "trekk-kred",
                             "datoValutert": "2023-01-01",
+                            "bankkonto": "12345678901",
                             "opprettet": "2023-01-01T08:37:52Z",
                             "arkivert": null
                         },
                         {
                             "id": 3,
                             "bestillingId": 3,
-                            "orgNr": "234567890",
+                            "orgnr": "234567890",
                             "type": "ref-arbg",
                             "datoValutert": "2023-11-01",
+                            "bankkonto": "23456789012",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": null
                         },
                         {
                             "id": 5,
                             "bestillingId": 5,
-                            "orgNr": "456789012",
+                            "orgnr": "456789012",
                             "type": "ref-arbg",
                             "datoValutert": "2023-12-31",
+                            "bankkonto": "45678901234",
                             "opprettet": "2023-12-31T22:58:27Z",
                             "arkivert": null
                         },
                         {
                             "id": 6,
                             "bestillingId": 6,
-                            "orgNr": "456789012",
+                            "orgnr": "456789012",
                             "type": "ref-arbg",
                             "datoValutert": "2024-01-01",
+                            "bankkonto": "45678901234",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
                         }
@@ -438,36 +492,40 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 3,
                             "bestillingId": 3,
-                            "orgNr": "234567890",
+                            "orgnr": "234567890",
                             "type": "ref-arbg",
                             "datoValutert": "2023-11-01",
+                            "bankkonto": "23456789012",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": null
                         },
                         {
                             "id": 4,
                             "bestillingId": 4,
-                            "orgNr": "345678901",
+                            "orgnr": "345678901",
                             "type": "ref-arbg",
                             "datoValutert": "2023-11-01",
+                            "bankkonto": "34567890123",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": "2023-11-15T07:14:41Z"
                         },
                         {
                             "id": 5,
                             "bestillingId": 5,
-                            "orgNr": "456789012",
+                            "orgnr": "456789012",
                             "type": "ref-arbg",
                             "datoValutert": "2023-12-31",
+                            "bankkonto": "45678901234",
                             "opprettet": "2023-12-31T22:58:27Z",
                             "arkivert": null
                         },
                         {
                             "id": 6,
                             "bestillingId": 6,
-                            "orgNr": "456789012",
+                            "orgnr": "456789012",
                             "type": "ref-arbg",
                             "datoValutert": "2024-01-01",
+                            "bankkonto": "45678901234",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
                         }
@@ -504,9 +562,49 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 6,
                             "bestillingId": 6,
-                            "orgNr": "456789012",
+                            "orgnr": "456789012",
                             "type": "ref-arbg",
                             "datoValutert": "2024-01-01",
+                            "bankkonto": "45678901234",
+                            "opprettet": "2023-12-31T23:13:54Z",
+                            "arkivert": null
+                        }
+                    ]
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun `POST _api_rapport_v1 (for ID etter 5, med implisitt orgnr fra systembruker) svarer riktig`() {
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        val response =
+            client(authToken = mockOAuth2Server.gyldigSystembrukerAuthToken(OrgNr("456789012")))
+                .body(
+                    """
+                        {
+                            "etterId": 5
+                        }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                    [
+                        {
+                            "id": 6,
+                            "bestillingId": 6,
+                            "orgnr": "456789012",
+                            "type": "ref-arbg",
+                            "datoValutert": "2024-01-01",
+                            "bankkonto": "45678901234",
                             "opprettet": "2023-12-31T23:13:54Z",
                             "arkivert": null
                         }
@@ -543,9 +641,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 3,
                             "bestillingId": 3,
-                            "orgNr": "234567890",
+                            "orgnr": "234567890",
                             "type": "ref-arbg",
                             "datoValutert": "2023-11-01",
+                            "bankkonto": "23456789012",
                             "opprettet": "2023-11-01T10:57:21Z",
                             "arkivert": null
                         }
@@ -582,9 +681,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 2,
                             "bestillingId": 2,
-                            "orgNr": "123456789",
+                            "orgnr": "123456789",
                             "type": "trekk-kred",
                             "datoValutert": "2023-01-01",
+                            "bankkonto": "12345678901",
                             "opprettet": "2023-01-01T08:37:52Z",
                             "arkivert": null
                         }
@@ -621,9 +721,82 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 2,
                             "bestillingId": 2,
-                            "orgNr": "123456789",
+                            "orgnr": "123456789",
                             "type": "trekk-kred",
                             "datoValutert": "2023-01-01",
+                            "bankkonto": "12345678901",
+                            "opprettet": "2023-01-01T08:37:52Z",
+                            "arkivert": null
+                        }
+                    ]
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun `POST _api_rapport_v1 (for ukjent bankkonto) svarer riktig`() {
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "bankkonto": "78912378912"
+                         }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        assertThatJson(response.body().prettyPrint()).isEqualTo("[]")
+    }
+
+    @Test
+    fun `POST _api_rapport_v1 (for kjent bankkonto) svarer riktig`() {
+        val response =
+            client()
+                .body(
+                    """
+                        {
+                            "bankkonto": "12345678901",
+                            "aar": 2023
+                         }
+                    """
+                        .trimIndent()
+                )
+                .post("/api/rapport/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                    [
+                        {
+                            "id": 1,
+                            "bestillingId": 1,
+                            "orgnr": "123456789",
+                            "type": "ref-arbg",
+                            "datoValutert": "2023-01-01",
+                            "bankkonto": "12345678901",
+                            "opprettet": "2022-12-31T23:45:15Z",
+                            "arkivert": null
+                        },
+                        {
+                            "id": 2,
+                            "bestillingId": 2,
+                            "orgnr": "123456789",
+                            "type": "trekk-kred",
+                            "datoValutert": "2023-01-01",
+                            "bankkonto": "12345678901",
                             "opprettet": "2023-01-01T08:37:52Z",
                             "arkivert": null
                         }
@@ -656,9 +829,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     {
                         "id": 2,
                         "bestillingId": 2,
-                        "orgNr": "123456789",
+                        "orgnr": "123456789",
                         "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": null
                     }
@@ -775,9 +949,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     {
                         "id": 2,
                         "bestillingId": 2,
-                        "orgNr": "123456789",
+                        "orgnr": "123456789",
                         "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": null
                     }
@@ -803,9 +978,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     {
                         "id": 2,
                         "bestillingId": 2,
-                        "orgNr": "123456789",
+                        "orgnr": "123456789",
                         "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": "2025-11-22T12:00:00Z"
                     }
@@ -838,9 +1014,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     {
                         "id": 2,
                         "bestillingId": 2,
-                        "orgNr": "123456789",
+                        "orgnr": "123456789",
                         "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": null
                     }

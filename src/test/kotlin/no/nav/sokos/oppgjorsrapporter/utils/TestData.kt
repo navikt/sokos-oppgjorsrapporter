@@ -6,6 +6,7 @@ import java.time.LocalDate
 import no.nav.sokos.oppgjorsrapporter.mq.Data
 import no.nav.sokos.oppgjorsrapporter.mq.Header
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.rapport.Bankkonto
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportBestilling
@@ -16,9 +17,10 @@ object TestData {
         Rapport(
             id = Rapport.Id(123),
             bestillingId = RapportBestilling.Id(114),
-            orgNr = OrgNr("810007982"),
+            orgnr = OrgNr("810007982"),
             type = RapportType.`ref-arbg`,
             datoValutert = LocalDate.parse("2024-11-01"),
+            bankkonto = Bankkonto("12345678901"),
             opprettet = Instant.parse("2024-11-01T12:15:02Z"),
             arkivert = null,
         )
