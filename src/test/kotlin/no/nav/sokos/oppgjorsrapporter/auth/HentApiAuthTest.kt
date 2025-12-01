@@ -124,11 +124,11 @@ class HentApiAuthTest : ApiTest() {
                 // systembruker for underenhet skal få lov til å hente rapport på underenhet
                 underenhetOrgnrMedPdpTilgang to rapportUnderenhet,
             )
-            .forEach { (orgNr, rapport) ->
+            .forEach { (orgnr, rapport) ->
                 runBlocking {
                     val respons =
                         client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
-                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgNr))
+                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
                         }
 
                     respons.status shouldBe HttpStatusCode.OK
@@ -153,11 +153,11 @@ class HentApiAuthTest : ApiTest() {
                 // systembruker for underenhet skal få lov til å hente rapport på underenhet
                 underenhetOrgnrMedPdpTilgang to rapportUnderenhet,
             )
-            .forEach { (orgNr, rapport) ->
+            .forEach { (orgnr, rapport) ->
                 runBlocking {
                     val respons =
                         client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
-                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgNr))
+                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
                             accept(ContentType.Application.Pdf)
                         }
 
@@ -183,11 +183,11 @@ class HentApiAuthTest : ApiTest() {
                 // systembruker for underenhet forsøker å aksessere rapport for egen orgs hovedenhet
                 underenhetOrgnrMedPdpTilgang to rapportMedTilgang,
             )
-            .forEach { (orgNr, rapport) ->
+            .forEach { (orgnr, rapport) ->
                 runBlocking {
                     val respons =
                         client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
-                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgNr))
+                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
                         }
                     respons.status shouldBe HttpStatusCode.NotFound
                 }
@@ -210,11 +210,11 @@ class HentApiAuthTest : ApiTest() {
                 // systembruker for underenhet forsøker å aksessere rapport for egen orgs hovedenhet
                 underenhetOrgnrMedPdpTilgang to rapportMedTilgang,
             )
-            .forEach { (orgNr, rapport) ->
+            .forEach { (orgnr, rapport) ->
                 runBlocking {
                     val respons =
                         client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
-                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgNr))
+                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
                             accept(ContentType.Application.Pdf)
                         }
                     respons.status shouldBe HttpStatusCode.NotFound

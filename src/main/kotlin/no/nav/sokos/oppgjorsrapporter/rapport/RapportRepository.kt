@@ -93,16 +93,17 @@ class RapportRepository(private val clock: Clock) {
     fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         queryOf(
                 """
-                    INSERT INTO rapport.rapport(bestilling_id, orgnr, type, dato_valutert)
-                    VALUES (:bestilling_id, :orgnr, CAST(:type AS rapport.rapport_type), :dato_valutert)
+                    INSERT INTO rapport.rapport(bestilling_id, orgnr, type, dato_valutert, bankkonto)
+                    VALUES (:bestilling_id, :orgnr, CAST(:type AS rapport.rapport_type), :dato_valutert, :bankkonto)
                     RETURNING *
                 """
                     .trimIndent(),
                 mapOf(
                     "bestilling_id" to rapport.bestillingId.raw,
-                    "orgnr" to rapport.orgNr.raw,
+                    "orgnr" to rapport.orgnr.raw,
                     "type" to rapport.type.name,
                     "dato_valutert" to rapport.datoValutert,
+                    "bankkonto" to rapport.bankkonto?.raw,
                 ),
             )
             .map { row -> Rapport(row) }
@@ -112,7 +113,7 @@ class RapportRepository(private val clock: Clock) {
     fun finnRapport(tx: TransactionalSession, id: Rapport.Id): Rapport? =
         queryOf(
                 """
-                    SELECT id, bestilling_id, orgnr, type, dato_valutert, opprettet, arkivert
+                    SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, opprettet, arkivert
                     FROM rapport.rapport
                     WHERE id = :id
                 """
@@ -128,11 +129,16 @@ class RapportRepository(private val clock: Clock) {
                 is DatoRangeKriterier -> {
                     when (kriterier) {
                         is InkluderOrgKriterier -> "orgnr = ANY(:orgnummere)" to kriterier.inkluderte
-                        is EkskluderOrgKriterier -> "(NOT orgnr = ANY(:orgnummere))" to kriterier.ekskluderte
+                        is EkskluderOrgKriterier ->
+                            if (kriterier.bankkonto == null) {
+                                "(NOT orgnr = ANY(:orgnummere))" to kriterier.ekskluderte
+                            } else {
+                                "(NOT orgnr = ANY(:orgnummere)) AND bankkonto = :bankkonto" to kriterier.ekskluderte
+                            }
                     }.let { (orgnrWhere, orgnummere) ->
                         queryOf(
                             """
-                            SELECT id, bestilling_id, orgnr, type, dato_valutert, opprettet, arkivert
+                            SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, opprettet, arkivert
                             FROM rapport.rapport
                             WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                               AND (arkivert IS NULL OR :inkluderArkiverte)
@@ -146,6 +152,7 @@ class RapportRepository(private val clock: Clock) {
                                 "orgnummere" to orgnummere.map { it.raw }.toTypedArray(),
                                 "fraDato" to kriterier.periode.start,
                                 "tilDato" to kriterier.periode.end,
+                                "bankkonto" to (kriterier as? EkskluderOrgKriterier)?.bankkonto?.raw,
                             ),
                         )
                     }
@@ -154,7 +161,7 @@ class RapportRepository(private val clock: Clock) {
                 is EtterIdKriterier -> {
                     queryOf(
                         """
-                            SELECT id, bestilling_id, orgnr, type, dato_valutert, opprettet, arkivert
+                            SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, opprettet, arkivert
                             FROM rapport.rapport
                             WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                               AND (arkivert IS NULL OR :inkluderArkiverte)

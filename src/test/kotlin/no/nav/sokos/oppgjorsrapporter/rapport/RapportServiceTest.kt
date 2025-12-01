@@ -118,13 +118,14 @@ class RapportServiceTest :
                     val ulagret =
                         UlagretRapport(
                             bestillingId = RapportBestilling.Id(1),
-                            orgNr = OrgNr("39487569"),
+                            orgnr = OrgNr("39487569"),
                             type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
+                            bankkonto = Bankkonto("53785238218"),
                         )
                     val rapport = sut.lagreRapport(ulagret)
                     rapport.id shouldBe Rapport.Id(2)
-                    rapport.orgNr shouldBe ulagret.orgNr
+                    rapport.orgnr shouldBe ulagret.orgnr
                     rapport.type shouldBe ulagret.type
 
                     val auditLog = sut.hentAuditLog(RapportAuditKriterier(rapport.id))
@@ -143,7 +144,7 @@ class RapportServiceTest :
                     val rapport = sut.finnRapport(Rapport.Id(1))
                     rapport shouldNotBe null
                     rapport!!.id shouldBe Rapport.Id(1)
-                    rapport.orgNr shouldBe OrgNr("123456789")
+                    rapport.orgnr shouldBe OrgNr("123456789")
                     rapport.type shouldBe RapportType.`ref-arbg`
                 }
             }
@@ -153,17 +154,17 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
-                    val orgNr = OrgNr("123456789")
+                    val orgnr = OrgNr("123456789")
                     val rapporter =
-                        sut.listRapporter(InkluderOrgKriterier(setOf(orgNr), RapportType.entries.toSet(), heltAarDateRange(2023), false))
+                        sut.listRapporter(InkluderOrgKriterier(setOf(orgnr), RapportType.entries.toSet(), heltAarDateRange(2023), false))
                     rapporter.size shouldBe 2
 
                     rapporter[0].id shouldBe Rapport.Id(1)
-                    rapporter[0].orgNr shouldBe orgNr
+                    rapporter[0].orgnr shouldBe orgnr
                     rapporter[0].type shouldBe RapportType.`ref-arbg`
 
                     rapporter[1].id shouldBe Rapport.Id(2)
-                    rapporter[1].orgNr shouldBe orgNr
+                    rapporter[1].orgnr shouldBe orgnr
                     rapporter[1].type shouldBe RapportType.`trekk-kred`
                 }
             }
@@ -242,9 +243,10 @@ class RapportServiceTest :
                     val ulagretRapport =
                         UlagretRapport(
                             bestillingId = RapportBestilling.Id(1),
-                            orgNr = OrgNr("39487569"),
+                            orgnr = OrgNr("39487569"),
                             type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
+                            bankkonto = Bankkonto("53785238218"),
                         )
                     val rapport = sut.lagreRapport(ulagretRapport)
 
