@@ -4,7 +4,10 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import no.nav.sokos.oppgjorsrapporter.mq.Data
+import no.nav.sokos.oppgjorsrapporter.mq.OrganisasjonInfo
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportPdfPayload
+import no.nav.sokos.oppgjorsrapporter.utils.Ansatt
 import no.nav.sokos.oppgjorsrapporter.utils.TestData.createDataRec
 import no.nav.sokos.oppgjorsrapporter.utils.TestData.createRefusjonsRapportBestilling
 import org.assertj.core.api.Assertions.assertThat
@@ -129,5 +132,133 @@ class RefusjonsRapportBestillingSerializationTest {
         val faktiskCsvInnhold = refusjonsRapportBestilling.tilCSV()
 
         assertThat(faktiskCsvInnhold).isEqualTo(forventetCsvInnhold)
+    }
+
+    @Test
+    fun `tilPdfPayload returnerer riktig formatert payload som er sortert etter underenhet, fnr, periodeFra og ytelse`() {
+        val underenhet1 = "009876111"
+        val underenhet2 = "009876222"
+
+        val person1 = Ansatt(fnr = "12345678111", navn = "Anders Andersen")
+        val person2 = Ansatt(fnr = "12345678222", navn = "Birte Birtesen")
+        val ytelse1 = "Foreldrepenger"
+        val ytelse2 = "Sykepenger"
+
+        val utbetalinger =
+            listOf(
+                createDataRec(
+                    bedriftsnummer = underenhet2,
+                    fnr = person2.fnr,
+                    navn = person2.navn,
+                    tekst = ytelse2,
+                    belop = BigDecimal("4000.00"),
+                    fraDato = LocalDate.parse("2025-03-01"),
+                    tilDato = LocalDate.parse("2025-03-31"),
+                ),
+                createDataRec(
+                    bedriftsnummer = underenhet1,
+                    fnr = person1.fnr,
+                    navn = person1.navn,
+                    tekst = ytelse1,
+                    belop = BigDecimal("4234.00"),
+                    fraDato = LocalDate.parse("2025-01-01"),
+                    tilDato = LocalDate.parse("2025-01-31"),
+                ),
+                createDataRec(
+                    bedriftsnummer = underenhet2,
+                    fnr = person1.fnr,
+                    navn = person1.navn,
+                    tekst = ytelse1,
+                    belop = BigDecimal("6500.00"),
+                    fraDato = LocalDate.parse("2025-01-01"),
+                    tilDato = LocalDate.parse("2025-01-31"),
+                ),
+                createDataRec(
+                    bedriftsnummer = underenhet1,
+                    fnr = person2.fnr,
+                    navn = person2.navn,
+                    tekst = ytelse2,
+                    belop = BigDecimal("1504.677"),
+                    fraDato = LocalDate.parse("2025-03-01"),
+                    tilDato = LocalDate.parse("2025-03-31"),
+                ),
+            )
+
+        val totalsum = utbetalinger.sumOf { it.belop }
+
+        val refusjonsRapportBestilling = createRefusjonsRapportBestilling(headerSumBelop = totalsum, datarec = utbetalinger)
+        val now = LocalDate.parse("2025-10-31")
+        val organisasjonInfo =
+            OrganisasjonInfo(organisasjonsnummer = "0087654321", navn = "Helsfyr stål og plasikk", adresse = "Veien 24, 1234, VårBy")
+        val pdfPayload = refusjonsRapportBestilling.tilPdfPayload(now, organisasjonInfo)
+        val actualJson = json.encodeToString(RefusjonsRapportPdfPayload.serializer(), pdfPayload)
+
+        assertThatJson(actualJson)
+            .isEqualTo(
+                """
+                    {
+                      "rapportSendt": "31.10.2025",
+                      "utbetalingsDato": "28.10.2025",
+                      "totalsum": "16 238,68",
+                      "bedrift": {
+                        "organisajonsnummer": "974 600 019",
+                        "navn": "Helsfyr stål og plasikk",
+                        "kontonummer": "0247 03 03400",
+                        "adresse": "Veien 24, 1234, VårBy"
+                      },
+                      "underenheter": [
+                        {
+                          "totalbelop": "5 738,68",
+                          "underenhet": "009876111",
+                          "utbetalinger": [
+                            {
+                              "ytelse": "Foreldrepenger",
+                              "fnr": "12345678111",
+                              "navn": "Anders Andersen",
+                              "periodeFra": "01.01.2025",
+                              "periodeTil": "31.01.2025",
+                              "maksDato": "31.07.2026",
+                              "belop": "4 234,00"
+                            },
+                            {
+                              "ytelse": "Sykepenger",
+                              "fnr": "12345678222",
+                              "navn": "Birte Birtesen",
+                              "periodeFra": "01.03.2025",
+                              "periodeTil": "31.03.2025",
+                              "maksDato": "31.07.2026",
+                              "belop": "1 504,68"
+                            }
+                          ]
+                        },
+                        {
+                          "totalbelop": "10 500,00",
+                          "underenhet": "009876222",
+                          "utbetalinger": [
+                            {
+                              "ytelse": "Foreldrepenger",
+                              "fnr": "12345678111",
+                              "navn": "Anders Andersen",
+                              "periodeFra": "01.01.2025",
+                              "periodeTil": "31.01.2025",
+                              "maksDato": "31.07.2026",
+                              "belop": "6 500,00"
+                            },
+                            {
+                              "ytelse": "Sykepenger",
+                              "fnr": "12345678222",
+                              "navn": "Birte Birtesen",
+                              "periodeFra": "01.03.2025",
+                              "periodeTil": "31.03.2025",
+                              "maksDato": "31.07.2026",
+                              "belop": "4 000,00"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                """
+                    .trimIndent()
+            )
     }
 }

@@ -98,7 +98,7 @@ startxref
         navenhet: Int = 8020,
         bedriftsnummer: String = "933001542",
         kode: String = "H",
-        tekst: String = "Sykepenger feriepenger",
+        tekst: String = "Sykepenger",
         fnr: String = "29070049716",
         navn: String = "wopoj hyfom",
         fraDato: LocalDate = LocalDate.parse("2025-05-01"),
@@ -142,3 +142,5 @@ startxref
         )
     }
 }
+
+data class Ansatt(val fnr: String, val navn: String)

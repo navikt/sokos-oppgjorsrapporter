@@ -5,13 +5,16 @@ package no.nav.sokos.oppgjorsrapporter.mq
 
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.math.abs
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
@@ -60,6 +63,63 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
         return datarec.joinToString(LINJESKIFT) { byggCsvRad(header, it) } + LINJESKIFT
     }
 
+    fun tilPDF(): ByteArray {
+        throw NotImplementedError("PDF-rapport er ikke implementert for refusjonsrapport")
+    }
+
+    /**
+     * Konverterer refusjonsrapportens header og data til et PDF-payload-objekt.
+     *
+     * Denne funksjonen grupperer utbetalingene etter underenhet (bedriftsnummer) og summerer beløpene for hver underenhet. Den bygger
+     * deretter en RefusjonsRapportPdfPayload som inneholder informasjon om rapporten, bedriften og underenhetene med deres respektive
+     * utbetalinger. Utbetalingene innen hver underenhet sorteres etter fødselsnummer, periodeFra og ytelse.
+     *
+     * @param rapportSendt Datoen rapporten ble sendt. Standardverdi er dagens dato. Lagt til for fleksibilitet ved testing.
+     * @param organisasjonInfo Informasjon om hovedenheten som mottar rapporten.
+     * @return RefusjonsRapportPdfPayload som representerer dataene i et format egnet for PDF-generering.
+     */
+    fun tilPdfPayload(rapportSendt: LocalDate = LocalDate.now(), organisasjonInfo: OrganisasjonInfo): RefusjonsRapportPdfPayload {
+
+        val underenheterMap = mutableMapOf<String, MutableList<Utbetaling>>()
+        for (data in datarec) {
+            val utbetaling =
+                Utbetaling(
+                    ytelse = data.tekst,
+                    fnr = data.fnr,
+                    navn = data.navn,
+                    periodeFra = data.fraDato.formaterDatoForPdf(),
+                    periodeTil = data.tilDato.formaterDatoForPdf(),
+                    maksDato = data.maxDato.formaterDatoForPdf(),
+                    belop = data.belop.formaterBeløpForPdf(),
+                    ufromattertBeløp = data.belop,
+                )
+            underenheterMap.computeIfAbsent(data.bedriftsnummer) { mutableListOf() }.add(utbetaling)
+        }
+
+        val underenheter =
+            underenheterMap.map { (underenhet, utbetalinger) ->
+                Underenhet(
+                    totalbelop = utbetalinger.sumOf { it.ufromattertBeløp }.formaterBeløpForPdf(),
+                    underenhet,
+                    utbetalinger.sortedWith(compareBy({ it.fnr }, { it.periodeFra }, { it.ytelse })),
+                )
+            }
+
+        return RefusjonsRapportPdfPayload(
+            rapportSendt = rapportSendt.formaterDatoForPdf(),
+            utbetalingsDato = header.valutert.formaterDatoForPdf(),
+            totalsum = header.sumBelop.formaterBeløpForPdf(),
+            bedrift =
+                Bedrift(
+                    organisajonsnummer = header.orgnr.formaterBedriftsnummerForPdf(),
+                    navn = organisasjonInfo.navn,
+                    kontonummer = header.bankkonto.formaterKontonummerForPdf(),
+                    adresse = organisasjonInfo.adresse,
+                ),
+            underenheter.sortedWith(compareBy({ it.underenhet })),
+        )
+    }
+
     /**
      * Bygger en CSV-rad basert på header og data fra refusjonsrapporten.
      *
@@ -91,19 +151,15 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
                 data.bedriftsnummer,
                 data.kode,
                 data.fnr,
-                formaterDatoForCsv(data.fraDato),
+                data.fraDato.formaterDatoForCsv(),
                 header.bankkonto,
-                formaterNavn(data.navn),
-                formaterDatoForCsv(data.tilDato),
-                formaterBeløp(data.belop),
+                data.navn.formaterAnsattNavnForCsv(),
+                data.tilDato.formaterDatoForCsv(),
+                data.belop.formaterBeløpForCsv(),
                 hardkodetFelt,
-                formaterDatoForCsv(data.maxDato),
+                data.maxDato.formaterDatoForCsv(),
             )
             .joinToString(";")
-    }
-
-    private fun formaterDatoForCsv(dato: LocalDate?): String {
-        return dato?.format(DateTimeFormatter.BASIC_ISO_DATE) ?: "0".repeat(8)
     }
 
     /**
@@ -116,16 +172,44 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
      * @param belop Beløpet som skal formateres
      * @return Formaterte beløp som streng i CSV-format
      */
-    private fun formaterBeløp(belop: BigDecimal): String {
-        val beløpIØrer: Long = (belop * BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).longValueExact()
+    private fun BigDecimal.formaterBeløpForCsv(): String {
+        val beløpIØrer: Long = (this * BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).longValueExact()
         val absolutBeløp = abs(beløpIØrer)
         val dkSuffiks = if (beløpIØrer < 0) "-" else " "
         return "${absolutBeløp.toString().padStart(10, '0')}$dkSuffiks"
     }
 
+    private fun LocalDate?.formaterDatoForCsv(): String {
+        return this?.format(DateTimeFormatter.BASIC_ISO_DATE) ?: "0".repeat(8)
+    }
+
     /** Formaterer navnet ved å erstatte eventuelle semikolon, quote og linjeskift med mellomrom og padde det til 25 tegn. */
-    private fun formaterNavn(navn: String): String {
-        return navn.replace(Regex("[\";\n\r]+"), " ").trim().take(25).padEnd(25, ' ')
+    private fun String.formaterAnsattNavnForCsv(): String {
+        return this.replace(Regex("[\";\n\r]+"), " ").trim().take(25).padEnd(25, ' ')
+    }
+
+    private fun LocalDate?.formaterDatoForPdf(): String {
+        val pdfPayloadDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+        return this?.format(pdfPayloadDateFormatter) ?: ""
+    }
+
+    private fun BigDecimal.formaterBeløpForPdf(): String {
+        val formatter =
+            NumberFormat.getNumberInstance(Locale.of("no", "NO")).apply {
+                minimumFractionDigits = 2
+                maximumFractionDigits = 2
+            }
+        return formatter.format(this)
+    }
+
+    private fun String.formaterKontonummerForPdf(): String {
+        // 12341212345 --> 1234 12 12345
+        return "${this.substring(0, 4)} ${this.substring(4, 6)} ${this.substring(6)}"
+    }
+
+    private fun String.formaterBedriftsnummerForPdf(): String {
+        // 974600019 --> 974 600 019
+        return "${this.substring(0, 3)} ${this.substring(3, 6)} ${this.substring(6)}"
     }
 
     companion object {
@@ -157,3 +241,30 @@ data class Data(
     val tilDato: LocalDate?,
     val maxDato: LocalDate?,
 )
+
+@Serializable
+data class RefusjonsRapportPdfPayload(
+    val rapportSendt: String,
+    val utbetalingsDato: String,
+    val totalsum: String,
+    val bedrift: Bedrift,
+    val underenheter: List<Underenhet>,
+)
+
+@Serializable data class Bedrift(val organisajonsnummer: String, val navn: String, val kontonummer: String, val adresse: String)
+
+@Serializable data class Underenhet(val totalbelop: String, val underenhet: String, val utbetalinger: List<Utbetaling>)
+
+@Serializable
+data class Utbetaling(
+    val ytelse: String,
+    val fnr: String,
+    val navn: String,
+    val periodeFra: String,
+    val periodeTil: String,
+    val maksDato: String,
+    val belop: String,
+    @Transient val ufromattertBeløp: BigDecimal = BigDecimal.ZERO,
+)
+
+data class OrganisasjonInfo(val organisasjonsnummer: String, val navn: String, val adresse: String)
