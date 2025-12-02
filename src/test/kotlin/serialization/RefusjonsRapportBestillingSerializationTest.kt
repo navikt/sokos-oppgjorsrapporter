@@ -18,17 +18,17 @@ class RefusjonsRapportBestillingSerializationTest {
     fun `deserialize nullable LocalDate values properly`() {
         val input =
             """
-                {
-                    "navenhet": 1,
-                    "bedriftsnummer": "123456789",
-                    "kode": "A",
-                    "tekst": "Test",
-                    "fnr": "12345678901",
-                    "navn": "Test Person",
-                    "belop": 100.0,
-                    "fraDato": "2024-01-01",
-                    "tilDato": "2024-12-31"
-                }
+            {
+                "navenhet": 1,
+                "bedriftsnummer": "123456789",
+                "kode": "A",
+                "tekst": "Test",
+                "fnr": "12345678901",
+                "navn": "Test Person",
+                "belop": 100.0,
+                "fraDato": "2024-01-01",
+                "tilDato": "2024-12-31"
+            }
             """
                 .trimIndent()
 

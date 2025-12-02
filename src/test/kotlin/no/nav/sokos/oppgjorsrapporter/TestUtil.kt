@@ -78,16 +78,16 @@ object TestUtil {
                 // Flyway-migreringene kan gi rettigheter til denne brukeren
                 DatabaseConfig.migrationInitSql =
                     $$"""
-                        DO
-                        $do$
-                        BEGIN
-                           IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE  rolname = 'appbruker') THEN
-                              RAISE NOTICE 'Role "appbruker" already exists. Skipping.';
-                           ELSE
-                              CREATE ROLE appbruker LOGIN PASSWORD 'test';
-                           END IF;
-                        END
-                        $do$;
+                    DO
+                    $do$
+                    BEGIN
+                       IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE  rolname = 'appbruker') THEN
+                          RAISE NOTICE 'Role "appbruker" already exists. Skipping.';
+                       ELSE
+                          CREATE ROLE appbruker LOGIN PASSWORD 'test';
+                       END IF;
+                    END
+                    $do$;
                     """
                         .trimIndent()
             }

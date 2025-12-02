@@ -10,9 +10,9 @@ class RapportRepository(private val clock: Clock) {
     fun lagreBestilling(tx: TransactionalSession, bestilling: UlagretRapportBestilling): RapportBestilling =
         queryOf(
                 """
-                    INSERT INTO rapport.rapport_bestilling(mottatt, mottatt_fra, dokument, generer_som)
-                    VALUES (:mottatt, :mottatt_fra, :dokument, CAST(:generer_som AS rapport.rapport_type))
-                    RETURNING *
+                INSERT INTO rapport.rapport_bestilling(mottatt, mottatt_fra, dokument, generer_som)
+                VALUES (:mottatt, :mottatt_fra, :dokument, CAST(:generer_som AS rapport.rapport_type))
+                RETURNING *
                 """
                     .trimIndent(),
                 mapOf(
@@ -35,14 +35,14 @@ class RapportRepository(private val clock: Clock) {
     fun finnUprosessertBestilling(tx: TransactionalSession): RapportBestilling? =
         queryOf(
                 """
-                    SELECT *
-                    FROM rapport.rapport_bestilling
-                    WHERE ferdig_prosessert IS NULL
-                      AND ( prosessering_feilet IS NULL OR
-                            prosessering_feilet + '1 day'::interval <= now() )
-                    ORDER BY id
-                    LIMIT 1
-                    FOR NO KEY UPDATE SKIP LOCKED
+                SELECT *
+                FROM rapport.rapport_bestilling
+                WHERE ferdig_prosessert IS NULL
+                  AND ( prosessering_feilet IS NULL OR
+                        prosessering_feilet + '1 day'::interval <= now() )
+                ORDER BY id
+                LIMIT 1
+                FOR NO KEY UPDATE SKIP LOCKED
                 """
                     .trimIndent()
             )
@@ -53,9 +53,9 @@ class RapportRepository(private val clock: Clock) {
     fun markerBestillingProsesseringFeilet(tx: TransactionalSession, id: RapportBestilling.Id) =
         queryOf(
                 """
-                    UPDATE rapport.rapport_bestilling
-                    SET prosessering_feilet = now()
-                    WHERE id = :id AND ferdig_prosessert IS NULL
+                UPDATE rapport.rapport_bestilling
+                SET prosessering_feilet = now()
+                WHERE id = :id AND ferdig_prosessert IS NULL
                 """
                     .trimIndent(),
                 mapOf("id" to id.raw),
@@ -66,9 +66,9 @@ class RapportRepository(private val clock: Clock) {
     fun markerBestillingProsessert(tx: TransactionalSession, id: RapportBestilling.Id) =
         queryOf(
                 """
-                    UPDATE rapport.rapport_bestilling
-                    SET ferdig_prosessert = now()
-                    WHERE id = :id AND ferdig_prosessert IS NULL
+                UPDATE rapport.rapport_bestilling
+                SET ferdig_prosessert = now()
+                WHERE id = :id AND ferdig_prosessert IS NULL
                 """
                     .trimIndent(),
                 mapOf("id" to id.raw),
@@ -79,10 +79,10 @@ class RapportRepository(private val clock: Clock) {
     fun antallUprosesserteBestillinger(tx: TransactionalSession, rapportType: RapportType): Long =
         queryOf(
                 """
-                    SELECT COUNT(*) AS antall 
-                    FROM rapport.rapport_bestilling
-                    WHERE ferdig_prosessert IS NULL
-                      AND generer_som = CAST(:rapportType AS rapport.rapport_type)
+                SELECT COUNT(*) AS antall 
+                FROM rapport.rapport_bestilling
+                WHERE ferdig_prosessert IS NULL
+                  AND generer_som = CAST(:rapportType AS rapport.rapport_type)
                 """
                     .trimIndent(),
                 mapOf("rapportType" to rapportType.name),
@@ -94,9 +94,9 @@ class RapportRepository(private val clock: Clock) {
     fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         queryOf(
                 """
-                    INSERT INTO rapport.rapport(bestilling_id, orgnr, type, dato_valutert, bankkonto)
-                    VALUES (:bestilling_id, :orgnr, CAST(:type AS rapport.rapport_type), :dato_valutert, :bankkonto)
-                    RETURNING *
+                INSERT INTO rapport.rapport(bestilling_id, orgnr, type, dato_valutert, bankkonto)
+                VALUES (:bestilling_id, :orgnr, CAST(:type AS rapport.rapport_type), :dato_valutert, :bankkonto)
+                RETURNING *
                 """
                     .trimIndent(),
                 mapOf(
@@ -114,9 +114,9 @@ class RapportRepository(private val clock: Clock) {
     fun finnRapport(tx: TransactionalSession, id: Rapport.Id): Rapport? =
         queryOf(
                 """
-                    SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, opprettet, arkivert
-                    FROM rapport.rapport
-                    WHERE id = :id
+                SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, opprettet, arkivert
+                FROM rapport.rapport
+                WHERE id = :id
                 """
                     .trimIndent(),
                 mapOf("id" to id.raw),
@@ -162,12 +162,12 @@ class RapportRepository(private val clock: Clock) {
                 is EtterIdKriterier -> {
                     queryOf(
                         """
-                            SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, opprettet, arkivert
-                            FROM rapport.rapport
-                            WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
-                              AND (arkivert IS NULL OR :inkluderArkiverte)
-                              AND orgnr = :orgnummer
-                              AND id > :etter_id
+                        SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, opprettet, arkivert
+                        FROM rapport.rapport
+                        WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
+                          AND (arkivert IS NULL OR :inkluderArkiverte)
+                          AND orgnr = :orgnummer
+                          AND id > :etter_id
                         """
                             .trimIndent(),
                         mapOf(
@@ -202,9 +202,9 @@ class RapportRepository(private val clock: Clock) {
     fun lagreVariant(tx: TransactionalSession, variant: UlagretVariant): Variant =
         queryOf(
                 """
-                    INSERT INTO rapport.rapport_variant (rapport_id, format, filnavn, innhold) 
-                    VALUES (:rapport_id, CAST(:format AS rapport.rapport_format), :filnavn, :innhold)
-                    RETURNING id, rapport_id, format, filnavn, octet_length(innhold) AS bytes
+                INSERT INTO rapport.rapport_variant (rapport_id, format, filnavn, innhold) 
+                VALUES (:rapport_id, CAST(:format AS rapport.rapport_format), :filnavn, :innhold)
+                RETURNING id, rapport_id, format, filnavn, octet_length(innhold) AS bytes
                 """
                     .trimIndent(),
                 mapOf(
@@ -221,9 +221,9 @@ class RapportRepository(private val clock: Clock) {
     fun listVarianter(tx: TransactionalSession, rapportId: Rapport.Id): List<Variant> =
         queryOf(
                 """
-                    SELECT id, rapport_id, format, filnavn, octet_length(innhold) AS bytes
-                    FROM rapport.rapport_variant
-                    WHERE rapport_id = :rapportId
+                SELECT id, rapport_id, format, filnavn, octet_length(innhold) AS bytes
+                FROM rapport.rapport_variant
+                WHERE rapport_id = :rapportId
                 """
                     .trimIndent(),
                 mapOf("rapportId" to rapportId.raw),
@@ -239,7 +239,8 @@ class RapportRepository(private val clock: Clock) {
                 | FROM rapport.rapport_variant v
                 | JOIN rapport.rapport r ON r.id = v.rapport_id
                 |WHERE v.rapport_id = :rapportId
-                |  AND v.format = CAST(:format AS rapport.rapport_format)"""
+                |  AND v.format = CAST(:format AS rapport.rapport_format)
+                """
                     .trimMargin(),
                 mapOf("rapportId" to rapportId.raw, "format" to format.contentType),
             )
@@ -251,8 +252,8 @@ class RapportRepository(private val clock: Clock) {
         tx.execute(
             queryOf(
                 """
-                    INSERT INTO rapport.rapport_audit (rapport_id, variant_id, tidspunkt, hendelse, brukernavn, tekst)
-                    VALUES (:rapportId, :variantId, :tidspunkt, :hendelse, :brukernavn, :tekst)
+                INSERT INTO rapport.rapport_audit (rapport_id, variant_id, tidspunkt, hendelse, brukernavn, tekst)
+                VALUES (:rapportId, :variantId, :tidspunkt, :hendelse, :brukernavn, :tekst)
                 """
                     .trimIndent(),
                 mapOf(
@@ -269,11 +270,11 @@ class RapportRepository(private val clock: Clock) {
     fun hentAuditlog(tx: TransactionalSession, kriterier: RapportAuditKriterier): List<RapportAudit> =
         queryOf(
                 """
-                    SELECT * FROM rapport.rapport_audit
-                    WHERE rapport_id = :rapportId
-                      AND ( (:variantId :: BIGINT) IS NULL OR variant_id = :variantId )
-                      AND ( (:start :: TIMESTAMPTZ) IS NULL OR tidspunkt BETWEEN :start AND :end )
-                    ORDER BY id ASC
+                SELECT * FROM rapport.rapport_audit
+                WHERE rapport_id = :rapportId
+                  AND ( (:variantId :: BIGINT) IS NULL OR variant_id = :variantId )
+                  AND ( (:start :: TIMESTAMPTZ) IS NULL OR tidspunkt BETWEEN :start AND :end )
+                ORDER BY id ASC
                 """
                     .trimIndent(),
                 mapOf(
