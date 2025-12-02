@@ -4,11 +4,15 @@ import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.extensions.testcontainers.toDataSource
 import io.kotest.inspectors.forExactly
+import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.ktor.server.plugins.di.dependencies
+import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
 import java.time.Period
+import java.time.ZoneOffset
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
@@ -63,26 +67,33 @@ class BestillingProsessorTest :
             }
 
             test("jobben for bestillings-prosessering plukker automatisk opp uprosessesert bestillinger og prosesserer dem") {
-                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = { dependencies.provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) } },
+                ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                     val rapportService: RapportService = application.dependencies.resolve()
+                    val clock: Clock = application.dependencies.resolve()
+
                     val kriterier =
                         EkskluderOrgKriterier(
                             ekskluderte = emptySet(),
                             bankkonto = null,
                             rapportTyper = RapportType.entries.toSet(),
-                            periode = LocalDateRange.of(LocalDate.now().minusDays(1), Period.ofDays(2)),
+                            periode = LocalDateRange.of(LocalDate.now(clock).minusDays(1), Period.ofDays(2)),
                             inkluderArkiverte = false,
                         )
                     val before = rapportService.listRapporter(kriterier)
 
-                    val bestilling1 = TestData.createRefusjonsRapportBestilling(headerOrgnr = "123456789", headerValutert = LocalDate.now())
+                    val bestilling1 =
+                        TestData.createRefusjonsRapportBestilling(headerOrgnr = "123456789", headerValutert = LocalDate.now(clock))
                     rapportService.lagreBestilling(
                         "test",
                         RapportType.`ref-arbg`,
                         RefusjonsRapportBestilling.json.encodeToString((bestilling1)),
                     )
-                    val bestilling2 = TestData.createRefusjonsRapportBestilling(headerOrgnr = "987654321", headerValutert = LocalDate.now())
+                    val bestilling2 =
+                        TestData.createRefusjonsRapportBestilling(headerOrgnr = "987654321", headerValutert = LocalDate.now(clock))
                     rapportService.lagreBestilling(
                         "test",
                         RapportType.`ref-arbg`,
@@ -102,10 +113,71 @@ class BestillingProsessorTest :
                                 val varianter = rapportService.listVarianter(rapport.id)
                                 varianter.size shouldBeGreaterThanOrEqual 1
                                 // TODO: Oppdatere test til å verifisere at PDF-variant er på plass når vi har laget det
-                                varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv)
+                                varianter.forExactly(1) {
+                                    it.format shouldBe VariantFormat.Csv
+                                    it.filnavn shouldBe "${rapport.orgnr.raw}_ref-arbg_1970-01-01_${rapport.id.raw}.csv"
+                                }
                             }
                             nye.forExactly(1) { it.orgnr.raw shouldBe bestilling1.header.orgnr }
                             nye.forExactly(1) { it.orgnr.raw shouldBe bestilling2.header.orgnr }
+                        }
+                    } finally {
+                        applicationState.disableBackgroundJobs = preDisabled
+                    }
+                }
+            }
+
+            test("jobben for bestillings-prosessering håndterer multiple rapporter med likt orgnr+dato") {
+                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+                    val rapportService: RapportService = application.dependencies.resolve()
+                    val kriterier =
+                        EkskluderOrgKriterier(
+                            ekskluderte = emptySet(),
+                            bankkonto = null,
+                            rapportTyper = RapportType.entries.toSet(),
+                            periode = LocalDateRange.of(LocalDate.now().minusDays(1), Period.ofDays(2)),
+                            inkluderArkiverte = false,
+                        )
+                    val before = rapportService.listRapporter(kriterier)
+
+                    val bestilling1 = TestData.createRefusjonsRapportBestilling(headerOrgnr = "123456789", headerValutert = LocalDate.now())
+                    rapportService.lagreBestilling(
+                        "test",
+                        RapportType.`ref-arbg`,
+                        RefusjonsRapportBestilling.json.encodeToString((bestilling1)),
+                    )
+                    val bestilling2 =
+                        bestilling1.copy(
+                            header = bestilling1.header.let { it.copy(sumBelop = it.sumBelop * 2.toBigDecimal()) },
+                            datarec = bestilling1.datarec.map { it.copy(belop = it.belop * 2.toBigDecimal()) },
+                        )
+                    rapportService.lagreBestilling(
+                        "test",
+                        RapportType.`ref-arbg`,
+                        RefusjonsRapportBestilling.json.encodeToString((bestilling2)),
+                    )
+
+                    val applicationState: ApplicationState = application.dependencies.resolve()
+                    val preDisabled = applicationState.disableBackgroundJobs
+                    try {
+                        applicationState.disableBackgroundJobs = false
+
+                        eventually {
+                            val after = rapportService.listRapporter(kriterier)
+                            (after.size - before.size) shouldBeGreaterThanOrEqual 2
+                            val nye = after.filterNot { before.contains(it) }
+                            val varianterMap =
+                                nye.map { rapport ->
+                                        val varianter = rapportService.listVarianter(rapport.id)
+                                        varianter.size shouldBeGreaterThanOrEqual 1
+                                        // TODO: Oppdatere test til å verifisere at PDF-variant er på plass når vi har laget det
+                                        varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv)
+                                        rapport.id to varianter
+                                    }
+                                    .toMap()
+                            varianterMap.values.flatten().map { it.filnavn }.toSet().size shouldBeGreaterThanOrEqual nye.size
+                            nye.map { it.orgnr.raw }.toSet() shouldContainExactly setOf(bestilling1.header.orgnr, bestilling2.header.orgnr)
                         }
                     } finally {
                         applicationState.disableBackgroundJobs = preDisabled

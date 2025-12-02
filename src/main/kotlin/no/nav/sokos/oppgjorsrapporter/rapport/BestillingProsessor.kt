@@ -73,7 +73,7 @@ class BestillingProsessor(val rapportService: RapportService, val applicationSta
                             UlagretVariant(
                                 rapport.id,
                                 format,
-                                "${rapport.orgnr.raw}_${rapport.type.name}_${rapport.datoValutert}.${format.name.lowercase()}",
+                                "${rapport.orgnr.raw}_${rapport.type.name}_${rapport.datoValutert}_${rapport.id.raw}.${format.name.lowercase()}",
                                 bytes,
                             )
                         )
