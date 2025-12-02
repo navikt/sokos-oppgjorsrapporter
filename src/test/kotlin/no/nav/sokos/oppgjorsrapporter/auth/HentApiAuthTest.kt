@@ -17,6 +17,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
+import kotlinx.io.bytestring.encodeToByteString
 import no.nav.helsearbeidsgiver.utils.json.fromJson
 import no.nav.helsearbeidsgiver.utils.test.wrapper.genererGyldig
 import no.nav.helsearbeidsgiver.utils.wrapper.Orgnr
@@ -104,7 +105,7 @@ class HentApiAuthTest : ApiTest() {
     fun mockHentingAvEnkelRapport(resultat: Rapport) {
         every { mockedRapportRepository.finnRapport(any(), resultat.id) } returns resultat
         every { mockedRapportRepository.hentInnhold(any(), resultat.id, VariantFormat.Pdf) } returns
-            Triple(resultat, Variant.Id(1), TestData.minimalPdf.encodeToByteArray())
+            Triple(resultat, Variant.Id(1), TestData.minimalPdf.encodeToByteString())
         every { mockedRapportRepository.audit(any(), any()) } returns true
     }
 

@@ -17,6 +17,7 @@ import java.time.LocalDate
 import java.util.*
 import java.util.concurrent.CountDownLatch
 import kotlinx.coroutines.async
+import kotlinx.io.bytestring.append
 import kotlinx.io.bytestring.buildByteString
 import kotlinx.io.bytestring.encodeToByteString
 import no.nav.sokos.oppgjorsrapporter.TestContainer
@@ -274,13 +275,11 @@ class RapportServiceTest :
                     val rapportId = Rapport.Id(4)
                     val innhold = sut.hentInnhold(EntraId("navIdent", listOf("group")), rapportId, VariantFormat.Pdf) { _, data -> data }
 
-                    val expected =
-                        buildByteString {
-                                append("PDF".toByteArray())
-                                append(0.toByte())
-                                append("4".toByteArray())
-                            }
-                            .toByteArray()
+                    val expected = buildByteString {
+                        append("PDF".encodeToByteString())
+                        append(0.toByte())
+                        append("4".encodeToByteString())
+                    }
                     innhold shouldBe expected
 
                     val auditLog = sut.hentAuditLog(RapportAuditKriterier(rapportId)).single()

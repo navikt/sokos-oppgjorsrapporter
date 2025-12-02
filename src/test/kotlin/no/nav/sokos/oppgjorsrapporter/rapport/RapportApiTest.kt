@@ -14,7 +14,10 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlinx.coroutines.runBlocking
+import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.append
 import kotlinx.io.bytestring.buildByteString
+import kotlinx.io.bytestring.encodeToByteString
 import net.javacrumbs.jsonunit.assertj.assertThatJson
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
@@ -867,14 +870,13 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                 .statusCode(HttpStatusCode.OK.value)
                 .extract()
                 .response()!!
-        assertThat(response.body().asByteArray())
+        assertThat(ByteString(response.body().asByteArray()))
             .isEqualTo(
                 buildByteString {
-                        append("CSV".toByteArray())
-                        append(0.toByte())
-                        append("2".toByteArray())
-                    }
-                    .toByteArray()
+                    append("CSV".encodeToByteString())
+                    append(0.toByte())
+                    append("2".encodeToByteString())
+                }
             )
     }
 
@@ -890,14 +892,13 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                 .statusCode(HttpStatusCode.OK.value)
                 .extract()
                 .response()!!
-        assertThat(response.body().asByteArray())
+        assertThat(ByteString(response.body().asByteArray()))
             .isEqualTo(
                 buildByteString {
-                        append("PDF".toByteArray())
-                        append(0.toByte())
-                        append("2".toByteArray())
-                    }
-                    .toByteArray()
+                    append("PDF".encodeToByteString())
+                    append(0.toByte())
+                    append("2".encodeToByteString())
+                }
             )
     }
 

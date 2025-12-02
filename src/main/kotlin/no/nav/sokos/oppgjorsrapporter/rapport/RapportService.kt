@@ -4,6 +4,7 @@ import java.time.Clock
 import java.time.Instant
 import javax.sql.DataSource
 import kotlinx.coroutines.runBlocking
+import kotlinx.io.bytestring.ByteString
 import kotliquery.Session
 import kotliquery.TransactionalSession
 import kotliquery.sessionOf
@@ -128,7 +129,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
         bruker: AutentisertBruker,
         rapportId: Rapport.Id,
         format: VariantFormat,
-        process: suspend (Rapport, ByteArray) -> T?,
+        process: suspend (Rapport, ByteString) -> T?,
     ): T? = withTransaction { tx ->
         repository.hentInnhold(tx, rapportId, format)?.let { (rapport, variantId, innhold) ->
             runBlocking { process(rapport, innhold) }
