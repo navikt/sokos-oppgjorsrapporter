@@ -93,10 +93,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "aar": 2025,
-                            "fraDato": "2025-01-01"
-                        }
+                    {
+                        "aar": 2025,
+                        "fraDato": "2025-01-01"
+                    }
                     """
                         .trimIndent()
                 )
@@ -116,10 +116,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "aar": 2025,
-                            "tilDato": "2025-01-01"
-                        }
+                    {
+                        "aar": 2025,
+                        "tilDato": "2025-01-01"
+                    }
                     """
                         .trimIndent()
                 )
@@ -139,10 +139,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "fraDato": "2025-01-02",
-                            "tilDato": "2025-01-01"
-                        }
+                    {
+                        "fraDato": "2025-01-02",
+                        "tilDato": "2025-01-01"
+                    }
                     """
                         .trimIndent()
                 )
@@ -162,9 +162,9 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "tilDato": "2025-01-01"
-                        }
+                    {
+                        "tilDato": "2025-01-01"
+                    }
                     """
                         .trimIndent()
                 )
@@ -184,9 +184,9 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "etterId": 5
-                        }
+                    {
+                        "etterId": 5
+                    }
                     """
                         .trimIndent()
                 )
@@ -206,10 +206,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "aar": 2025,
-                            "etterId": 5
-                        }
+                    {
+                        "aar": 2025,
+                        "etterId": 5
+                    }
                     """
                         .trimIndent()
                 )
@@ -229,10 +229,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "fraDato": "2025-01-01",
-                            "etterId": 5
-                        }
+                    {
+                        "fraDato": "2025-01-01",
+                        "etterId": 5
+                    }
                     """
                         .trimIndent()
                 )
@@ -252,9 +252,9 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client(authToken = mockOAuth2Server.gyldigSystembrukerAuthToken(OrgNr("123456789")))
                 .body(
                     """
-                        {
-                            "bankkonto": "12345678901"
-                        }
+                    {
+                        "bankkonto": "12345678901"
+                    }
                     """
                         .trimIndent()
                 )
@@ -274,10 +274,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "bankkonto": "12345678901",
-                            "orgnr": "123456789"
-                        }
+                    {
+                        "bankkonto": "12345678901",
+                        "orgnr": "123456789"
+                    }
                     """
                         .trimIndent()
                 )
@@ -305,9 +305,9 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "aar": 2024
-                         }
+                    {
+                        "aar": 2024
+                     }
                     """
                         .trimIndent()
                 )
@@ -320,18 +320,18 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    [
-                        {
-                            "id": 6,
-                            "bestillingId": 6,
-                            "orgnr": "456789012",
-                            "type": "ref-arbg",
-                            "datoValutert": "2024-01-01",
-                            "bankkonto": "45678901234",
-                            "opprettet": "2023-12-31T23:13:54Z",
-                            "arkivert": null
-                        }
-                    ]
+                [
+                    {
+                        "id": 6,
+                        "bestillingId": 6,
+                        "orgnr": "456789012",
+                        "type": "ref-arbg",
+                        "datoValutert": "2024-01-01",
+                        "bankkonto": "45678901234",
+                        "opprettet": "2023-12-31T23:13:54Z",
+                        "arkivert": null
+                    }
+                ]
                 """
                     .trimIndent()
             )
@@ -344,10 +344,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "fraDato": "2023-01-01",
-                            "tilDato": "2023-01-01"
-                        }
+                    {
+                        "fraDato": "2023-01-01",
+                        "tilDato": "2023-01-01"
+                    }
                     """
                         .trimIndent()
                 )
@@ -360,28 +360,28 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    [
-                        {
-                            "id": 1,
-                            "bestillingId": 1,
-                            "orgnr": "123456789",
-                            "type": "ref-arbg",
-                            "datoValutert": "2023-01-01",
-                            "bankkonto": "12345678901",
-                            "opprettet": "2022-12-31T23:45:15Z",
-                            "arkivert": null
-                        },
-                        {
-                            "id": 2,
-                            "bestillingId": 2,
-                            "orgnr": "123456789",
-                            "type": "trekk-kred",
-                            "datoValutert": "2023-01-01",
-                            "bankkonto": "12345678901",
-                            "opprettet": "2023-01-01T08:37:52Z",
-                            "arkivert": null
-                        }
-                    ]
+                [
+                    {
+                        "id": 1,
+                        "bestillingId": 1,
+                        "orgnr": "123456789",
+                        "type": "ref-arbg",
+                        "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
+                        "opprettet": "2022-12-31T23:45:15Z",
+                        "arkivert": null
+                    },
+                    {
+                        "id": 2,
+                        "bestillingId": 2,
+                        "orgnr": "123456789",
+                        "type": "trekk-kred",
+                        "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
+                        "opprettet": "2023-01-01T08:37:52Z",
+                        "arkivert": null
+                    }
+                ]
                 """
                     .trimIndent()
             )
@@ -394,10 +394,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "fraDato": "2023-01-01",
-                            "tilDato": "2023-12-31"
-                         }
+                    {
+                        "fraDato": "2023-01-01",
+                        "tilDato": "2023-12-31"
+                     }
                     """
                         .trimIndent()
                 )
@@ -410,58 +410,58 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    [
-                        {
-                            "id": 1,
-                            "bestillingId": 1,
-                            "orgnr": "123456789",
-                            "type": "ref-arbg",
-                            "datoValutert": "2023-01-01",
-                            "bankkonto": "12345678901",
-                            "opprettet": "2022-12-31T23:45:15Z",
-                            "arkivert": null
-                        },
-                        {
-                            "id": 2,
-                            "bestillingId": 2,
-                            "orgnr": "123456789",
-                            "type": "trekk-kred",
-                            "datoValutert": "2023-01-01",
-                            "bankkonto": "12345678901",
-                            "opprettet": "2023-01-01T08:37:52Z",
-                            "arkivert": null
-                        },
-                        {
-                            "id": 3,
-                            "bestillingId": 3,
-                            "orgnr": "234567890",
-                            "type": "ref-arbg",
-                            "datoValutert": "2023-11-01",
-                            "bankkonto": "23456789012",
-                            "opprettet": "2023-11-01T10:57:21Z",
-                            "arkivert": null
-                        },
-                        {
-                            "id": 5,
-                            "bestillingId": 5,
-                            "orgnr": "456789012",
-                            "type": "ref-arbg",
-                            "datoValutert": "2023-12-31",
-                            "bankkonto": "45678901234",
-                            "opprettet": "2023-12-31T22:58:27Z",
-                            "arkivert": null
-                        },
-                        {
-                            "id": 6,
-                            "bestillingId": 6,
-                            "orgnr": "456789012",
-                            "type": "ref-arbg",
-                            "datoValutert": "2024-01-01",
-                            "bankkonto": "45678901234",
-                            "opprettet": "2023-12-31T23:13:54Z",
-                            "arkivert": null
-                        }
-                    ]
+                [
+                    {
+                        "id": 1,
+                        "bestillingId": 1,
+                        "orgnr": "123456789",
+                        "type": "ref-arbg",
+                        "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
+                        "opprettet": "2022-12-31T23:45:15Z",
+                        "arkivert": null
+                    },
+                    {
+                        "id": 2,
+                        "bestillingId": 2,
+                        "orgnr": "123456789",
+                        "type": "trekk-kred",
+                        "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
+                        "opprettet": "2023-01-01T08:37:52Z",
+                        "arkivert": null
+                    },
+                    {
+                        "id": 3,
+                        "bestillingId": 3,
+                        "orgnr": "234567890",
+                        "type": "ref-arbg",
+                        "datoValutert": "2023-11-01",
+                        "bankkonto": "23456789012",
+                        "opprettet": "2023-11-01T10:57:21Z",
+                        "arkivert": null
+                    },
+                    {
+                        "id": 5,
+                        "bestillingId": 5,
+                        "orgnr": "456789012",
+                        "type": "ref-arbg",
+                        "datoValutert": "2023-12-31",
+                        "bankkonto": "45678901234",
+                        "opprettet": "2023-12-31T22:58:27Z",
+                        "arkivert": null
+                    },
+                    {
+                        "id": 6,
+                        "bestillingId": 6,
+                        "orgnr": "456789012",
+                        "type": "ref-arbg",
+                        "datoValutert": "2024-01-01",
+                        "bankkonto": "45678901234",
+                        "opprettet": "2023-12-31T23:13:54Z",
+                        "arkivert": null
+                    }
+                ]
                 """
                     .trimIndent()
             )
@@ -474,11 +474,11 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "fraDato": "2023-11-01",
-                            "tilDato": "2023-12-31",
-                            "inkluderArkiverte": true
-                         }
+                    {
+                        "fraDato": "2023-11-01",
+                        "tilDato": "2023-12-31",
+                        "inkluderArkiverte": true
+                     }
                     """
                         .trimIndent()
                 )
@@ -491,48 +491,48 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    [
-                        {
-                            "id": 3,
-                            "bestillingId": 3,
-                            "orgnr": "234567890",
-                            "type": "ref-arbg",
-                            "datoValutert": "2023-11-01",
-                            "bankkonto": "23456789012",
-                            "opprettet": "2023-11-01T10:57:21Z",
-                            "arkivert": null
-                        },
-                        {
-                            "id": 4,
-                            "bestillingId": 4,
-                            "orgnr": "345678901",
-                            "type": "ref-arbg",
-                            "datoValutert": "2023-11-01",
-                            "bankkonto": "34567890123",
-                            "opprettet": "2023-11-01T10:57:21Z",
-                            "arkivert": "2023-11-15T07:14:41Z"
-                        },
-                        {
-                            "id": 5,
-                            "bestillingId": 5,
-                            "orgnr": "456789012",
-                            "type": "ref-arbg",
-                            "datoValutert": "2023-12-31",
-                            "bankkonto": "45678901234",
-                            "opprettet": "2023-12-31T22:58:27Z",
-                            "arkivert": null
-                        },
-                        {
-                            "id": 6,
-                            "bestillingId": 6,
-                            "orgnr": "456789012",
-                            "type": "ref-arbg",
-                            "datoValutert": "2024-01-01",
-                            "bankkonto": "45678901234",
-                            "opprettet": "2023-12-31T23:13:54Z",
-                            "arkivert": null
-                        }
-                    ]
+                [
+                    {
+                        "id": 3,
+                        "bestillingId": 3,
+                        "orgnr": "234567890",
+                        "type": "ref-arbg",
+                        "datoValutert": "2023-11-01",
+                        "bankkonto": "23456789012",
+                        "opprettet": "2023-11-01T10:57:21Z",
+                        "arkivert": null
+                    },
+                    {
+                        "id": 4,
+                        "bestillingId": 4,
+                        "orgnr": "345678901",
+                        "type": "ref-arbg",
+                        "datoValutert": "2023-11-01",
+                        "bankkonto": "34567890123",
+                        "opprettet": "2023-11-01T10:57:21Z",
+                        "arkivert": "2023-11-15T07:14:41Z"
+                    },
+                    {
+                        "id": 5,
+                        "bestillingId": 5,
+                        "orgnr": "456789012",
+                        "type": "ref-arbg",
+                        "datoValutert": "2023-12-31",
+                        "bankkonto": "45678901234",
+                        "opprettet": "2023-12-31T22:58:27Z",
+                        "arkivert": null
+                    },
+                    {
+                        "id": 6,
+                        "bestillingId": 6,
+                        "orgnr": "456789012",
+                        "type": "ref-arbg",
+                        "datoValutert": "2024-01-01",
+                        "bankkonto": "45678901234",
+                        "opprettet": "2023-12-31T23:13:54Z",
+                        "arkivert": null
+                    }
+                ]
                 """
                     .trimIndent()
             )
@@ -545,10 +545,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "orgnr": "456789012",
-                            "etterId": 5
-                        }
+                    {
+                        "orgnr": "456789012",
+                        "etterId": 5
+                    }
                     """
                         .trimIndent()
                 )
@@ -561,18 +561,18 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    [
-                        {
-                            "id": 6,
-                            "bestillingId": 6,
-                            "orgnr": "456789012",
-                            "type": "ref-arbg",
-                            "datoValutert": "2024-01-01",
-                            "bankkonto": "45678901234",
-                            "opprettet": "2023-12-31T23:13:54Z",
-                            "arkivert": null
-                        }
-                    ]
+                [
+                    {
+                        "id": 6,
+                        "bestillingId": 6,
+                        "orgnr": "456789012",
+                        "type": "ref-arbg",
+                        "datoValutert": "2024-01-01",
+                        "bankkonto": "45678901234",
+                        "opprettet": "2023-12-31T23:13:54Z",
+                        "arkivert": null
+                    }
+                ]
                 """
                     .trimIndent()
             )
@@ -585,9 +585,9 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client(authToken = mockOAuth2Server.gyldigSystembrukerAuthToken(OrgNr("456789012")))
                 .body(
                     """
-                        {
-                            "etterId": 5
-                        }
+                    {
+                        "etterId": 5
+                    }
                     """
                         .trimIndent()
                 )
@@ -600,18 +600,18 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    [
-                        {
-                            "id": 6,
-                            "bestillingId": 6,
-                            "orgnr": "456789012",
-                            "type": "ref-arbg",
-                            "datoValutert": "2024-01-01",
-                            "bankkonto": "45678901234",
-                            "opprettet": "2023-12-31T23:13:54Z",
-                            "arkivert": null
-                        }
-                    ]
+                [
+                    {
+                        "id": 6,
+                        "bestillingId": 6,
+                        "orgnr": "456789012",
+                        "type": "ref-arbg",
+                        "datoValutert": "2024-01-01",
+                        "bankkonto": "45678901234",
+                        "opprettet": "2023-12-31T23:13:54Z",
+                        "arkivert": null
+                    }
+                ]
                 """
                     .trimIndent()
             )
@@ -624,10 +624,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "aar": 2023,
-                            "orgnr": "234567890"
-                         }
+                    {
+                        "aar": 2023,
+                        "orgnr": "234567890"
+                     }
                     """
                         .trimIndent()
                 )
@@ -640,18 +640,18 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    [
-                        {
-                            "id": 3,
-                            "bestillingId": 3,
-                            "orgnr": "234567890",
-                            "type": "ref-arbg",
-                            "datoValutert": "2023-11-01",
-                            "bankkonto": "23456789012",
-                            "opprettet": "2023-11-01T10:57:21Z",
-                            "arkivert": null
-                        }
-                    ]
+                [
+                    {
+                        "id": 3,
+                        "bestillingId": 3,
+                        "orgnr": "234567890",
+                        "type": "ref-arbg",
+                        "datoValutert": "2023-11-01",
+                        "bankkonto": "23456789012",
+                        "opprettet": "2023-11-01T10:57:21Z",
+                        "arkivert": null
+                    }
+                ]
                 """
                     .trimIndent()
             )
@@ -663,10 +663,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "aar": 2023,
-                            "rapportTyper": ["trekk-kred"]
-                         }
+                    {
+                        "aar": 2023,
+                        "rapportTyper": ["trekk-kred"]
+                     }
                     """
                         .trimIndent()
                 )
@@ -680,18 +680,18 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    [
-                        {
-                            "id": 2,
-                            "bestillingId": 2,
-                            "orgnr": "123456789",
-                            "type": "trekk-kred",
-                            "datoValutert": "2023-01-01",
-                            "bankkonto": "12345678901",
-                            "opprettet": "2023-01-01T08:37:52Z",
-                            "arkivert": null
-                        }
-                    ]
+                [
+                    {
+                        "id": 2,
+                        "bestillingId": 2,
+                        "orgnr": "123456789",
+                        "type": "trekk-kred",
+                        "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
+                        "opprettet": "2023-01-01T08:37:52Z",
+                        "arkivert": null
+                    }
+                ]
                 """
                     .trimIndent()
             )
@@ -703,10 +703,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client(validationFilter = null)
                 .body(
                     """
-                        {
-                            "aar": 2023,
-                            "rapportTyper": ["T14"]
-                         }
+                    {
+                        "aar": 2023,
+                        "rapportTyper": ["T14"]
+                     }
                     """
                         .trimIndent()
                 )
@@ -720,18 +720,18 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    [
-                        {
-                            "id": 2,
-                            "bestillingId": 2,
-                            "orgnr": "123456789",
-                            "type": "trekk-kred",
-                            "datoValutert": "2023-01-01",
-                            "bankkonto": "12345678901",
-                            "opprettet": "2023-01-01T08:37:52Z",
-                            "arkivert": null
-                        }
-                    ]
+                [
+                    {
+                        "id": 2,
+                        "bestillingId": 2,
+                        "orgnr": "123456789",
+                        "type": "trekk-kred",
+                        "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
+                        "opprettet": "2023-01-01T08:37:52Z",
+                        "arkivert": null
+                    }
+                ]
                 """
                     .trimIndent()
             )
@@ -743,9 +743,9 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "bankkonto": "78912378912"
-                         }
+                    {
+                        "bankkonto": "78912378912"
+                     }
                     """
                         .trimIndent()
                 )
@@ -765,10 +765,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             client()
                 .body(
                     """
-                        {
-                            "bankkonto": "12345678901",
-                            "aar": 2023
-                         }
+                    {
+                        "bankkonto": "12345678901",
+                        "aar": 2023
+                     }
                     """
                         .trimIndent()
                 )
@@ -782,28 +782,28 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    [
-                        {
-                            "id": 1,
-                            "bestillingId": 1,
-                            "orgnr": "123456789",
-                            "type": "ref-arbg",
-                            "datoValutert": "2023-01-01",
-                            "bankkonto": "12345678901",
-                            "opprettet": "2022-12-31T23:45:15Z",
-                            "arkivert": null
-                        },
-                        {
-                            "id": 2,
-                            "bestillingId": 2,
-                            "orgnr": "123456789",
-                            "type": "trekk-kred",
-                            "datoValutert": "2023-01-01",
-                            "bankkonto": "12345678901",
-                            "opprettet": "2023-01-01T08:37:52Z",
-                            "arkivert": null
-                        }
-                    ]
+                [
+                    {
+                        "id": 1,
+                        "bestillingId": 1,
+                        "orgnr": "123456789",
+                        "type": "ref-arbg",
+                        "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
+                        "opprettet": "2022-12-31T23:45:15Z",
+                        "arkivert": null
+                    },
+                    {
+                        "id": 2,
+                        "bestillingId": 2,
+                        "orgnr": "123456789",
+                        "type": "trekk-kred",
+                        "datoValutert": "2023-01-01",
+                        "bankkonto": "12345678901",
+                        "opprettet": "2023-01-01T08:37:52Z",
+                        "arkivert": null
+                    }
+                ]
                 """
                     .trimIndent()
             )
@@ -829,16 +829,16 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                    {
-                        "id": 2,
-                        "bestillingId": 2,
-                        "orgnr": "123456789",
-                        "type": "trekk-kred",
-                        "datoValutert": "2023-01-01",
-                        "bankkonto": "12345678901",
-                        "opprettet": "2023-01-01T08:37:52Z",
-                        "arkivert": null
-                    }
+                {
+                    "id": 2,
+                    "bestillingId": 2,
+                    "orgnr": "123456789",
+                    "type": "trekk-kred",
+                    "datoValutert": "2023-01-01",
+                    "bankkonto": "12345678901",
+                    "opprettet": "2023-01-01T08:37:52Z",
+                    "arkivert": null
+                }
                 """
                     .trimIndent()
             )
@@ -947,16 +947,16 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             )
             .isEqualTo(
                 """
-                    {
-                        "id": 2,
-                        "bestillingId": 2,
-                        "orgnr": "123456789",
-                        "type": "trekk-kred",
-                        "datoValutert": "2023-01-01",
-                        "bankkonto": "12345678901",
-                        "opprettet": "2023-01-01T08:37:52Z",
-                        "arkivert": null
-                    }
+                {
+                    "id": 2,
+                    "bestillingId": 2,
+                    "orgnr": "123456789",
+                    "type": "trekk-kred",
+                    "datoValutert": "2023-01-01",
+                    "bankkonto": "12345678901",
+                    "opprettet": "2023-01-01T08:37:52Z",
+                    "arkivert": null
+                }
                 """
                     .trimIndent()
             )
@@ -976,16 +976,16 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             )
             .isEqualTo(
                 """
-                    {
-                        "id": 2,
-                        "bestillingId": 2,
-                        "orgnr": "123456789",
-                        "type": "trekk-kred",
-                        "datoValutert": "2023-01-01",
-                        "bankkonto": "12345678901",
-                        "opprettet": "2023-01-01T08:37:52Z",
-                        "arkivert": "2025-11-22T12:00:00Z"
-                    }
+                {
+                    "id": 2,
+                    "bestillingId": 2,
+                    "orgnr": "123456789",
+                    "type": "trekk-kred",
+                    "datoValutert": "2023-01-01",
+                    "bankkonto": "12345678901",
+                    "opprettet": "2023-01-01T08:37:52Z",
+                    "arkivert": "2025-11-22T12:00:00Z"
+                }
                 """
                     .trimIndent()
             )
@@ -1012,16 +1012,16 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             )
             .isEqualTo(
                 """
-                    {
-                        "id": 2,
-                        "bestillingId": 2,
-                        "orgnr": "123456789",
-                        "type": "trekk-kred",
-                        "datoValutert": "2023-01-01",
-                        "bankkonto": "12345678901",
-                        "opprettet": "2023-01-01T08:37:52Z",
-                        "arkivert": null
-                    }
+                {
+                    "id": 2,
+                    "bestillingId": 2,
+                    "orgnr": "123456789",
+                    "type": "trekk-kred",
+                    "datoValutert": "2023-01-01",
+                    "bankkonto": "12345678901",
+                    "opprettet": "2023-01-01T08:37:52Z",
+                    "arkivert": null
+                }
                 """
                     .trimIndent()
             )
