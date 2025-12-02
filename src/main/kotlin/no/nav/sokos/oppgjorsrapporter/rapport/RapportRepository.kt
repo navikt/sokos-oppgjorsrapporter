@@ -79,7 +79,7 @@ class RapportRepository(private val clock: Clock) {
     fun antallUprosesserteBestillinger(tx: TransactionalSession, rapportType: RapportType): Long =
         queryOf(
                 """
-                SELECT COUNT(*) AS antall 
+                SELECT COUNT(*) AS antall
                 FROM rapport.rapport_bestilling
                 WHERE ferdig_prosessert IS NULL
                   AND generer_som = CAST(:rapportType AS rapport.rapport_type)
@@ -145,7 +145,7 @@ class RapportRepository(private val clock: Clock) {
                               AND (arkivert IS NULL OR :inkluderArkiverte)
                               AND $orgnrWhere
                               AND dato_valutert BETWEEN :fraDato AND :tilDato
-                        """
+                            """
                                 .trimIndent(),
                             mapOf(
                                 "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
@@ -202,7 +202,7 @@ class RapportRepository(private val clock: Clock) {
     fun lagreVariant(tx: TransactionalSession, variant: UlagretVariant): Variant =
         queryOf(
                 """
-                INSERT INTO rapport.rapport_variant (rapport_id, format, filnavn, innhold) 
+                INSERT INTO rapport.rapport_variant (rapport_id, format, filnavn, innhold)
                 VALUES (:rapport_id, CAST(:format AS rapport.rapport_format), :filnavn, :innhold)
                 RETURNING id, rapport_id, format, filnavn, octet_length(innhold) AS bytes
                 """
@@ -235,13 +235,13 @@ class RapportRepository(private val clock: Clock) {
     fun hentInnhold(tx: TransactionalSession, rapportId: Rapport.Id, format: VariantFormat): Triple<Rapport, Variant.Id, ByteString>? =
         queryOf(
                 """
-                |SELECT r.*, v.id AS variant_id, v.innhold
-                | FROM rapport.rapport_variant v
-                | JOIN rapport.rapport r ON r.id = v.rapport_id
-                |WHERE v.rapport_id = :rapportId
-                |  AND v.format = CAST(:format AS rapport.rapport_format)
+                SELECT r.*, v.id AS variant_id, v.innhold
+                FROM rapport.rapport_variant v
+                JOIN rapport.rapport r ON r.id = v.rapport_id
+                WHERE v.rapport_id = :rapportId
+                  AND v.format = CAST(:format AS rapport.rapport_format)
                 """
-                    .trimMargin(),
+                    .trimIndent(),
                 mapOf("rapportId" to rapportId.raw, "format" to format.contentType),
             )
             .map { row -> Triple(Rapport(row), Variant.Id(row.long("variant_id")), ByteString(row.bytes("innhold"))) }
