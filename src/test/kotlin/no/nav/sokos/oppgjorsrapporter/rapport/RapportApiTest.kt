@@ -9,11 +9,13 @@ import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
+import io.ktor.utils.io.ByteString
 import io.restassured.RestAssured
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlinx.coroutines.runBlocking
+import kotlinx.io.bytestring.ByteString
 import kotlinx.io.bytestring.buildByteString
 import net.javacrumbs.jsonunit.assertj.assertThatJson
 import no.nav.security.mock.oauth2.MockOAuth2Server
@@ -867,14 +869,13 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                 .statusCode(HttpStatusCode.OK.value)
                 .extract()
                 .response()!!
-        assertThat(response.body().asByteArray())
+        assertThat(ByteString(response.body().asByteArray()))
             .isEqualTo(
                 buildByteString {
-                        append("CSV".toByteArray())
-                        append(0.toByte())
-                        append("2".toByteArray())
-                    }
-                    .toByteArray()
+                    append("CSV".toByteArray())
+                    append(0.toByte())
+                    append("2".toByteArray())
+                }
             )
     }
 
@@ -890,14 +891,13 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                 .statusCode(HttpStatusCode.OK.value)
                 .extract()
                 .response()!!
-        assertThat(response.body().asByteArray())
+        assertThat(ByteString(response.body().asByteArray()))
             .isEqualTo(
                 buildByteString {
-                        append("PDF".toByteArray())
-                        append(0.toByte())
-                        append("2".toByteArray())
-                    }
-                    .toByteArray()
+                    append("PDF".toByteArray())
+                    append(0.toByte())
+                    append("2".toByteArray())
+                }
             )
     }
 

@@ -274,13 +274,11 @@ class RapportServiceTest :
                     val rapportId = Rapport.Id(4)
                     val innhold = sut.hentInnhold(EntraId("navIdent", listOf("group")), rapportId, VariantFormat.Pdf) { _, data -> data }
 
-                    val expected =
-                        buildByteString {
-                                append("PDF".toByteArray())
-                                append(0.toByte())
-                                append("4".toByteArray())
-                            }
-                            .toByteArray()
+                    val expected = buildByteString {
+                        append("PDF".toByteArray())
+                        append(0.toByte())
+                        append("4".toByteArray())
+                    }
                     innhold shouldBe expected
 
                     val auditLog = sut.hentAuditLog(RapportAuditKriterier(rapportId)).single()

@@ -196,7 +196,7 @@ fun Route.rapportApi() {
                     ?: return@get call.respond(HttpStatusCode.NotAcceptable)
             rapportService.hentInnhold(bruker, Rapport.Id(innhold.parent.id), format) { rapport, innhold ->
                 if (harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
-                    call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold }
+                    call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold.toByteArray() }
                     rapport
                 } else {
                     call.respond(HttpStatusCode.NotFound)

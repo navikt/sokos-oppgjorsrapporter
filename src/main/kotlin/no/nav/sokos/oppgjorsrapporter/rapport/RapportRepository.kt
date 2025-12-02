@@ -2,6 +2,7 @@ package no.nav.sokos.oppgjorsrapporter.rapport
 
 import java.time.Clock
 import java.time.Instant
+import kotlinx.io.bytestring.ByteString
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
 
@@ -231,7 +232,7 @@ class RapportRepository(private val clock: Clock) {
             .asList
             .let { tx.run(it) }
 
-    fun hentInnhold(tx: TransactionalSession, rapportId: Rapport.Id, format: VariantFormat): Triple<Rapport, Variant.Id, ByteArray>? =
+    fun hentInnhold(tx: TransactionalSession, rapportId: Rapport.Id, format: VariantFormat): Triple<Rapport, Variant.Id, ByteString>? =
         queryOf(
                 """
                 |SELECT r.*, v.id AS variant_id, v.innhold
@@ -242,7 +243,7 @@ class RapportRepository(private val clock: Clock) {
                     .trimMargin(),
                 mapOf("rapportId" to rapportId.raw, "format" to format.contentType),
             )
-            .map { row -> Triple(Rapport(row), Variant.Id(row.long("variant_id")), row.bytes("innhold")) }
+            .map { row -> Triple(Rapport(row), Variant.Id(row.long("variant_id")), ByteString(row.bytes("innhold"))) }
             .asSingle
             .let { tx.run(it) }
 
