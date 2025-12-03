@@ -105,7 +105,10 @@ class HentApiAuthTest : ApiTest() {
     fun mockHentingAvEnkelRapport(resultat: Rapport) {
         every { mockedRapportRepository.finnRapport(any(), resultat.id) } returns resultat
         every { mockedRapportRepository.hentInnhold(any(), resultat.id, VariantFormat.Pdf) } returns
-            Triple(resultat, Variant.Id(1), TestData.minimalPdf.encodeToByteString())
+            Pair(
+                Variant(Variant.Id(1), resultat.id, VariantFormat.Pdf, "filnavn", TestData.minimalPdf.length.toLong()),
+                TestData.minimalPdf.encodeToByteString(),
+            )
         every { mockedRapportRepository.audit(any(), any()) } returns true
     }
 

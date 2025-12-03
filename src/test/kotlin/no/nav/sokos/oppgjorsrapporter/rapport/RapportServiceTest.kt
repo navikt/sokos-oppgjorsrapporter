@@ -178,7 +178,7 @@ class RapportServiceTest :
                     val bruker = EntraId("enBruker", listOf("group"))
                     val rapportId = Rapport.Id(1)
 
-                    val arkivert = sut.markerRapportArkivert(rapportId, bruker) { true }.shouldNotBeNull()
+                    val arkivert = sut.markerRapportArkivert(bruker, rapportId, { true }, true).shouldNotBeNull()
                     arkivert.id shouldBe rapportId
                     arkivert.erArkivert shouldBe true
 
@@ -186,7 +186,7 @@ class RapportServiceTest :
                     arkivertLog.hendelse shouldBe RapportAudit.Hendelse.RAPPORT_ARKIVERT
                     arkivertLog.brukernavn shouldBe "azure:NAVident=enBruker"
 
-                    val dearkivert = sut.markerRapportArkivert(rapportId, bruker) { false }.shouldNotBeNull()
+                    val dearkivert = sut.markerRapportArkivert(bruker, rapportId, { true }, false).shouldNotBeNull()
                     dearkivert.id shouldBe rapportId
                     dearkivert.erArkivert shouldBe false
 
@@ -204,7 +204,7 @@ class RapportServiceTest :
                     val bruker = EntraId("navIdent", listOf("group"))
                     val rapportId = Rapport.Id(1)
 
-                    val dearkivert = sut.markerRapportArkivert(rapportId, bruker) { false }.shouldNotBeNull()
+                    val dearkivert = sut.markerRapportArkivert(bruker, rapportId, { true }, false).shouldNotBeNull()
                     dearkivert.id shouldBe rapportId
                     dearkivert.erArkivert shouldBe false
 
@@ -273,7 +273,15 @@ class RapportServiceTest :
 
                     val sut: RapportService = application.dependencies.resolve()
                     val rapportId = Rapport.Id(4)
-                    val innhold = sut.hentInnhold(EntraId("navIdent", listOf("group")), rapportId, VariantFormat.Pdf) { _, data -> data }
+                    val innhold =
+                        sut.hentInnhold(
+                            bruker = EntraId("navIdent", listOf("group")),
+                            rapportId = rapportId,
+                            format = VariantFormat.Pdf,
+                            harTilgang = { true },
+                        ) { _, data ->
+                            data
+                        }
 
                     val expected = buildByteString {
                         append("PDF".encodeToByteString())
@@ -297,7 +305,13 @@ class RapportServiceTest :
                     every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
                     val sut: RapportService = application.dependencies.resolve()
 
-                    sut.hentInnhold(EntraId("navIdent", listOf("group")), Rapport.Id(4), VariantFormat.Pdf) { _, _ -> null }
+                    sut.hentInnhold(
+                        bruker = EntraId("navIdent", listOf("group")),
+                        rapportId = Rapport.Id(4),
+                        format = VariantFormat.Pdf,
+                        harTilgang = { false },
+                    ) { _, _ ->
+                    }
 
                     verify(exactly = 0) { mockedRepository.audit(any(), any()) }
                 }

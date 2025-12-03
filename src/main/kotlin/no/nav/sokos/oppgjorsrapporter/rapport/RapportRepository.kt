@@ -128,17 +128,18 @@ class RapportRepository(private val clock: Clock) {
     fun listRapporter(tx: TransactionalSession, kriterier: RapportKriterier): List<Rapport> =
         when (kriterier) {
                 is DatoRangeKriterier -> {
-                    when (kriterier) {
-                        is InkluderOrgKriterier -> "orgnr = ANY(:orgnummere)" to kriterier.inkluderte
-                        is EkskluderOrgKriterier ->
-                            if (kriterier.bankkonto == null) {
-                                "(NOT orgnr = ANY(:orgnummere))" to kriterier.ekskluderte
-                            } else {
-                                "(NOT orgnr = ANY(:orgnummere)) AND bankkonto = :bankkonto" to kriterier.ekskluderte
-                            }
-                    }.let { (orgnrWhere, orgnummere) ->
-                        queryOf(
-                            """
+                    val (orgnrWhere, orgnummere) =
+                        when (kriterier) {
+                            is InkluderOrgKriterier -> "orgnr = ANY(:orgnummere)" to kriterier.inkluderte
+                            is EkskluderOrgKriterier ->
+                                if (kriterier.bankkonto == null) {
+                                    "(NOT orgnr = ANY(:orgnummere))" to kriterier.ekskluderte
+                                } else {
+                                    "(NOT orgnr = ANY(:orgnummere)) AND bankkonto = :bankkonto" to kriterier.ekskluderte
+                                }
+                        }
+                    queryOf(
+                        """
                             SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, opprettet, arkivert
                             FROM rapport.rapport
                             WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
@@ -146,17 +147,16 @@ class RapportRepository(private val clock: Clock) {
                               AND $orgnrWhere
                               AND dato_valutert BETWEEN :fraDato AND :tilDato
                             """
-                                .trimIndent(),
-                            mapOf(
-                                "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
-                                "inkluderArkiverte" to kriterier.inkluderArkiverte,
-                                "orgnummere" to orgnummere.map { it.raw }.toTypedArray(),
-                                "fraDato" to kriterier.periode.start,
-                                "tilDato" to kriterier.periode.end,
-                                "bankkonto" to (kriterier as? EkskluderOrgKriterier)?.bankkonto?.raw,
-                            ),
-                        )
-                    }
+                            .trimIndent(),
+                        mapOf(
+                            "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
+                            "inkluderArkiverte" to kriterier.inkluderArkiverte,
+                            "orgnummere" to orgnummere.map { it.raw }.toTypedArray(),
+                            "fraDato" to kriterier.periode.start,
+                            "tilDato" to kriterier.periode.end,
+                            "bankkonto" to (kriterier as? EkskluderOrgKriterier)?.bankkonto?.raw,
+                        ),
+                    )
                 }
 
                 is EtterIdKriterier -> {
@@ -232,19 +232,18 @@ class RapportRepository(private val clock: Clock) {
             .asList
             .let { tx.run(it) }
 
-    fun hentInnhold(tx: TransactionalSession, rapportId: Rapport.Id, format: VariantFormat): Triple<Rapport, Variant.Id, ByteString>? =
+    fun hentInnhold(tx: TransactionalSession, rapportId: Rapport.Id, format: VariantFormat): Pair<Variant, ByteString>? =
         queryOf(
                 """
-                SELECT r.*, v.id AS variant_id, v.innhold
-                FROM rapport.rapport_variant v
-                JOIN rapport.rapport r ON r.id = v.rapport_id
-                WHERE v.rapport_id = :rapportId
-                  AND v.format = CAST(:format AS rapport.rapport_format)
+                SELECT *, octet_length(innhold) AS bytes
+                FROM rapport.rapport_variant
+                WHERE rapport_id = :rapportId
+                  AND format = CAST(:format AS rapport.rapport_format)
                 """
                     .trimIndent(),
                 mapOf("rapportId" to rapportId.raw, "format" to format.contentType),
             )
-            .map { row -> Triple(Rapport(row), Variant.Id(row.long("variant_id")), ByteString(row.bytes("innhold"))) }
+            .map { row -> Pair(Variant(row), ByteString(row.bytes("innhold"))) }
             .asSingle
             .let { tx.run(it) }
 

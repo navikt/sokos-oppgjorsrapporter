@@ -194,29 +194,33 @@ fun Route.rapportApi() {
             val format =
                 VariantFormat.entries.find { f -> acceptItems.any { it.value == f.contentType } }
                     ?: return@get call.respond(HttpStatusCode.NotAcceptable)
-            rapportService.hentInnhold(bruker, Rapport.Id(innhold.parent.id), format) { rapport, innhold ->
-                if (harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
+            rapportService.hentInnhold(
+                bruker = bruker,
+                rapportId = Rapport.Id(innhold.parent.id),
+                format = format,
+                harTilgang = { harTilgangTilRessurs(bruker, it.type, it.orgnr) },
+                process = { variant, innhold ->
+                    call.response.header(
+                        HttpHeaders.ContentDisposition,
+                        ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, variant.filnavn).toString(),
+                    )
                     call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold.toByteArray() }
-                    rapport
-                } else {
-                    call.respond(HttpStatusCode.NotFound)
-                    null
-                }
-            }
+                },
+            ) ?: call.respond(HttpStatusCode.NotFound)
         }
     }
 
     put<ApiPaths.Rapporter.Id.Arkiver> { arkiver ->
         metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
-            rapportService.markerRapportArkivert(Rapport.Id(arkiver.parent.id), bruker) {
-                if (harTilgangTilRessurs(bruker, it.type, it.orgnr)) {
-                    call.respond(HttpStatusCode.NoContent)
-                    arkiver.arkivert
-                } else {
-                    null
-                }
-            } ?: call.respond(HttpStatusCode.NotFound)
+            rapportService
+                .markerRapportArkivert(
+                    bruker = bruker,
+                    id = Rapport.Id(arkiver.parent.id),
+                    harTilgang = { harTilgangTilRessurs(bruker, it.type, it.orgnr) },
+                    skalArkiveres = arkiver.arkivert,
+                )
+                ?.let { call.respond(HttpStatusCode.NoContent) } ?: call.respond(HttpStatusCode.NotFound)
         }
     }
 }
