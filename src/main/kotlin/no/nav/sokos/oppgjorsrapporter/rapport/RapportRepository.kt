@@ -232,19 +232,18 @@ class RapportRepository(private val clock: Clock) {
             .asList
             .let { tx.run(it) }
 
-    fun hentInnhold(tx: TransactionalSession, rapportId: Rapport.Id, format: VariantFormat): Triple<Rapport, Variant.Id, ByteString>? =
+    fun hentInnhold(tx: TransactionalSession, rapportId: Rapport.Id, format: VariantFormat): Pair<Variant, ByteString>? =
         queryOf(
                 """
-                SELECT r.*, v.id AS variant_id, v.innhold
-                FROM rapport.rapport_variant v
-                JOIN rapport.rapport r ON r.id = v.rapport_id
-                WHERE v.rapport_id = :rapportId
-                  AND v.format = CAST(:format AS rapport.rapport_format)
+                SELECT *, octet_length(innhold) AS bytes
+                FROM rapport.rapport_variant
+                WHERE rapport_id = :rapportId
+                  AND format = CAST(:format AS rapport.rapport_format)
                 """
                     .trimIndent(),
                 mapOf("rapportId" to rapportId.raw, "format" to format.contentType),
             )
-            .map { row -> Triple(Rapport(row), Variant.Id(row.long("variant_id")), ByteString(row.bytes("innhold"))) }
+            .map { row -> Pair(Variant(row), ByteString(row.bytes("innhold"))) }
             .asSingle
             .let { tx.run(it) }
 

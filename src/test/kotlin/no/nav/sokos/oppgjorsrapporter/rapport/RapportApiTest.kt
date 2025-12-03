@@ -892,6 +892,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                 .statusCode(HttpStatusCode.OK.value)
                 .extract()
                 .response()!!
+        assertThat(response.header(HttpHeaders.ContentDisposition)).contains("attachment").contains("filename=").contains(".pdf")
         assertThat(ByteString(response.body().asByteArray()))
             .isEqualTo(
                 buildByteString {

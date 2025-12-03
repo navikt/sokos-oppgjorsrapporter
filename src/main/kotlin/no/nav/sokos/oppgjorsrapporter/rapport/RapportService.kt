@@ -77,34 +77,37 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
 
     fun listRapporter(kriterier: RapportKriterier): List<Rapport> = withTransaction { repository.listRapporter(it, kriterier) }
 
-    fun markerRapportArkivert(id: Rapport.Id, bruker: AutentisertBruker, process: suspend (Rapport) -> Boolean?): Rapport? =
-        withTransaction { tx ->
-            repository.finnRapport(tx, id)?.let { rapport ->
-                val skalArkiveres = runBlocking { process(rapport) }
-                if (skalArkiveres != null && skalArkiveres != rapport.erArkivert) {
-                    repository.markerRapportArkivert(tx, id, skalArkiveres)
-                    repository.audit(
-                        tx,
-                        RapportAudit(
-                            RapportAudit.Id(0),
-                            rapport.id,
-                            null,
-                            Instant.now(clock),
-                            if (skalArkiveres) {
-                                RapportAudit.Hendelse.RAPPORT_ARKIVERT
-                            } else {
-                                RapportAudit.Hendelse.RAPPORT_DEARKIVERT
-                            },
-                            brukernavn(bruker),
-                            null,
-                        ),
-                    )
-                    repository.finnRapport(tx, id)
-                } else {
-                    rapport
-                }
+    fun markerRapportArkivert(
+        bruker: AutentisertBruker,
+        id: Rapport.Id,
+        harTilgang: (Rapport) -> Boolean,
+        skalArkiveres: Boolean,
+    ): Rapport? = withTransaction { tx ->
+        repository.finnRapport(tx, id)?.takeIf(harTilgang)?.let { rapport ->
+            if (skalArkiveres != rapport.erArkivert) {
+                repository.markerRapportArkivert(tx, id, skalArkiveres)
+                repository.audit(
+                    tx,
+                    RapportAudit(
+                        RapportAudit.Id(0),
+                        rapport.id,
+                        null,
+                        Instant.now(clock),
+                        if (skalArkiveres) {
+                            RapportAudit.Hendelse.RAPPORT_ARKIVERT
+                        } else {
+                            RapportAudit.Hendelse.RAPPORT_DEARKIVERT
+                        },
+                        brukernavn(bruker),
+                        null,
+                    ),
+                )
+                repository.finnRapport(tx, id)
+            } else {
+                rapport
             }
         }
+    }
 
     fun lagreVariant(variant: UlagretVariant): Variant = withTransaction { tx ->
         repository.lagreVariant(tx, variant).also {
@@ -129,27 +132,28 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
         bruker: AutentisertBruker,
         rapportId: Rapport.Id,
         format: VariantFormat,
-        process: suspend (Rapport, ByteString) -> T?,
+        harTilgang: (Rapport) -> Boolean,
+        process: suspend (Variant, ByteString) -> T,
     ): T? = withTransaction { tx ->
-        repository.hentInnhold(tx, rapportId, format)?.let { (rapport, variantId, innhold) ->
-            runBlocking { process(rapport, innhold) }
-                ?.apply {
-                    // process() kan returnere null for å indikere at innholdet ikke ble sendt - f.eks. dersom den oppdaget at
-                    // brukeren ikke hadde tilgang.  Kun hvis den returnerer non-null skal vi legge inn en audit-event.
-                    repository.audit(
-                        tx,
-                        RapportAudit(
-                            RapportAudit.Id(0),
-                            rapport.id,
-                            variantId,
-                            Instant.now(clock),
-                            RapportAudit.Hendelse.VARIANT_NEDLASTET,
-                            brukernavn(bruker),
-                            null,
-                        ),
-                    )
-                }
-        }
+        repository
+            .finnRapport(tx, rapportId)
+            ?.takeIf(harTilgang)
+            ?.let { repository.hentInnhold(tx, rapportId, format) }
+            ?.let { (variant, innhold) ->
+                repository.audit(
+                    tx,
+                    RapportAudit(
+                        RapportAudit.Id(0),
+                        rapportId,
+                        variant.id,
+                        Instant.now(clock),
+                        RapportAudit.Hendelse.VARIANT_NEDLASTET,
+                        brukernavn(bruker),
+                        null,
+                    ),
+                )
+                runBlocking { process(variant, innhold) }
+            }
     }
 
     fun hentAuditLog(kriterier: RapportAuditKriterier): List<RapportAudit> = withTransaction { repository.hentAuditlog(it, kriterier) }
