@@ -1,4 +1,3 @@
-@file:UseSerializers(LocalDateAsStringSerializer::class, InstantAsStringSerializer::class)
 @file:OptIn(ExperimentalSerializationApi::class)
 
 package no.nav.sokos.oppgjorsrapporter.rapport
@@ -9,11 +8,8 @@ import java.time.format.DateTimeFormatter
 import kotlinx.io.bytestring.ByteString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.JsonNames
 import kotliquery.Row
-import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
-import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 
 @Serializable @JvmInline value class OrgNr(val raw: String)
 
@@ -77,7 +73,6 @@ data class UlagretRapport(
     override val bankkonto: Bankkonto?,
 ) : RapportFelter
 
-@Serializable
 data class Rapport(
     val id: Id,
     override val bestillingId: RapportBestilling.Id,
@@ -106,7 +101,7 @@ data class Rapport(
         arkivert = row.instantOrNull("arkivert"),
     )
 
-    @kotlinx.serialization.Transient val erArkivert: Boolean = arkivert != null
+    val erArkivert: Boolean = arkivert != null
 }
 
 enum class VariantFormat(val contentType: String) {

@@ -13,6 +13,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.application
 import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters.firstDayOfYear
 import java.time.temporal.TemporalAdjusters.lastDayOfYear
@@ -23,6 +24,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.*
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
+import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import org.threeten.extra.LocalDateRange
@@ -79,6 +81,20 @@ object Api {
                 }
                 ?: tilDato?.let { throw IllegalArgumentException("tilDato kan ikke angis uten fraDato") }
                 ?: LocalDateRange.ofClosed(LocalDate.now(clock).with(firstDayOfYear()), LocalDate.now(clock))
+    }
+
+    @Serializable
+    data class RapportDTO(
+        val id: Rapport.Id,
+        val orgnr: OrgNr,
+        val type: RapportType,
+        val datoValutert: LocalDate,
+        @Serializable(with = InstantAsStringSerializer::class) val opprettet: Instant,
+        val arkivert: Boolean,
+    ) {
+        constructor(
+            rapport: Rapport
+        ) : this(rapport.id, rapport.orgnr, rapport.type, rapport.datoValutert, rapport.opprettet, rapport.erArkivert)
     }
 }
 
@@ -172,7 +188,7 @@ fun Route.rapportApi() {
                     val key = r.orgnr to r.type
                     rapportTyperMedTilgang.contains(key)
                 }
-            call.respond(filtrerteRapporter)
+            call.respond(filtrerteRapporter.map(Api::RapportDTO))
         }
     }
 
@@ -183,7 +199,7 @@ fun Route.rapportApi() {
             if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
                 return@get call.respond(HttpStatusCode.NotFound)
             }
-            call.respond(rapport)
+            call.respond(Api.RapportDTO(rapport))
         }
     }
 
