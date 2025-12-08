@@ -29,6 +29,12 @@ import org.slf4j.MarkerFactory
 import org.slf4j.event.Level
 
 val TEAM_LOGS_MARKER: Marker? = MarkerFactory.getMarker("TEAM_LOGS")
+val commonJsonConfig = Json {
+    prettyPrint = true
+    ignoreUnknownKeys = true
+    encodeDefaults = true
+    explicitNulls = true
+}
 
 fun Application.commonConfig() {
     val applicationConfig: PropertiesConfig.Configuration by dependencies
@@ -41,16 +47,7 @@ fun Application.commonConfig() {
         disableDefaultColors()
     }
 
-    install(ContentNegotiation) {
-        json(
-            Json {
-                prettyPrint = true
-                ignoreUnknownKeys = true
-                encodeDefaults = true
-                explicitNulls = true
-            }
-        )
-    }
+    install(ContentNegotiation) { json(commonJsonConfig) }
 
     install(MicrometerMetrics) {
         registry = metrics.registry
