@@ -83,6 +83,9 @@ spec:
       rules:
         - application: logging
           namespace: nais-system
+        - application: ereg-services-q1
+          namespace: arbeidsforhold
+        - application: pengeflyt-pdfgen
   envFrom:
     - secret: altinn-authorization-subscription
     - secret: sokos-oppgjorsrapporter-secrets

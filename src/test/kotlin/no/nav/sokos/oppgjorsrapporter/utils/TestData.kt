@@ -3,9 +3,9 @@ package no.nav.sokos.oppgjorsrapporter.utils
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.mq.Data
 import no.nav.sokos.oppgjorsrapporter.mq.Header
-import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.Bankkonto
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
@@ -125,7 +125,7 @@ startxref
         headerOrgnr: String = "974600019",
         headerBankkonto: String = "02470303400",
         headerSumBelop: BigDecimal = BigDecimal.valueOf(9093.00),
-        headerValutert: LocalDate = LocalDate.parse("2025-10-28"),
+        headerValutert: LocalDate = LocalDate.parse("2025-01-28"),
         headerLinjer: Long = 1,
         datarec: List<Data> = listOf(createDataRec()),
     ): RefusjonsRapportBestilling {
@@ -144,3 +144,178 @@ startxref
 }
 
 data class Ansatt(val fnr: String, val navn: String)
+
+val riktigFormatertRefusjonArbeidsgiverPdfPayloadSortertEtterYtelse =
+    """
+    {
+      "rapportSendt": "31.01.2025",
+      "utbetalingsDato": "28.01.2025",
+      "totalsum": "16 238,68",
+      "bedrift": {
+        "orgnr": "974 600 019",
+        "navn": "Helsfyr stål og plasikk",
+        "kontonummer": "0247 03 03400",
+        "adresse": "Veien 24, 1234, VårBy"
+      },
+      "ytelser": [
+        {
+          "totalbelop": "5 738,68",
+          "ytelse": "Foreldrepenger",
+          "utbetalinger": [
+            {
+              "orgnr": "009876111",
+              "fnr": "12345678111",
+              "navn": "Anders Andersen",
+              "periodeFra": "01.01.2025",
+              "periodeTil": "31.01.2025",
+              "maksDato": "31.07.2026",
+              "belop": "4 234,00"
+            },
+            {
+              "orgnr": "009876222",
+              "fnr": "12345678222",
+              "navn": "Birte Birtesen",
+              "periodeFra": "15.01.2025",
+              "periodeTil": "31.01.2025",
+              "maksDato": "31.07.2026",
+              "belop": "1 504,68"
+            }
+          ]
+        },
+        {
+          "totalbelop": "10 500,00",
+          "ytelse": "Sykepenger",
+          "utbetalinger": [
+            {
+              "orgnr": "009876111",
+              "fnr": "12345678111",
+              "navn": "Anders Andersen",
+              "periodeFra": "01.01.2025",
+              "periodeTil": "31.01.2025",
+              "maksDato": "31.07.2026",
+              "belop": "6 500,00"
+            },
+            {
+              "orgnr": "009876222",
+              "fnr": "12345678222",
+              "navn": "Birte Birtesen",
+              "periodeFra": "15.01.2025",
+              "periodeTil": "31.01.2025",
+              "maksDato": "31.07.2026",
+              "belop": "4 000,00"
+            }
+          ]
+        }
+      ]
+    }
+    """
+        .trimIndent()
+
+val riktigFormatertRefusjonArbeidsgiverPdfPayloadSortertEtterUnderenhet =
+    """
+                {
+                  "rapportSendt": "31.10.2025",
+                  "utbetalingsDato": "28.10.2025",
+                  "totalsum": "16 238,68",
+                  "bedrift": {
+                    "orgnr": "974 600 019",
+                    "navn": "Helsfyr stål og plasikk",
+                    "kontonummer": "0247 03 03400",
+                    "adresse": "Veien 24, 1234, VårBy"
+                  },
+                  "underenheter": [
+                    {
+                      "totalbelop": "5 738,68",
+                      "orgnr": "009876111",
+                      "utbetalinger": [
+                        {
+                          "ytelse": "Foreldrepenger",
+                          "fnr": "12345678111",
+                          "navn": "Anders Andersen",
+                          "periodeFra": "01.01.2025",
+                          "periodeTil": "31.01.2025",
+                          "maksDato": "31.07.2026",
+                          "belop": "4 234,00"
+                        },
+                        {
+                          "ytelse": "Sykepenger",
+                          "fnr": "12345678222",
+                          "navn": "Birte Birtesen",
+                          "periodeFra": "01.03.2025",
+                          "periodeTil": "31.03.2025",
+                          "maksDato": "31.07.2026",
+                          "belop": "1 504,68"
+                        }
+                      ]
+                    },
+                    {
+                      "totalbelop": "10 500,00",
+                      "orgnr": "009876222",
+                      "utbetalinger": [
+                        {
+                          "ytelse": "Foreldrepenger",
+                          "fnr": "12345678111",
+                          "navn": "Anders Andersen",
+                          "periodeFra": "01.01.2025",
+                          "periodeTil": "31.01.2025",
+                          "maksDato": "31.07.2026",
+                          "belop": "6 500,00"
+                        },
+                        {
+                          "ytelse": "Sykepenger",
+                          "fnr": "12345678222",
+                          "navn": "Birte Birtesen",
+                          "periodeFra": "01.03.2025",
+                          "periodeTil": "31.03.2025",
+                          "maksDato": "31.07.2026",
+                          "belop": "4 000,00"
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """
+
+val eregResponse =
+    """
+    {
+      "organisasjonsnummer": "990983666",
+      "navn": {
+        "sammensattnavn": "NAV FAMILIE- OG PENSJONSYTELSER OSL",
+        "navnelinje1": "",
+        "navnelinje2": "",
+        "navnelinje3": "",
+        "navnelinje4": "",
+        "navnelinje5": "",
+        "bruksperiode": {
+          "fom": "2015-01-06T21:44:04.748",
+          "tom": "2015-12-06T19:45:04"
+        },
+        "gyldighetsperiode": {
+          "fom": "2014-07-01",
+          "tom": "2015-12-31"
+        }
+      },
+      "enhetstype": "BEDR",
+      "adresse": {
+        "adresselinje1": "Sannergata 2",
+        "adresselinje2": "",
+        "adresselinje3": "",
+        "postnummer": "0557",
+        "poststed": "Oslo",
+        "landkode": "JPN",
+        "kommunenummer": "0301",
+        "bruksperiode": {
+          "fom": "2015-01-06T21:44:04.748",
+          "tom": "2015-12-06T19:45:04"
+        },
+        "gyldighetsperiode": {
+          "fom": "2014-07-01",
+          "tom": "2015-12-31"
+        },
+        "type": "string"
+      },
+      "opphoersdato": "2016-12-31"
+    }
+    """
+        .trimIndent()

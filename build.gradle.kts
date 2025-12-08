@@ -101,6 +101,7 @@ dependencies {
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-extensions-testcontainers:$kotestVersion")
+    testImplementation("io.ktor:ktor-client-mock:${ktorVersion}")
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("com.atlassian.oai:swagger-request-validator-restassured:${swaggerRequestValidatorVersion}")

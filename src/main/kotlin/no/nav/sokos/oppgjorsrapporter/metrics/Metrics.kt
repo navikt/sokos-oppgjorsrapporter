@@ -64,6 +64,10 @@ class Metrics(val registry: PrometheusMeterRegistry) {
         apiRequestsTeller.withTags(basisTags.plus(Tag.of("auth", auth))).increment()
     }
 
+    fun tellEksternEndepunktRequest(path: String, statusCode: String) {
+        apiRequestsTeller.withTags(listOf(Tag.of("ressurs", path), Tag.of("metode", "GET"), Tag.of("status_code", statusCode))).increment()
+    }
+
     private val mottatteJmsMeldingerTeller =
         io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_received_jms_messages")
             .description("Teller antall mottatte JMS-meldinger")
