@@ -16,7 +16,7 @@ import java.time.ZoneOffset
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
-import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import org.threeten.extra.LocalDateRange
 
