@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter
 
+import io.ktor.client.HttpClient
 import io.ktor.server.application.Application
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.addShutdownHook
@@ -33,6 +34,9 @@ import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
+import no.nav.sokos.oppgjorsrapporter.innhold.generator.EregService
+import no.nav.sokos.oppgjorsrapporter.innhold.generator.HttpClientFactory
+import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonArbeidsgiverInnholdGenerator
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
 import no.nav.sokos.oppgjorsrapporter.mq.RapportMottak
@@ -77,6 +81,17 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         provide<DataSource> { DatabaseConfig.dataSource }.cleanup { adminDataSource.close() }
         provide(RapportRepository::class)
         provide(RapportService::class)
+        provide(HttpClientFactory::class)
+        provide<HttpClient> {
+                val httpClientFactory: HttpClientFactory = resolve()
+                httpClientFactory.createHttpClient()
+            }
+            .cleanup { it.close() }
+
+        provide<EregService> { EregService(config.innholdGeneratorProperties.eregBaseUrl, resolve(), resolve()) }
+        provide<RefusjonArbeidsgiverInnholdGenerator> {
+            RefusjonArbeidsgiverInnholdGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, resolve(), resolve(), resolve())
+        }
 
         if (config.applicationProperties.profile == PropertiesConfig.Profile.LOCAL) {
             provide<AuthClient> { NoOpAuthClient() }

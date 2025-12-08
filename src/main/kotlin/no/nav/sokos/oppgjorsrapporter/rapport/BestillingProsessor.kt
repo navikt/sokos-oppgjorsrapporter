@@ -6,13 +6,17 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.io.bytestring.ByteString
-import kotlinx.io.bytestring.encodeToByteString
 import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
-import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonArbeidsgiverInnholdGenerator
+import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonsRapportBestilling
 
-class BestillingProsessor(val rapportService: RapportService, val applicationState: ApplicationState) {
+class BestillingProsessor(
+    val rapportService: RapportService,
+    val applicationState: ApplicationState,
+    val refusjonArbeidsgiverInnholdGenerator: RefusjonArbeidsgiverInnholdGenerator,
+) {
     private val logger: KLogger = KotlinLogging.logger {}
 
     suspend fun run() {
@@ -44,25 +48,25 @@ class BestillingProsessor(val rapportService: RapportService, val applicationSta
             val (ulagret: UlagretRapport?, generator: ((VariantFormat) -> ByteString?)) =
                 when (bestilling.genererSom) {
                     RapportType.`ref-arbg` -> {
-                        val data = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
+                        val refusjonsRapportBestilling =
+                            RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
                         Pair(
                             UlagretRapport(
                                 bestillingId = bestilling.id,
-                                orgnr = OrgNr(data.header.orgnr),
+                                orgnr = OrgNr(refusjonsRapportBestilling.header.orgnr),
                                 type = bestilling.genererSom,
-                                datoValutert = data.header.valutert,
-                                bankkonto = Bankkonto(data.header.bankkonto),
-                                antallRader = data.datarec.size,
-                                antallUnderenheter = data.datarec.distinctBy { it.bedriftsnummer }.size,
-                                antallPersoner = data.datarec.distinctBy { it.fnr }.size,
-                            ),
-                            { variant: VariantFormat ->
-                                when (variant) {
-                                    VariantFormat.Pdf -> null
-                                    VariantFormat.Csv -> data.tilCSV().encodeToByteString()
-                                }
-                            },
-                        )
+                                datoValutert = refusjonsRapportBestilling.header.valutert,
+                                bankkonto = Bankkonto(refusjonsRapportBestilling.header.bankkonto),
+                                antallRader = refusjonsRapportBestilling.datarec.size,
+                                antallUnderenheter = refusjonsRapportBestilling.datarec.distinctBy { it.bedriftsnummer }.size,
+                                antallPersoner = refusjonsRapportBestilling.datarec.distinctBy { it.fnr }.size,
+                            )
+                        ) { variant: VariantFormat ->
+                            when (variant) {
+                                VariantFormat.Pdf -> refusjonArbeidsgiverInnholdGenerator.genererPdfInnhold(refusjonsRapportBestilling)
+                                VariantFormat.Csv -> refusjonArbeidsgiverInnholdGenerator.genererCsvInnhold(refusjonsRapportBestilling)
+                            }
+                        }
                     }
 
                     else -> error("Vet ikke hvordan bestilling av type ${bestilling.genererSom} skal prosesseres ennå")
