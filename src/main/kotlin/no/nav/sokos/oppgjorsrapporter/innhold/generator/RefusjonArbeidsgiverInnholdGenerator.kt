@@ -34,7 +34,7 @@ class RefusjonArbeidsgiverInnholdGenerator(
             val pdfGenUrl = baseUrl.resolve("/api/v1/genpdf/oppgjorsrapporter/refusjonarbeidsgiver").toURL()
             val response =
                 client.post(pdfGenUrl) {
-                    contentType(ContentType.Application.Pdf)
+                    contentType(ContentType.Application.Json)
                     setBody(payload)
                 }
             metrics.tellEksternEndepunktRequest(pdfGenUrl.path, "${response.status.value}")
