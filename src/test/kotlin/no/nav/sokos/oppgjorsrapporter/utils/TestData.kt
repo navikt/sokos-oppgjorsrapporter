@@ -21,6 +21,9 @@ object TestData {
             type = RapportType.`ref-arbg`,
             datoValutert = LocalDate.parse("2024-11-01"),
             bankkonto = Bankkonto("12345678901"),
+            antallRader = 3,
+            antallUnderenheter = 1,
+            antallPersoner = 2,
             opprettet = Instant.parse("2024-11-01T12:15:02Z"),
             arkivert = null,
         )

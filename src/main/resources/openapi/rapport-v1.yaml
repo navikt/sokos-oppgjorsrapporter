@@ -266,9 +266,6 @@ components:
         id:
           type: "integer"
           format: "int64"
-        bestillingId:
-          type: "integer"
-          format: "int64"
         orgnr:
           type: "string"
         type:
@@ -276,21 +273,17 @@ components:
         datoValutert:
           type: "string"
           format: "date"
-        bankkonto:
-          nullable: true
-          type: "string"
         opprettet:
           $ref: "#/components/schemas/Instant"
         arkivert:
-          nullable: true
-          $ref: "#/components/schemas/Instant"
+          type: boolean
       required:
         - "id"
-        - "bestillingId"
         - "orgnr"
         - "type"
         - "datoValutert"
         - "opprettet"
+        - "arkivert"
 
   securitySchemes:
     Systembruker:

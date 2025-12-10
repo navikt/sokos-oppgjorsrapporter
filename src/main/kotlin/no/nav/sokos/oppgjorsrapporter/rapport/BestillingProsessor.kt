@@ -52,6 +52,9 @@ class BestillingProsessor(val rapportService: RapportService, val applicationSta
                                 type = bestilling.genererSom,
                                 datoValutert = data.header.valutert,
                                 bankkonto = Bankkonto(data.header.bankkonto),
+                                antallRader = data.datarec.size,
+                                antallUnderenheter = data.datarec.distinctBy { it.bedriftsnummer }.size,
+                                antallPersoner = data.datarec.distinctBy { it.fnr }.size,
                             ),
                             { variant: VariantFormat ->
                                 when (variant) {

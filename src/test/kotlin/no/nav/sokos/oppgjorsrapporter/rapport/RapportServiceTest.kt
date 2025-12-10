@@ -123,11 +123,17 @@ class RapportServiceTest :
                             type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
                             bankkonto = Bankkonto("53785238218"),
+                            antallRader = 3,
+                            antallUnderenheter = 1,
+                            antallPersoner = 2,
                         )
                     val rapport = sut.lagreRapport(ulagret)
                     rapport.id shouldBe Rapport.Id(2)
                     rapport.orgnr shouldBe ulagret.orgnr
                     rapport.type shouldBe ulagret.type
+                    rapport.antallRader shouldBe 3
+                    rapport.antallUnderenheter shouldBe 1
+                    rapport.antallPersoner shouldBe 2
 
                     val auditLog = sut.hentAuditLog(RapportAuditKriterier(rapport.id))
                     auditLog shouldHaveSize (2)
@@ -248,6 +254,9 @@ class RapportServiceTest :
                             type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
                             bankkonto = Bankkonto("53785238218"),
+                            antallRader = 3,
+                            antallUnderenheter = 1,
+                            antallPersoner = 2,
                         )
                     val rapport = sut.lagreRapport(ulagretRapport)
 

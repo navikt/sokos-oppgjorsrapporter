@@ -1,4 +1,3 @@
-@file:UseSerializers(LocalDateAsStringSerializer::class, InstantAsStringSerializer::class)
 @file:OptIn(ExperimentalSerializationApi::class)
 
 package no.nav.sokos.oppgjorsrapporter.rapport
@@ -9,11 +8,8 @@ import java.time.format.DateTimeFormatter
 import kotlinx.io.bytestring.ByteString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.JsonNames
 import kotliquery.Row
-import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
-import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 
 @Serializable @JvmInline value class OrgNr(val raw: String)
 
@@ -67,6 +63,9 @@ sealed interface RapportFelter {
     val type: RapportType
     val datoValutert: LocalDate
     val bankkonto: Bankkonto?
+    val antallRader: Int
+    val antallUnderenheter: Int?
+    val antallPersoner: Int?
 }
 
 data class UlagretRapport(
@@ -75,9 +74,11 @@ data class UlagretRapport(
     override val type: RapportType,
     override val datoValutert: LocalDate,
     override val bankkonto: Bankkonto?,
+    override val antallRader: Int,
+    override val antallUnderenheter: Int?,
+    override val antallPersoner: Int?,
 ) : RapportFelter
 
-@Serializable
 data class Rapport(
     val id: Id,
     override val bestillingId: RapportBestilling.Id,
@@ -85,6 +86,9 @@ data class Rapport(
     override val type: RapportType,
     override val datoValutert: LocalDate,
     override val bankkonto: Bankkonto?,
+    override val antallRader: Int,
+    override val antallUnderenheter: Int?,
+    override val antallPersoner: Int?,
     val opprettet: Instant,
     val arkivert: Instant? = null,
 ) : RapportFelter {
@@ -102,11 +106,14 @@ data class Rapport(
         type = RapportType.valueOf(row.string("type")),
         datoValutert = row.localDate("dato_valutert"),
         bankkonto = row.stringOrNull("bankkonto")?.let { Bankkonto(it) },
+        antallRader = row.int("antall_rader"),
+        antallUnderenheter = row.intOrNull("antall_underenheter"),
+        antallPersoner = row.intOrNull("antall_personer"),
         opprettet = row.instant("opprettet"),
         arkivert = row.instantOrNull("arkivert"),
     )
 
-    @kotlinx.serialization.Transient val erArkivert: Boolean = arkivert != null
+    val erArkivert: Boolean = arkivert != null
 }
 
 enum class VariantFormat(val contentType: String) {

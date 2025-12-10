@@ -26,6 +26,7 @@ import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.configureTestApplicationEnvironment
 import no.nav.sokos.oppgjorsrapporter.module
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
+import no.nav.sokos.oppgjorsrapporter.rapport.Api
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
@@ -122,11 +123,11 @@ class HentApiAuthTest : ApiTest() {
 
         mapOf(
                 // systembruker for hovedenhet skal få lov til å hente rapport på hovedenhet
-                hovedenhetOrgnrMedPdpTilgang to rapportHovedenhet,
+                hovedenhetOrgnrMedPdpTilgang to Api.RapportDTO(rapportHovedenhet),
                 // systembruker for hovedenhet skal få lov til å hente rapport på underenhet
-                hovedenhetOrgnrMedPdpTilgang to rapportUnderenhet,
+                hovedenhetOrgnrMedPdpTilgang to Api.RapportDTO(rapportUnderenhet),
                 // systembruker for underenhet skal få lov til å hente rapport på underenhet
-                underenhetOrgnrMedPdpTilgang to rapportUnderenhet,
+                underenhetOrgnrMedPdpTilgang to Api.RapportDTO(rapportUnderenhet),
             )
             .forEach { (orgnr, rapport) ->
                 runBlocking {
@@ -136,7 +137,7 @@ class HentApiAuthTest : ApiTest() {
                         }
 
                     respons.status shouldBe HttpStatusCode.OK
-                    respons.bodyAsText().fromJson(Rapport.serializer()) shouldBe rapport
+                    respons.bodyAsText().fromJson(Api.RapportDTO.serializer()) shouldBe rapport
                 }
             }
     }
