@@ -1,5 +1,5 @@
-SET lock_timeout = '5s';
-SET statement_timeout = '5s';
+SET lock_timeout = '30s';
+SET statement_timeout = '30s';
 SET SEARCH_PATH TO rapport;
 
 -- Antall rader/underenheter/personer i en enkelt rapport vil aldri være i
