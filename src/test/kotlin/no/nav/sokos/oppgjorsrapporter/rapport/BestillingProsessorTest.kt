@@ -49,7 +49,11 @@ class BestillingProsessorTest :
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                     val rapportService: RapportService = application.dependencies.resolve()
-                    val bestilling = TestData.createRefusjonsRapportBestilling()
+                    val bestilling =
+                        TestData.createRefusjonsRapportBestilling(
+                            datarec =
+                                (1..10).map { i -> TestData.createDataRec(bedriftsnummer = "12345678${i % 3}", fnr = "123456${i % 5}8901") }
+                        )
                     rapportService.lagreBestilling(
                         "test",
                         RapportType.`ref-arbg`,
@@ -59,6 +63,10 @@ class BestillingProsessorTest :
                     val sut: BestillingProsessor = application.dependencies.resolve()
 
                     val rapport = sut.prosesserEnBestilling()!!
+                    rapport.antallRader shouldBe 10
+                    rapport.antallUnderenheter shouldBe 3
+                    rapport.antallPersoner shouldBe 5
+
                     val varianter = rapportService.listVarianter(rapport.id)
                     varianter.size shouldBeGreaterThanOrEqual 1
                     // TODO: Oppdatere test til å verifisere at PDF-variant er på plass når vi har laget det
