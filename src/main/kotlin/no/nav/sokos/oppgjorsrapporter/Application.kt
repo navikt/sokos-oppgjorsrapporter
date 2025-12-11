@@ -34,7 +34,7 @@ import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.EregService
+import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.innhold.generator.HttpClientFactory
 import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonArbeidsgiverInnholdGenerator
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics

@@ -20,7 +20,7 @@ import kotlinx.io.bytestring.ByteString
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.EregService
+import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.innhold.generator.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonArbeidsgiverInnholdGenerator
 import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonsRapportBestilling

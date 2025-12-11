@@ -1,5 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter.metrics
 
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.request
 import io.ktor.server.request.httpMethod
 import io.ktor.server.routing.RoutingContext
 import io.micrometer.core.instrument.Tag
@@ -64,8 +66,22 @@ class Metrics(val registry: PrometheusMeterRegistry) {
         apiRequestsTeller.withTags(basisTags.plus(Tag.of("auth", auth))).increment()
     }
 
-    fun tellEksternEndepunktRequest(path: String, statusCode: String) {
-        apiRequestsTeller.withTags(listOf(Tag.of("ressurs", path), Tag.of("metode", "GET"), Tag.of("status_code", statusCode))).increment()
+    private val clientRequestsTeller =
+        io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_client_http_requests")
+            .description("Teller antall http requests til eksterne APIer")
+            .withRegistry(registry)
+
+    fun tellEksternEndepunktRequest(response: HttpResponse, endepunkt: String) {
+        clientRequestsTeller
+            .withTags(
+                listOf(
+                    Tag.of("host", response.request.url.host),
+                    Tag.of("endepunkt", endepunkt),
+                    Tag.of("metode", response.request.method.value),
+                    Tag.of("status_code", response.status.value.toString()),
+                )
+            )
+            .increment()
     }
 
     private val mottatteJmsMeldingerTeller =

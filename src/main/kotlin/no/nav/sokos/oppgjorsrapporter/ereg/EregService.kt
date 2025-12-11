@@ -1,4 +1,4 @@
-package no.nav.sokos.oppgjorsrapporter.innhold.generator
+package no.nav.sokos.oppgjorsrapporter.ereg
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -6,14 +6,13 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.http.isSuccess
 import java.net.URI
-import java.time.Clock
 import kotlinx.serialization.Serializable
 import mu.KotlinLogging
+import no.nav.sokos.oppgjorsrapporter.innhold.generator.ApiError
+import no.nav.sokos.oppgjorsrapporter.innhold.generator.OrganisasjonsNavnOgAdresse
+import no.nav.sokos.oppgjorsrapporter.innhold.generator.eregErrorMessage
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import org.slf4j.MDC
-
-const val MANGLENDE_ORGANISASJONSNAVN = "-"
-const val MANGLENDE_ORGANISASJONSADRESSE = "-"
 
 class EregService(private val baseUrl: URI, val client: HttpClient, private val metrics: Metrics) {
     private val logger = KotlinLogging.logger {}
@@ -23,31 +22,19 @@ class EregService(private val baseUrl: URI, val client: HttpClient, private val 
             logger.info("Henter organisasjonsnavn og adresse for $orgnr fra Ereg.")
             val eregUrl = baseUrl.resolve("/v2/organisasjon/$orgnr/noekkelinfo").toURL()
             val response = client.get(eregUrl) { header("Nav-Call-Id", MDC.get("x-correlation-id")) }
-            metrics.tellEksternEndepunktRequest(eregUrl.path, "${response.status.value}")
+            metrics.tellEksternEndepunktRequest(response, "/v2/organisasjon/{orgnr}/noekkelinfo")
 
             when {
                 response.status.isSuccess() -> {
                     val organisasjonInfo = response.body<Organisasjon>().tilOrganisasjonsNavnOgAdresse()
-                    logger.info("Fant organisasjon navn {} med orgnr {} i Ereg", organisasjonInfo, orgnr)
+                    logger.info { "Fant organisasjonsnavn fra Ereg: $organisasjonInfo" }
                     organisasjonInfo
                 }
 
                 else -> {
-                    val apiError =
-                        ApiError(
-                            Clock.systemUTC().instant(),
-                            response.status.value,
-                            response.status.description,
-                            response.errorMessage() ?: "Noe gikk galt ved oppslag mot Ereg-tjenesten",
-                            eregUrl.path,
-                        )
-                    logger.error("Feil ved oppslag mot Ereg {}", apiError)
-                    // TODO ønsker vi å generere pdf selv om oppslag mot Ereg feiler?
-                    OrganisasjonsNavnOgAdresse(
-                        organisasjonsnummer = orgnr,
-                        navn = MANGLENDE_ORGANISASJONSNAVN,
-                        adresse = MANGLENDE_ORGANISASJONSADRESSE,
-                    )
+                    val apiError = ApiError(response, response.eregErrorMessage() ?: "Noe gikk galt ved oppslag mot Ereg-tjenesten")
+                    logger.error { "Feil ved oppslag mot Ereg $apiError" }
+                    throw RuntimeException("Feil ved oppslag mot Ereg: $apiError")
                 }
             }
         }

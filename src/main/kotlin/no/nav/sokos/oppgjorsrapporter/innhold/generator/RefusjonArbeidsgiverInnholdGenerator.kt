@@ -8,10 +8,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import java.net.URI
-import java.time.Clock
 import kotlinx.io.bytestring.ByteString
 import kotlinx.io.bytestring.encodeToByteString
 import mu.KotlinLogging
+import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 
 class RefusjonArbeidsgiverInnholdGenerator(
@@ -36,7 +36,7 @@ class RefusjonArbeidsgiverInnholdGenerator(
                     contentType(ContentType.Application.Json)
                     setBody(payload)
                 }
-            metrics.tellEksternEndepunktRequest(pdfGenUrl.path, "${response.status.value}")
+            metrics.tellEksternEndepunktRequest(response, pdfGenUrl.path)
 
             when {
                 response.status.isSuccess() -> {
@@ -45,15 +45,9 @@ class RefusjonArbeidsgiverInnholdGenerator(
                 }
 
                 else -> {
-                    val apiError =
-                        ApiError(
-                            Clock.systemUTC().instant(),
-                            response.status.value,
-                            response.status.description,
-                            response.errorMessage() ?: "Noe gikk galt ved kall mot PDF-generator tjenesten",
-                            pdfGenUrl.path,
-                        )
-                    logger.error("Feil ved kall mot PDF-generator tjenesten {}", apiError)
+                    val apiError = ApiError(response, "Noe gikk galt ved kall mot PDF-generator tjenesten")
+
+                    logger.error { "Feil ved kall mot PDF-generator tjenesten $apiError" }
                     throw RuntimeException("Feil ved kall mot PDF-generator tjenesten: $apiError")
                 }
             }
