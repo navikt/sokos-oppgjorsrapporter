@@ -35,47 +35,44 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
     fun tilPdfPayload(
         organisasjonsNavnOgAdresse: OrganisasjonsNavnOgAdresse,
         rapportSendt: LocalDate = LocalDate.now(),
-    ): RefusjonsRapportPdfPayload {
-
-        val ytelseMap = mutableMapOf<String, MutableList<Utbetaling>>()
-        for (data in datarec) {
-            val utbetaling =
-                Utbetaling(
-                    orgnr = data.bedriftsnummer,
-                    fnr = data.fnr,
-                    navn = data.navn,
-                    periodeFra = data.fraDato.formaterDatoForPdf(),
-                    periodeTil = data.tilDato.formaterDatoForPdf(),
-                    maksDato = data.maxDato.formaterDatoForPdf(),
-                    belop = data.belop.formaterBeløpForPdf(),
-                    ufromattertBeløp = data.belop,
-                )
-            ytelseMap.computeIfAbsent(data.tekst) { mutableListOf() }.add(utbetaling)
-        }
-
-        val ytelser =
-            ytelseMap.map { (ytelse, utbetalinger) ->
+    ): RefusjonsRapportPdfPayload =
+        datarec
+            .map { data ->
+                data.tekst to
+                    Utbetaling(
+                        orgnr = data.bedriftsnummer,
+                        fnr = data.fnr,
+                        navn = data.navn,
+                        periodeFra = data.fraDato.formaterDatoForPdf(),
+                        periodeTil = data.tilDato.formaterDatoForPdf(),
+                        maksDato = data.maxDato.formaterDatoForPdf(),
+                        belop = data.belop.formaterBeløpForPdf(),
+                        ufromattertBeløp = data.belop,
+                    )
+            }
+            .groupBy({ it.first }) { it.second }
+            .map { (ytelse, utbetalinger) ->
                 Ytelse(
                     totalbelop = utbetalinger.sumOf { it.ufromattertBeløp }.formaterBeløpForPdf(),
                     ytelse,
                     utbetalinger.sortedWith(compareBy({ it.orgnr }, { it.fnr }, { it.periodeFra })),
                 )
             }
-
-        return RefusjonsRapportPdfPayload(
-            rapportSendt = rapportSendt.formaterDatoForPdf(),
-            utbetalingsDato = header.valutert.formaterDatoForPdf(),
-            totalsum = header.sumBelop.formaterBeløpForPdf(),
-            bedrift =
-                Bedrift(
-                    orgnr = header.orgnr.formaterBedriftsnummerForPdf(),
-                    navn = organisasjonsNavnOgAdresse.navn,
-                    kontonummer = header.bankkonto.formaterKontonummerForPdf(),
-                    adresse = organisasjonsNavnOgAdresse.adresse,
-                ),
-            ytelser.sortedWith(compareBy { it.ytelse }),
-        )
-    }
+            .let { ytelser ->
+                RefusjonsRapportPdfPayload(
+                    rapportSendt = rapportSendt.formaterDatoForPdf(),
+                    utbetalingsDato = header.valutert.formaterDatoForPdf(),
+                    totalsum = header.sumBelop.formaterBeløpForPdf(),
+                    bedrift =
+                        Bedrift(
+                            orgnr = header.orgnr.formaterBedriftsnummerForPdf(),
+                            navn = organisasjonsNavnOgAdresse.navn,
+                            kontonummer = header.bankkonto.formaterKontonummerForPdf(),
+                            adresse = organisasjonsNavnOgAdresse.adresse,
+                        ),
+                    ytelser.sortedWith(compareBy { it.ytelse }),
+                )
+            }
 
     /**
      * Bygger en CSV-rad basert på header og data fra refusjonsrapporten.
