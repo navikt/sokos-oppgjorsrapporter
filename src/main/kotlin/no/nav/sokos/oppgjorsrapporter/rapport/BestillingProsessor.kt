@@ -9,13 +9,13 @@ import kotlinx.io.bytestring.ByteString
 import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonArbeidsgiverInnholdGenerator
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 
 class BestillingProsessor(
     val rapportService: RapportService,
     val applicationState: ApplicationState,
-    val refusjonArbeidsgiverInnholdGenerator: RefusjonArbeidsgiverInnholdGenerator,
+    val rapportGenerator: RapportGenerator,
 ) {
     private val logger: KLogger = KotlinLogging.logger {}
 
@@ -53,8 +53,8 @@ class BestillingProsessor(
                         // Er en separat val så vi får spesifisert "suspend" i typen.
                         val generatorLambda: suspend (VariantFormat) -> ByteString? = { variant: VariantFormat ->
                             when (variant) {
-                                VariantFormat.Pdf -> refusjonArbeidsgiverInnholdGenerator.genererPdfInnhold(refusjonsRapportBestilling)
-                                VariantFormat.Csv -> refusjonArbeidsgiverInnholdGenerator.genererCsvInnhold(refusjonsRapportBestilling)
+                                VariantFormat.Pdf -> rapportGenerator.genererPdfInnhold(refusjonsRapportBestilling)
+                                VariantFormat.Csv -> rapportGenerator.genererCsvInnhold(refusjonsRapportBestilling)
                             }
                         }
                         Pair(

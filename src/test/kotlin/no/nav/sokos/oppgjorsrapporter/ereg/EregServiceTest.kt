@@ -14,7 +14,6 @@ import io.mockk.spyk
 import java.net.URI
 import kotlinx.coroutines.test.runTest
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.utils.eregResponse
 import org.junit.jupiter.api.Assertions.*

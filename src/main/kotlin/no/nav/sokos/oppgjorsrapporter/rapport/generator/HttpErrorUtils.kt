@@ -1,4 +1,4 @@
-package no.nav.sokos.oppgjorsrapporter.innhold.generator
+package no.nav.sokos.oppgjorsrapporter.rapport.generator
 
 import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse

@@ -3,9 +3,9 @@ package no.nav.sokos.oppgjorsrapporter.utils
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.mq.Data
 import no.nav.sokos.oppgjorsrapporter.mq.Header
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.Bankkonto
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
@@ -150,59 +150,59 @@ val riktigFormatertRefusjonArbeidsgiverPdfPayloadSortertEtterYtelse =
     {
       "rapportSendt": "31.01.2025",
       "utbetalingsDato": "28.01.2025",
-      "totalsum": "16 238,68",
+      "totalsum": { "verdi": 16238.68, "formattert": "16 238,68" },
       "bedrift": {
-        "orgnr": "974 600 019",
+        "orgnr": { "verdi": "974600019", "formattert": "974 600 019" },
         "navn": "Helsfyr stål og plasikk",
-        "kontonummer": "0247 03 03400",
+        "kontonummer": { "verdi": "02470303400", "formattert": "0247 03 03400" },
         "adresse": "Veien 24, 1234, VårBy"
       },
       "ytelser": [
         {
-          "totalbelop": "5 738,68",
+          "totalbelop": { "verdi": 5738.68, "formattert": "5 738,68" },
           "ytelse": "Foreldrepenger",
           "utbetalinger": [
             {
-              "orgnr": "009876111",
-              "fnr": "12345678111",
+              "orgnr": { "verdi": "009876111", "formattert": "009 876 111" },
+              "fnr": { "verdi": "12345678111", "formattert": "123456 78111" },
               "navn": "Anders Andersen",
               "periodeFra": "01.01.2025",
               "periodeTil": "31.01.2025",
               "maksDato": "31.07.2026",
-              "belop": "4 234,00"
+              "belop": { "verdi": 4234.00, "formattert": "4 234,00" }
             },
             {
-              "orgnr": "009876222",
-              "fnr": "12345678222",
+              "orgnr": { "verdi": "009876222", "formattert": "009 876 222" },
+              "fnr": { "verdi": "12345678222", "formattert": "123456 78222" },
               "navn": "Birte Birtesen",
               "periodeFra": "15.01.2025",
               "periodeTil": "31.01.2025",
               "maksDato": "31.07.2026",
-              "belop": "1 504,68"
+              "belop": { "verdi": 1504.68, "formattert": "1 504,68" }
             }
           ]
         },
         {
-          "totalbelop": "10 500,00",
+          "totalbelop": { "verdi": 10500.00, "formattert": "10 500,00" },
           "ytelse": "Sykepenger",
           "utbetalinger": [
             {
-              "orgnr": "009876111",
-              "fnr": "12345678111",
+              "orgnr": { "verdi": "009876111", "formattert": "009 876 111" },
+              "fnr": { "verdi": "12345678111", "formattert": "123456 78111" },
               "navn": "Anders Andersen",
               "periodeFra": "01.01.2025",
               "periodeTil": "31.01.2025",
               "maksDato": "31.07.2026",
-              "belop": "6 500,00"
+              "belop": { "verdi": 6500.00, "formattert": "6 500,00" }
             },
             {
-              "orgnr": "009876222",
-              "fnr": "12345678222",
+              "orgnr": { "verdi": "009876222", "formattert": "009 876 222" },
+              "fnr": { "verdi": "12345678222", "formattert": "123456 78222" },
               "navn": "Birte Birtesen",
               "periodeFra": "15.01.2025",
               "periodeTil": "31.01.2025",
               "maksDato": "31.07.2026",
-              "belop": "4 000,00"
+              "belop": { "verdi": 4000.00, "formattert": "4 000,00" }
             }
           ]
         }
@@ -216,59 +216,59 @@ val riktigFormatertRefusjonArbeidsgiverPdfPayloadSortertEtterUnderenhet =
                 {
                   "rapportSendt": "31.10.2025",
                   "utbetalingsDato": "28.10.2025",
-                  "totalsum": "16 238,68",
+                  "totalsum": { "verdi": 16238.68, "formattert": "16 238,68" },
                   "bedrift": {
-                    "orgnr": "974 600 019",
+                    "orgnr": { "verdi": "974600019", "formattert": "974 600 019" },
                     "navn": "Helsfyr stål og plasikk",
-                    "kontonummer": "0247 03 03400",
+                    "kontonummer": { "verdi": "02470303400", "formattert": "0247 03 03400" },
                     "adresse": "Veien 24, 1234, VårBy"
                   },
                   "underenheter": [
                     {
-                      "totalbelop": "5 738,68",
-                      "orgnr": "009876111",
+                      "totalbelop": { "verdi": 5738.68, "formattert": "5 738,68" },
+                      "orgnr": { "verdi": "009876111", "formattert": "009 876 111" },
                       "utbetalinger": [
                         {
                           "ytelse": "Foreldrepenger",
-                          "fnr": "12345678111",
+                          "fnr": { "verdi": "12345678111", "formattert": "123456 78111" },
                           "navn": "Anders Andersen",
                           "periodeFra": "01.01.2025",
                           "periodeTil": "31.01.2025",
                           "maksDato": "31.07.2026",
-                          "belop": "4 234,00"
+                          "belop": "{ "verdi": 4234.00, "formattert": "4 234,00" }
                         },
                         {
                           "ytelse": "Sykepenger",
-                          "fnr": "12345678222",
+                          "fnr": { "verdi": "12345678222", "formattert": "123456 78222" },
                           "navn": "Birte Birtesen",
                           "periodeFra": "01.03.2025",
                           "periodeTil": "31.03.2025",
                           "maksDato": "31.07.2026",
-                          "belop": "1 504,68"
+                          "belop": { "verdi": 1504.68, "formattert": "1 504,68" }
                         }
                       ]
                     },
                     {
-                      "totalbelop": "10 500,00",
-                      "orgnr": "009876222",
+                      "totalbelop": { "verdi": 10500.00, "formattert": "10 500,00" },
+                      "orgnr": { "verdi": "009876222", "formattert": "009 876 222" },
                       "utbetalinger": [
                         {
                           "ytelse": "Foreldrepenger",
-                          "fnr": "12345678111",
+                          "fnr": { "verdi": "12345678111", "formattert": "123456 78111" },
                           "navn": "Anders Andersen",
                           "periodeFra": "01.01.2025",
                           "periodeTil": "31.01.2025",
                           "maksDato": "31.07.2026",
-                          "belop": "6 500,00"
+                          "belop": { "verdi": 6500.00, "formattert": "6 500,00" }
                         },
                         {
                           "ytelse": "Sykepenger",
-                          "fnr": "12345678222",
+                          "fnr": { "verdi": "12345678222", "formattert": "123456 78222" },
                           "navn": "Birte Birtesen",
                           "periodeFra": "01.03.2025",
                           "periodeTil": "31.03.2025",
                           "maksDato": "31.07.2026",
-                          "belop": "4 000,00"
+                          "belop": { "verdi": 4000.00, "formattert": "4 000,00" }
                         }
                       ]
                     }

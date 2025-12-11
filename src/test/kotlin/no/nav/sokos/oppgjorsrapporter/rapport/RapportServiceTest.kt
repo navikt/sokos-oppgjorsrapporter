@@ -23,7 +23,7 @@ import kotlinx.io.bytestring.encodeToByteString
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
 

@@ -10,9 +10,9 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
@@ -46,6 +46,13 @@ class RapportMottak(private val refusjonMqConsumer: MqConsumer, private val rapp
                 logger.error(TEAM_LOGS_MARKER, ex) { "Noe gikk galt; lesing av meldingen er rullet tilbake (kanskje til BOQ)" }
             }
         }
+    }
+}
+
+@Serializable
+data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>) {
+    companion object {
+        val json = Json { explicitNulls = false }
     }
 }
 

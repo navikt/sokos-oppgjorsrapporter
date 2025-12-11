@@ -1,6 +1,11 @@
 package no.nav.sokos.oppgjorsrapporter
 
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.apache5.Apache5
+import io.ktor.client.engine.apache5.Apache5EngineConfig
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.addShutdownHook
@@ -30,13 +35,12 @@ import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.applicationLifecycleConfig
 import no.nav.sokos.oppgjorsrapporter.config.commonConfig
+import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.HttpClientFactory
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonArbeidsgiverInnholdGenerator
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
 import no.nav.sokos.oppgjorsrapporter.mq.RapportMottak
@@ -47,6 +51,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 
 private val logger = KotlinLogging.logger {}
 
@@ -81,16 +86,17 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         provide<DataSource> { DatabaseConfig.dataSource }.cleanup { adminDataSource.close() }
         provide(RapportRepository::class)
         provide(RapportService::class)
-        provide(HttpClientFactory::class)
-        provide<HttpClient> {
-                val httpClientFactory: HttpClientFactory = resolve()
-                httpClientFactory.createHttpClient()
-            }
-            .cleanup { it.close() }
 
-        provide<EregService> { EregService(config.innholdGeneratorProperties.eregBaseUrl, resolve(), resolve()) }
-        provide<RefusjonArbeidsgiverInnholdGenerator> {
-            RefusjonArbeidsgiverInnholdGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, resolve(), resolve(), resolve())
+        // For klasser som trenger en HttpClient (typisk for å snakke med én ekstern tjeneste), velger vi å lage en klient-instans per
+        // tjeneste, slik at vi kan justere konfig for JSON-enkoding og -dekoding uavhengig av hva andre tjenester krever i sin
+        // input/output.
+        provide<EregService> {
+            val client = HttpClient(Apache5) { configure() }
+            EregService(config.innholdGeneratorProperties.eregBaseUrl, client, resolve())
+        }
+        provide<RapportGenerator> {
+            val client = HttpClient(Apache5) { configure() }
+            RapportGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, resolve(), client, resolve(), resolve())
         }
 
         if (config.applicationProperties.profile == PropertiesConfig.Profile.LOCAL) {
@@ -168,3 +174,8 @@ fun Application.resolveConfig(appConfig: ApplicationConfig = environment.config)
     } else {
         configFrom(appConfig).also { attributes.put(ConfigAttributeKey, it) }
     }
+
+private fun HttpClientConfig<Apache5EngineConfig>.configure() {
+    expectSuccess = true
+    install(ContentNegotiation) { json(commonJsonConfig) }
+}

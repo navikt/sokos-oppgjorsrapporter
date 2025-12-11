@@ -3,10 +3,11 @@ package serialization
 import java.math.BigDecimal
 import java.time.LocalDate
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.OrganisasjonsNavnOgAdresse
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonsRapportBestilling
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.RefusjonsRapportPdfPayload
+import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.mq.Data
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.tilCSV
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.RefusjonsRapportPdfPayload
 import no.nav.sokos.oppgjorsrapporter.utils.Ansatt
 import no.nav.sokos.oppgjorsrapporter.utils.TestData.createDataRec
 import no.nav.sokos.oppgjorsrapporter.utils.TestData.createRefusjonsRapportBestilling
@@ -204,7 +205,7 @@ class RefusjonsRapportBestillingSerializationTest {
                 navn = "Helsfyr stål og plasikk",
                 adresse = "Veien 24, 1234, VårBy",
             )
-        val pdfPayload = refusjonsRapportBestilling.tilPdfPayload(organisasjonsNavnOgAdresse, now)
+        val pdfPayload = RefusjonsRapportPdfPayload(refusjonsRapportBestilling, organisasjonsNavnOgAdresse, now)
         val actualJson = json.encodeToString(RefusjonsRapportPdfPayload.serializer(), pdfPayload)
 
         assertThatJson(actualJson).isEqualTo(riktigFormatertRefusjonArbeidsgiverPdfPayloadSortertEtterYtelse)

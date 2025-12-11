@@ -8,18 +8,17 @@ import io.ktor.http.isSuccess
 import java.net.URI
 import kotlinx.serialization.Serializable
 import mu.KotlinLogging
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.ApiError
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.OrganisasjonsNavnOgAdresse
-import no.nav.sokos.oppgjorsrapporter.innhold.generator.eregErrorMessage
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.ApiError
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.eregErrorMessage
 import org.slf4j.MDC
 
-class EregService(private val baseUrl: URI, val client: HttpClient, private val metrics: Metrics) {
+class EregService(private val baseUrl: URI, private val client: HttpClient, private val metrics: Metrics) {
     private val logger = KotlinLogging.logger {}
 
     suspend fun hentOrganisasjonsNavnOgAdresse(orgnr: String): OrganisasjonsNavnOgAdresse {
         return run {
-            logger.info("Henter organisasjonsnavn og adresse for $orgnr fra Ereg.")
+            logger.info { "Henter organisasjonsnavn og adresse for $orgnr fra Ereg." }
             val eregUrl = baseUrl.resolve("/v2/organisasjon/$orgnr/noekkelinfo").toURL()
             val response = client.get(eregUrl) { header("Nav-Call-Id", MDC.get("x-correlation-id")) }
             metrics.tellEksternEndepunktRequest(response, "/v2/organisasjon/{orgnr}/noekkelinfo")
@@ -40,6 +39,8 @@ class EregService(private val baseUrl: URI, val client: HttpClient, private val 
         }
     }
 }
+
+data class OrganisasjonsNavnOgAdresse(val organisasjonsnummer: String, val navn: String, val adresse: String)
 
 @Serializable
 data class Organisasjon(val organisasjonsnummer: String, val navn: Navn, val adresse: Adresse) {

@@ -98,10 +98,7 @@ object PropertiesConfig {
     data class InnholdGeneratorProperties(val eregBaseUrl: URI, val pdfGenBaseUrl: URI) {
         constructor(
             source: ConfigSource
-        ) : this(
-            eregBaseUrl = URI.create(source.get("innholdGenerator.eregBaseUrl")),
-            pdfGenBaseUrl = URI.create(source.get("innholdGenerator.pdfGenBaseUrl")),
-        )
+        ) : this(eregBaseUrl = URI.create(source.get("ereg.baseUrl")), pdfGenBaseUrl = URI.create(source.get("pdfGen.baseUrl")))
     }
 
     data class SecurityProperties(
