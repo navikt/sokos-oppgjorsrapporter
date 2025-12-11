@@ -9,7 +9,6 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import java.net.URI
 import java.time.Clock
-import kotlinx.coroutines.runBlocking
 import kotlinx.io.bytestring.ByteString
 import kotlinx.io.bytestring.encodeToByteString
 import mu.KotlinLogging
@@ -27,8 +26,8 @@ class RefusjonArbeidsgiverInnholdGenerator(
         return refusjonsRapportBestilling.tilCSV().encodeToByteString()
     }
 
-    fun genererPdfInnhold(refusjonsRapportBestilling: RefusjonsRapportBestilling): ByteString {
-        return runBlocking {
+    suspend fun genererPdfInnhold(refusjonsRapportBestilling: RefusjonsRapportBestilling): ByteString {
+        return run {
             val arbeidsgiverNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(refusjonsRapportBestilling.header.orgnr)
             val payload = refusjonsRapportBestilling.tilPdfPayload(arbeidsgiverNavnOgAdresse)
             val pdfGenUrl = baseUrl.resolve("/api/v1/genpdf/oppgjorsrapporter/refusjonarbeidsgiver").toURL()

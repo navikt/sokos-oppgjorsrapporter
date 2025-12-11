@@ -1,6 +1,5 @@
 package no.nav.sokos.oppgjorsrapporter.pdp
 
-import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import no.nav.helsearbeidsgiver.altinn.pdp.PdpClient
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
@@ -11,7 +10,7 @@ import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 
 interface PdpService {
-    fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean
+    suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean
 }
 
 class AltinnPdpService(val securityProperties: PropertiesConfig.SecurityProperties, val authClient: AuthClient) : PdpService {
@@ -23,7 +22,7 @@ class AltinnPdpService(val securityProperties: PropertiesConfig.SecurityProperti
             authClient.pdpTokenGetter(securityProperties.maskinportenProperties.pdpScope),
         )
 
-    override fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean = runBlocking {
+    override suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean = run {
         logger.info(TEAM_LOGS_MARKER) { "PDP orgnr: $orgnumre, systembruker: $systembruker, ressurs: $ressurs" }
         runCatching {
                 pdpClient.systemHarRettighetForOrganisasjoner(
@@ -39,7 +38,7 @@ class AltinnPdpService(val securityProperties: PropertiesConfig.SecurityProperti
 object LocalhostPdpService : PdpService {
     private val logger = KotlinLogging.logger {}
 
-    override fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
+    override suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
         logger.info(TEAM_LOGS_MARKER) { "Ingen PDP, har tilgang" }
         return true
     }
@@ -49,7 +48,7 @@ object LocalhostPdpService : PdpService {
 object IngenTilgangPdpService : PdpService {
     private val logger = KotlinLogging.logger {}
 
-    override fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
+    override suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
         logger.info(TEAM_LOGS_MARKER) { "Ingen PDP, ingen tilgang" }
         return false
     }

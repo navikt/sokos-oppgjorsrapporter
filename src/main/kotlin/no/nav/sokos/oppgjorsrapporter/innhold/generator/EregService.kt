@@ -7,7 +7,6 @@ import io.ktor.client.request.header
 import io.ktor.http.isSuccess
 import java.net.URI
 import java.time.Clock
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
@@ -19,8 +18,8 @@ const val MANGLENDE_ORGANISASJONSADRESSE = "-"
 class EregService(private val baseUrl: URI, val client: HttpClient, private val metrics: Metrics) {
     private val logger = KotlinLogging.logger {}
 
-    fun hentOrganisasjonsNavnOgAdresse(orgnr: String): OrganisasjonsNavnOgAdresse {
-        return runBlocking {
+    suspend fun hentOrganisasjonsNavnOgAdresse(orgnr: String): OrganisasjonsNavnOgAdresse {
+        return run {
             logger.info("Henter organisasjonsnavn og adresse for $orgnr fra Ereg.")
             val eregUrl = baseUrl.resolve("/v2/organisasjon/$orgnr/noekkelinfo").toURL()
             val response = client.get(eregUrl) { header("Nav-Call-Id", MDC.get("x-correlation-id")) }

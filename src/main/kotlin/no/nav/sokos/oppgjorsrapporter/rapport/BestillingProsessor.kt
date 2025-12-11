@@ -45,11 +45,18 @@ class BestillingProsessor(
 
     fun prosesserEnBestilling(): Rapport? =
         rapportService.prosesserBestilling { bestilling ->
-            val (ulagret: UlagretRapport?, generator: ((VariantFormat) -> ByteString?)) =
+            val (ulagret: UlagretRapport?, generator: (suspend (VariantFormat) -> ByteString?)) =
                 when (bestilling.genererSom) {
                     RapportType.`ref-arbg` -> {
                         val refusjonsRapportBestilling =
                             RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
+                        // Er en separat val så vi får spesifisert "suspend" i typen.
+                        val generatorLambda: suspend (VariantFormat) -> ByteString? = { variant: VariantFormat ->
+                            when (variant) {
+                                VariantFormat.Pdf -> refusjonArbeidsgiverInnholdGenerator.genererPdfInnhold(refusjonsRapportBestilling)
+                                VariantFormat.Csv -> refusjonArbeidsgiverInnholdGenerator.genererCsvInnhold(refusjonsRapportBestilling)
+                            }
+                        }
                         Pair(
                             UlagretRapport(
                                 bestillingId = bestilling.id,
@@ -60,13 +67,9 @@ class BestillingProsessor(
                                 antallRader = refusjonsRapportBestilling.datarec.size,
                                 antallUnderenheter = refusjonsRapportBestilling.datarec.distinctBy { it.bedriftsnummer }.size,
                                 antallPersoner = refusjonsRapportBestilling.datarec.distinctBy { it.fnr }.size,
-                            )
-                        ) { variant: VariantFormat ->
-                            when (variant) {
-                                VariantFormat.Pdf -> refusjonArbeidsgiverInnholdGenerator.genererPdfInnhold(refusjonsRapportBestilling)
-                                VariantFormat.Csv -> refusjonArbeidsgiverInnholdGenerator.genererCsvInnhold(refusjonsRapportBestilling)
-                            }
-                        }
+                            ),
+                            generatorLambda,
+                        )
                     }
 
                     else -> error("Vet ikke hvordan bestilling av type ${bestilling.genererSom} skal prosesseres ennå")

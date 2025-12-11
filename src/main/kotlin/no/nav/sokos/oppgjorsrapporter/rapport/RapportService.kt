@@ -20,7 +20,9 @@ import org.threeten.extra.LocalDateRange
 abstract class DatabaseSupport(private val dataSource: DataSource) {
     protected fun <T> withSession(block: (Session) -> T): T = using(sessionOf(dataSource)) { block(it) }
 
-    protected fun <T> withTransaction(block: (TransactionalSession) -> T): T = withSession { it.transaction { tx -> block(tx) } }
+    protected fun <T> withTransaction(block: suspend (TransactionalSession) -> T): T = withSession {
+        it.transaction { tx -> runBlocking { block(tx) } }
+    }
 }
 
 class RapportService(dataSource: DataSource, private val repository: RapportRepository, private val clock: Clock) :
@@ -35,7 +37,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
         )
     }
 
-    fun <T> prosesserBestilling(block: (RapportBestilling) -> T): T? = withTransaction { tx ->
+    fun <T> prosesserBestilling(block: suspend (RapportBestilling) -> T): T? = withTransaction { tx ->
         repository.finnUprosessertBestilling(tx)?.let { bestilling ->
             // TODO: Er det innafor å la caller bestemme hele prosesserings-oppførselen?  Det gjør jo testing lettere, men...
             try {
@@ -80,33 +82,36 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
     fun markerRapportArkivert(
         bruker: AutentisertBruker,
         id: Rapport.Id,
-        harTilgang: (Rapport) -> Boolean,
+        harTilgang: suspend (Rapport) -> Boolean,
         skalArkiveres: Boolean,
     ): Rapport? = withTransaction { tx ->
-        repository.finnRapport(tx, id)?.takeIf(harTilgang)?.let { rapport ->
-            if (skalArkiveres != rapport.erArkivert) {
-                repository.markerRapportArkivert(tx, id, skalArkiveres)
-                repository.audit(
-                    tx,
-                    RapportAudit(
-                        RapportAudit.Id(0),
-                        rapport.id,
-                        null,
-                        Instant.now(clock),
-                        if (skalArkiveres) {
-                            RapportAudit.Hendelse.RAPPORT_ARKIVERT
-                        } else {
-                            RapportAudit.Hendelse.RAPPORT_DEARKIVERT
-                        },
-                        brukernavn(bruker),
-                        null,
-                    ),
-                )
-                repository.finnRapport(tx, id)
-            } else {
-                rapport
+        repository
+            .finnRapport(tx, id)
+            ?.takeIf { harTilgang(it) }
+            ?.let { rapport ->
+                if (skalArkiveres != rapport.erArkivert) {
+                    repository.markerRapportArkivert(tx, id, skalArkiveres)
+                    repository.audit(
+                        tx,
+                        RapportAudit(
+                            RapportAudit.Id(0),
+                            rapport.id,
+                            null,
+                            Instant.now(clock),
+                            if (skalArkiveres) {
+                                RapportAudit.Hendelse.RAPPORT_ARKIVERT
+                            } else {
+                                RapportAudit.Hendelse.RAPPORT_DEARKIVERT
+                            },
+                            brukernavn(bruker),
+                            null,
+                        ),
+                    )
+                    repository.finnRapport(tx, id)
+                } else {
+                    rapport
+                }
             }
-        }
     }
 
     fun lagreVariant(variant: UlagretVariant): Variant = withTransaction { tx ->
@@ -132,12 +137,12 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
         bruker: AutentisertBruker,
         rapportId: Rapport.Id,
         format: VariantFormat,
-        harTilgang: (Rapport) -> Boolean,
+        harTilgang: suspend (Rapport) -> Boolean,
         process: suspend (Variant, ByteString) -> T,
     ): T? = withTransaction { tx ->
         repository
             .finnRapport(tx, rapportId)
-            ?.takeIf(harTilgang)
+            ?.takeIf { harTilgang(it) }
             ?.let { repository.hentInnhold(tx, rapportId, format) }
             ?.let { (variant, innhold) ->
                 repository.audit(
@@ -152,7 +157,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
                         null,
                     ),
                 )
-                runBlocking { process(variant, innhold) }
+                process(variant, innhold)
             }
     }
 

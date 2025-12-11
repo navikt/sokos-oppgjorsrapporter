@@ -104,7 +104,7 @@ fun Route.rapportApi() {
     val pdpService: PdpService by application.dependencies
     val metrics: Metrics by application.dependencies
 
-    fun harTilgangTilRessurs(bruker: AutentisertBruker, rapportType: RapportType, orgnr: OrgNr): Boolean {
+    suspend fun harTilgangTilRessurs(bruker: AutentisertBruker, rapportType: RapportType, orgnr: OrgNr): Boolean {
         logger.debug(TEAM_LOGS_MARKER) { "Skal sjekke om $bruker har tilgang til $rapportType for $orgnr" }
         when (bruker) {
             is Systembruker -> {

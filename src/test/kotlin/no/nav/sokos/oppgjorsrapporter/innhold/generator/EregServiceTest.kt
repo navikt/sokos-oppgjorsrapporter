@@ -11,6 +11,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.ByteReadChannel
 import io.mockk.mockk
 import io.mockk.spyk
+import kotlinx.coroutines.test.runTest
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.utils.eregResponse
@@ -20,7 +21,7 @@ import org.junit.jupiter.api.Test
 class EregServiceTest {
 
     @Test
-    fun `hentOrganisasjonsNavnOgAdresse bør returnere en korekt formatert organisasjon navn og addresse`() {
+    fun `hentOrganisasjonsNavnOgAdresse bør returnere en korekt formatert organisasjon navn og addresse`() = runTest {
         val mockMetrics = mockk<Metrics>(relaxed = true)
 
         // Arrange
@@ -49,7 +50,7 @@ class EregServiceTest {
     }
 
     @Test
-    fun `hentOrganisasjonsNavnOgAdresse bør håndtere feil respons fra Ereg tjenesten`() {
+    fun `hentOrganisasjonsNavnOgAdresse bør håndtere feil respons fra Ereg tjenesten`() = runTest {
         val mockMetrics = mockk<Metrics>(relaxed = true)
         // Arrange
         val orgnr = "990983666"
