@@ -45,6 +45,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
             } catch (e: Exception) {
                 logger.error { "Prosessering av bestilling ${bestilling.id.raw} feilet" }
                 logger.error(TEAM_LOGS_MARKER, e) { "Prosessering av $bestilling feilet" }
+                logger.error { "Prosessering av '${bestilling.genererSom}'-bestilling #${bestilling.id.raw} feilet" }
                 repository.markerBestillingProsesseringFeilet(tx, bestilling.id)
                 null
             }

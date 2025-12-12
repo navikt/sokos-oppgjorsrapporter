@@ -22,7 +22,6 @@ import kotlinx.serialization.UseSerializers
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.*
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
-import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
@@ -102,7 +101,6 @@ fun Route.rapportApi() {
     val clock: Clock by application.dependencies
     val rapportService: RapportService by application.dependencies
     val pdpService: PdpService by application.dependencies
-    val metrics: Metrics by application.dependencies
 
     suspend fun harTilgangTilRessurs(bruker: AutentisertBruker, rapportType: RapportType, orgnr: OrgNr): Boolean {
         logger.debug(TEAM_LOGS_MARKER) { "Skal sjekke om $bruker har tilgang til $rapportType for $orgnr" }
@@ -126,7 +124,6 @@ fun Route.rapportApi() {
 
     post<ApiPaths.Rapporter, Api.RapportListeRequest> { _, reqBody ->
         // TODO: Listen med tilgjengelige rapporter kan bli lang; trenger vi å lage noe slags paging?
-        metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
             val datoRange =
                 try {
@@ -193,7 +190,6 @@ fun Route.rapportApi() {
     }
 
     get<ApiPaths.Rapporter.Id> { rapport ->
-        metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
             val rapport = rapportService.finnRapport(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
             if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
@@ -204,7 +200,6 @@ fun Route.rapportApi() {
     }
 
     get<ApiPaths.Rapporter.Id.Innhold> { innhold ->
-        metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
             val acceptItems = call.request.acceptItems()
             val format =
@@ -227,7 +222,6 @@ fun Route.rapportApi() {
     }
 
     put<ApiPaths.Rapporter.Id.Arkiver> { arkiver ->
-        metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
             rapportService
                 .markerRapportArkivert(

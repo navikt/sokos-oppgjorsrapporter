@@ -4,6 +4,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.auth.principal
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -16,13 +17,15 @@ import io.ktor.server.routing.application
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics
-import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
-import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
-import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
-import io.micrometer.core.instrument.binder.system.ProcessorMetrics
-import io.micrometer.core.instrument.binder.system.UptimeMetrics
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
 import javax.sql.DataSource
 import kotlinx.serialization.json.Json
+import no.nav.security.token.support.v3.TokenValidationContextPrincipal
+import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
+import no.nav.sokos.oppgjorsrapporter.auth.claimsFor
+import no.nav.sokos.oppgjorsrapporter.auth.getBruker
+import no.nav.sokos.oppgjorsrapporter.auth.getConsumerOrgnr
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import org.slf4j.Marker
 import org.slf4j.MarkerFactory
@@ -51,15 +54,29 @@ fun Application.commonConfig() {
 
     install(MicrometerMetrics) {
         registry = metrics.registry
-        meterBinders =
-            listOf(
-                UptimeMetrics(),
-                JvmMemoryMetrics(),
-                JvmGcMetrics(),
-                JvmThreadMetrics(),
-                ProcessorMetrics(),
-                PostgreSQLDatabaseMetrics(dataSource, applicationConfig.postgresProperties.databaseName),
-            )
+        distributionStatisticConfig = DistributionStatisticConfig.Builder().percentilesHistogram(true).build()
+        meterBinders += listOf(PostgreSQLDatabaseMetrics(dataSource, applicationConfig.postgresProperties.databaseName))
+
+        timers { call, _ ->
+            val validationCtx = call.principal<TokenValidationContextPrincipal>()?.context
+            val bruker = validationCtx?.getBruker()?.getOrNull()
+            when (bruker) {
+                is Systembruker -> {
+                    tag("auth_type", "systembruker")
+                    tag("authorized_party", validationCtx.getConsumerOrgnr())
+                }
+                is EntraId -> {
+                    tag("auth_type", "entraid")
+                    val kallendeSystem =
+                        (validationCtx.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name") as? String) ?: "unknown"
+                    tag("authorized_party", kallendeSystem)
+                }
+                null -> {
+                    tag("auth_type", "unknown")
+                    tag("authorized_party", "unknown")
+                }
+            }
+        }
     }
 
     install(Resources)
