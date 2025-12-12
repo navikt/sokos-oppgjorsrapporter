@@ -8,15 +8,21 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.ktor.server.plugins.di.dependencies
+import io.mockk.coEvery
+import io.mockk.mockk
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Period
 import java.time.ZoneOffset
+import kotlinx.io.bytestring.ByteString
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
+import no.nav.sokos.oppgjorsrapporter.ereg.EregService
+import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import org.threeten.extra.LocalDateRange
 
@@ -46,7 +52,26 @@ class BestillingProsessorTest :
             }
 
             test("oppretter rapport + varianter når det finnes en uprosessesert bestilling i databasen") {
-                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = {
+                        dependencies.provide<EregService> {
+                            mockk<EregService>(relaxed = true) {
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
+                                    OrganisasjonsNavnOgAdresse(
+                                        navn = "Test Organisasjon",
+                                        adresse = "Testveien 1, 0123 Oslo",
+                                        organisasjonsnummer = "123456789",
+                                    )
+                            }
+                        }
+                        dependencies.provide<RapportGenerator> {
+                            mockk<RapportGenerator>(relaxed = true) {
+                                coEvery { genererPdfInnhold(any()) } returns ByteString("test pdf content".toByteArray())
+                            }
+                        }
+                    },
+                ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                     val rapportService: RapportService = application.dependencies.resolve()
                     val bestilling =
@@ -68,16 +93,32 @@ class BestillingProsessorTest :
                     rapport.antallPersoner shouldBe 5
 
                     val varianter = rapportService.listVarianter(rapport.id)
-                    varianter.size shouldBeGreaterThanOrEqual 1
-                    // TODO: Oppdatere test til å verifisere at PDF-variant er på plass når vi har laget det
-                    varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv)
+                    varianter.size shouldBe 2
+                    varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv, VariantFormat.Pdf)
                 }
             }
 
             test("jobben for bestillings-prosessering plukker automatisk opp uprosessesert bestillinger og prosesserer dem") {
                 TestUtil.withFullApplication(
                     dbContainer = dbContainer,
-                    dependencyOverrides = { dependencies.provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) } },
+                    dependencyOverrides = {
+                        dependencies.provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) }
+                        dependencies.provide<EregService> {
+                            mockk<EregService>(relaxed = true) {
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
+                                    OrganisasjonsNavnOgAdresse(
+                                        navn = "Test Organisasjon",
+                                        adresse = "Testveien 1, 0123 Oslo",
+                                        organisasjonsnummer = "123456789",
+                                    )
+                            }
+                        }
+                        dependencies.provide<RapportGenerator> {
+                            mockk<RapportGenerator>(relaxed = true) {
+                                coEvery { genererPdfInnhold(any()) } returns ByteString("test pdf content".toByteArray())
+                            }
+                        }
+                    },
                 ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                     val rapportService: RapportService = application.dependencies.resolve()
@@ -119,11 +160,14 @@ class BestillingProsessorTest :
                             val nye = after.filterNot { before.contains(it) }
                             nye.forEach { rapport ->
                                 val varianter = rapportService.listVarianter(rapport.id)
-                                varianter.size shouldBeGreaterThanOrEqual 1
-                                // TODO: Oppdatere test til å verifisere at PDF-variant er på plass når vi har laget det
+                                varianter.size shouldBe 2
                                 varianter.forExactly(1) {
                                     it.format shouldBe VariantFormat.Csv
                                     it.filnavn shouldBe "${rapport.orgnr.raw}_ref-arbg_1970-01-01_${rapport.id.raw}.csv"
+                                }
+                                varianter.forExactly(1) {
+                                    it.format shouldBe VariantFormat.Pdf
+                                    it.filnavn shouldBe "${rapport.orgnr.raw}_ref-arbg_1970-01-01_${rapport.id.raw}.pdf"
                                 }
                             }
                             nye.forExactly(1) { it.orgnr.raw shouldBe bestilling1.header.orgnr }
@@ -136,7 +180,27 @@ class BestillingProsessorTest :
             }
 
             test("jobben for bestillings-prosessering håndterer multiple rapporter med likt orgnr+dato") {
-                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = {
+                        dependencies.provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) }
+                        dependencies.provide<EregService> {
+                            mockk<EregService>(relaxed = true) {
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
+                                    OrganisasjonsNavnOgAdresse(
+                                        navn = "Test Organisasjon",
+                                        adresse = "Testveien 1, 0123 Oslo",
+                                        organisasjonsnummer = "123456789",
+                                    )
+                            }
+                        }
+                        dependencies.provide<RapportGenerator> {
+                            mockk<RapportGenerator>(relaxed = true) {
+                                coEvery { genererPdfInnhold(any()) } returns ByteString("test pdf content".toByteArray())
+                            }
+                        }
+                    },
+                ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                     val rapportService: RapportService = application.dependencies.resolve()
                     val kriterier =
@@ -178,9 +242,8 @@ class BestillingProsessorTest :
                             val varianterMap =
                                 nye.associate { rapport ->
                                     val varianter = rapportService.listVarianter(rapport.id)
-                                    varianter.size shouldBeGreaterThanOrEqual 1
-                                    // TODO: Oppdatere test til å verifisere at PDF-variant er på plass når vi har laget det
-                                    varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv)
+                                    varianter.size shouldBe 2
+                                    varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv, VariantFormat.Pdf)
                                     rapport.id to varianter
                                 }
                             varianterMap.values.flatten().map { it.filnavn }.toSet().size shouldBeGreaterThanOrEqual nye.size

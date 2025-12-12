@@ -34,6 +34,7 @@ object PropertiesConfig {
         val securityProperties: SecurityProperties,
         val postgresProperties: PostgresProperties,
         val mqConfiguration: MqProperties,
+        val innholdGeneratorProperties: InnholdGeneratorProperties,
     ) {
         constructor(
             source: ConfigSource
@@ -42,6 +43,7 @@ object PropertiesConfig {
             securityProperties = SecurityProperties(source),
             postgresProperties = PostgresProperties(source),
             mqConfiguration = MqProperties(source),
+            innholdGeneratorProperties = InnholdGeneratorProperties(source),
         )
     }
 
@@ -91,6 +93,12 @@ object PropertiesConfig {
 
     data class MqQueueProperties(val key: String, val queueName: String) {
         constructor(source: ConfigSource, key: String) : this(key, source.get("mq.$key.queueName"))
+    }
+
+    data class InnholdGeneratorProperties(val eregBaseUrl: URI, val pdfGenBaseUrl: URI) {
+        constructor(
+            source: ConfigSource
+        ) : this(eregBaseUrl = URI.create(source.get("ereg.baseUrl")), pdfGenBaseUrl = URI.create(source.get("pdfGen.baseUrl")))
     }
 
     data class SecurityProperties(

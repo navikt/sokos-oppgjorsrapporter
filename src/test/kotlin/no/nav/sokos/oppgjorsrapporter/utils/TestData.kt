@@ -98,7 +98,7 @@ startxref
         navenhet: Int = 8020,
         bedriftsnummer: String = "933001542",
         kode: String = "H",
-        tekst: String = "Sykepenger feriepenger",
+        tekst: String = "Sykepenger",
         fnr: String = "29070049716",
         navn: String = "wopoj hyfom",
         fraDato: LocalDate = LocalDate.parse("2025-05-01"),
@@ -125,7 +125,7 @@ startxref
         headerOrgnr: String = "974600019",
         headerBankkonto: String = "02470303400",
         headerSumBelop: BigDecimal = BigDecimal.valueOf(9093.00),
-        headerValutert: LocalDate = LocalDate.parse("2025-10-28"),
+        headerValutert: LocalDate = LocalDate.parse("2025-01-28"),
         headerLinjer: Long = 1,
         datarec: List<Data> = listOf(createDataRec()),
     ): RefusjonsRapportBestilling {
@@ -142,3 +142,114 @@ startxref
         )
     }
 }
+
+data class Ansatt(val fnr: String, val navn: String)
+
+val riktigFormatertRefusjonArbeidsgiverPdfPayloadSortertEtterUnderenhet =
+    """
+                {
+                  "rapportSendt": "31.10.2025",
+                  "utbetalingsDato": "28.10.2025",
+                  "totalsum": { "verdi": 16238.68, "formattert": "16 238,68" },
+                  "bedrift": {
+                    "orgnr": { "verdi": "974600019", "formattert": "974 600 019" },
+                    "navn": "Helsfyr stål og plasikk",
+                    "kontonummer": { "verdi": "02470303400", "formattert": "0247 03 03400" },
+                    "adresse": "Veien 24, 1234, VårBy"
+                  },
+                  "underenheter": [
+                    {
+                      "totalbelop": { "verdi": 5738.68, "formattert": "5 738,68" },
+                      "orgnr": { "verdi": "009876111", "formattert": "009 876 111" },
+                      "utbetalinger": [
+                        {
+                          "ytelse": "Foreldrepenger",
+                          "fnr": { "verdi": "12345678111", "formattert": "123456 78111" },
+                          "navn": "Anders Andersen",
+                          "periodeFra": "01.01.2025",
+                          "periodeTil": "31.01.2025",
+                          "maksDato": "31.07.2026",
+                          "belop": "{ "verdi": 4234.00, "formattert": "4 234,00" }
+                        },
+                        {
+                          "ytelse": "Sykepenger",
+                          "fnr": { "verdi": "12345678222", "formattert": "123456 78222" },
+                          "navn": "Birte Birtesen",
+                          "periodeFra": "01.03.2025",
+                          "periodeTil": "31.03.2025",
+                          "maksDato": "31.07.2026",
+                          "belop": { "verdi": 1504.68, "formattert": "1 504,68" }
+                        }
+                      ]
+                    },
+                    {
+                      "totalbelop": { "verdi": 10500.00, "formattert": "10 500,00" },
+                      "orgnr": { "verdi": "009876222", "formattert": "009 876 222" },
+                      "utbetalinger": [
+                        {
+                          "ytelse": "Foreldrepenger",
+                          "fnr": { "verdi": "12345678111", "formattert": "123456 78111" },
+                          "navn": "Anders Andersen",
+                          "periodeFra": "01.01.2025",
+                          "periodeTil": "31.01.2025",
+                          "maksDato": "31.07.2026",
+                          "belop": { "verdi": 6500.00, "formattert": "6 500,00" }
+                        },
+                        {
+                          "ytelse": "Sykepenger",
+                          "fnr": { "verdi": "12345678222", "formattert": "123456 78222" },
+                          "navn": "Birte Birtesen",
+                          "periodeFra": "01.03.2025",
+                          "periodeTil": "31.03.2025",
+                          "maksDato": "31.07.2026",
+                          "belop": { "verdi": 4000.00, "formattert": "4 000,00" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """
+
+val eregResponse =
+    """
+    {
+      "organisasjonsnummer": "990983666",
+      "navn": {
+        "sammensattnavn": "NAV FAMILIE- OG PENSJONSYTELSER OSL",
+        "navnelinje1": "",
+        "navnelinje2": "",
+        "navnelinje3": "",
+        "navnelinje4": "",
+        "navnelinje5": "",
+        "bruksperiode": {
+          "fom": "2015-01-06T21:44:04.748",
+          "tom": "2015-12-06T19:45:04"
+        },
+        "gyldighetsperiode": {
+          "fom": "2014-07-01",
+          "tom": "2015-12-31"
+        }
+      },
+      "enhetstype": "BEDR",
+      "adresse": {
+        "adresselinje1": "Sannergata 2",
+        "adresselinje2": "",
+        "adresselinje3": "",
+        "postnummer": "0557",
+        "poststed": "Oslo",
+        "landkode": "JPN",
+        "kommunenummer": "0301",
+        "bruksperiode": {
+          "fom": "2015-01-06T21:44:04.748",
+          "tom": "2015-12-06T19:45:04"
+        },
+        "gyldighetsperiode": {
+          "fom": "2014-07-01",
+          "tom": "2015-12-31"
+        },
+        "type": "string"
+      },
+      "opphoersdato": "2016-12-31"
+    }
+    """
+        .trimIndent()

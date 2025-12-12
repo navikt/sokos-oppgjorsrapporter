@@ -27,7 +27,7 @@ class MqConsumer(private val config: PropertiesConfig.MqProperties, private val 
         val connection = config.connect()
         session = connection.createSession(Session.SESSION_TRANSACTED)
 
-        logger.info("Connecting to MQ queue $queueName")
+        logger.info { "Connecting to MQ queue $queueName" }
         val queue = nonJmsQueue(queueName)
         mqConsumer = session.createConsumer(queue)
 

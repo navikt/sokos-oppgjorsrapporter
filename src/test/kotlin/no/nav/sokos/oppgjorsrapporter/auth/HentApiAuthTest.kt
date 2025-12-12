@@ -13,10 +13,12 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.testing.TestApplication
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.io.bytestring.encodeToByteString
 import no.nav.helsearbeidsgiver.utils.json.fromJson
 import no.nav.helsearbeidsgiver.utils.test.wrapper.genererGyldig
@@ -69,9 +71,9 @@ abstract class ApiTest {
     }
 
     fun mockPdpTilganger() {
-        every { mockedPdpService.harTilgang(systembruker = any(), orgnumre = any(), ressurs = any()) } returns false
+        coEvery { mockedPdpService.harTilgang(systembruker = any(), orgnumre = any(), ressurs = any()) } returns false
 
-        every {
+        coEvery {
             mockedPdpService.harTilgang(
                 systembruker = match { it.userOrg == hovedenhetOrgnrMedPdpTilgang },
                 orgnumre = match { it.contains(hovedenhetOrgnrMedPdpTilgang) || it.contains(underenhetOrgnrMedPdpTilgang) },
@@ -79,7 +81,7 @@ abstract class ApiTest {
             )
         } returns true
 
-        every {
+        coEvery {
             mockedPdpService.harTilgang(
                 systembruker = match { it.userOrg == underenhetOrgnrMedPdpTilgang },
                 orgnumre = match { it.contains(underenhetOrgnrMedPdpTilgang) },
@@ -114,7 +116,7 @@ class HentApiAuthTest : ApiTest() {
     }
 
     @Test
-    fun `gir 200 OK ved henting av metainfo om en spesifikk rapport som systembruker har tilgang til`() {
+    fun `gir 200 OK ved henting av metainfo om en spesifikk rapport som systembruker har tilgang til`() = runTest {
         val rapportHovedenhet = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
         val rapportUnderenhet = mockRapport(id = 234, orgnr = underenhetOrgnrMedPdpTilgang)
 
@@ -130,20 +132,18 @@ class HentApiAuthTest : ApiTest() {
                 underenhetOrgnrMedPdpTilgang to Api.RapportDTO(rapportUnderenhet),
             )
             .forEach { (orgnr, rapport) ->
-                runBlocking {
-                    val respons =
-                        client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
-                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
-                        }
+                val respons =
+                    client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
+                        bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
+                    }
 
-                    respons.status shouldBe HttpStatusCode.OK
-                    respons.bodyAsText().fromJson(Api.RapportDTO.serializer()) shouldBe rapport
-                }
+                respons.status shouldBe HttpStatusCode.OK
+                respons.bodyAsText().fromJson(Api.RapportDTO.serializer()) shouldBe rapport
             }
     }
 
     @Test
-    fun `gir 200 OK ved henting av innhold i en spesifikk rapport som systembruker har tilgang til`() {
+    fun `gir 200 OK ved henting av innhold i en spesifikk rapport som systembruker har tilgang til`() = runTest {
         val rapportHovedenhet = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
         val rapportUnderenhet = mockRapport(id = 234, orgnr = underenhetOrgnrMedPdpTilgang)
 
@@ -159,21 +159,19 @@ class HentApiAuthTest : ApiTest() {
                 underenhetOrgnrMedPdpTilgang to rapportUnderenhet,
             )
             .forEach { (orgnr, rapport) ->
-                runBlocking {
-                    val respons =
-                        client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
-                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
-                            accept(ContentType.Application.Pdf)
-                        }
+                val respons =
+                    client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
+                        bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
+                        accept(ContentType.Application.Pdf)
+                    }
 
-                    respons.status shouldBe HttpStatusCode.OK
-                    respons.bodyAsText() shouldStartWith "%PDF-"
-                }
+                respons.status shouldBe HttpStatusCode.OK
+                respons.bodyAsText() shouldStartWith "%PDF-"
             }
     }
 
     @Test
-    fun `gir 404 Not Found ved henting av metainfo om en spesifikk rapport som systembruker ikke har tilgang til`() {
+    fun `gir 404 Not Found ved henting av metainfo om en spesifikk rapport som systembruker ikke har tilgang til`() = runTest {
         val rapportMedTilgang = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
         val rapportUtenTilgang = mockRapport(id = 321, orgnr = orgnrUtenPdpTilgang)
 
@@ -189,18 +187,16 @@ class HentApiAuthTest : ApiTest() {
                 underenhetOrgnrMedPdpTilgang to rapportMedTilgang,
             )
             .forEach { (orgnr, rapport) ->
-                runBlocking {
-                    val respons =
-                        client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
-                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
-                        }
-                    respons.status shouldBe HttpStatusCode.NotFound
-                }
+                val respons =
+                    client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
+                        bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
+                    }
+                respons.status shouldBe HttpStatusCode.NotFound
             }
     }
 
     @Test
-    fun `gir 404 Not Found ved henting av innhold i en spesifikk rapport som systembruker ikke har tilgang til`() {
+    fun `gir 404 Not Found ved henting av innhold i en spesifikk rapport som systembruker ikke har tilgang til`() = runTest {
         val rapportMedTilgang = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
         val rapportUtenTilgang = mockRapport(id = 321, orgnr = orgnrUtenPdpTilgang)
 
@@ -216,14 +212,12 @@ class HentApiAuthTest : ApiTest() {
                 underenhetOrgnrMedPdpTilgang to rapportMedTilgang,
             )
             .forEach { (orgnr, rapport) ->
-                runBlocking {
-                    val respons =
-                        client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
-                            bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
-                            accept(ContentType.Application.Pdf)
-                        }
-                    respons.status shouldBe HttpStatusCode.NotFound
-                }
+                val respons =
+                    client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
+                        bearerAuth(mockOAuth2Server.gyldigSystembrukerAuthToken(orgnr))
+                        accept(ContentType.Application.Pdf)
+                    }
+                respons.status shouldBe HttpStatusCode.NotFound
             }
     }
 }

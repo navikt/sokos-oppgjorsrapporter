@@ -6,13 +6,17 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.io.bytestring.ByteString
-import kotlinx.io.bytestring.encodeToByteString
 import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 
-class BestillingProsessor(val rapportService: RapportService, val applicationState: ApplicationState) {
+class BestillingProsessor(
+    val rapportService: RapportService,
+    val applicationState: ApplicationState,
+    val rapportGenerator: RapportGenerator,
+) {
     private val logger: KLogger = KotlinLogging.logger {}
 
     suspend fun run() {
@@ -41,27 +45,30 @@ class BestillingProsessor(val rapportService: RapportService, val applicationSta
 
     fun prosesserEnBestilling(): Rapport? =
         rapportService.prosesserBestilling { bestilling ->
-            val (ulagret: UlagretRapport?, generator: ((VariantFormat) -> ByteString?)) =
+            val (ulagret: UlagretRapport?, generator: (suspend (VariantFormat) -> ByteString?)) =
                 when (bestilling.genererSom) {
                     RapportType.`ref-arbg` -> {
-                        val data = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
+                        val refusjonsRapportBestilling =
+                            RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
+                        // Er en separat val så vi får spesifisert "suspend" i typen.
+                        val generatorLambda: suspend (VariantFormat) -> ByteString? = { variant: VariantFormat ->
+                            when (variant) {
+                                VariantFormat.Pdf -> rapportGenerator.genererPdfInnhold(refusjonsRapportBestilling)
+                                VariantFormat.Csv -> rapportGenerator.genererCsvInnhold(refusjonsRapportBestilling)
+                            }
+                        }
                         Pair(
                             UlagretRapport(
                                 bestillingId = bestilling.id,
-                                orgnr = OrgNr(data.header.orgnr),
+                                orgnr = OrgNr(refusjonsRapportBestilling.header.orgnr),
                                 type = bestilling.genererSom,
-                                datoValutert = data.header.valutert,
-                                bankkonto = Bankkonto(data.header.bankkonto),
-                                antallRader = data.datarec.size,
-                                antallUnderenheter = data.datarec.distinctBy { it.bedriftsnummer }.size,
-                                antallPersoner = data.datarec.distinctBy { it.fnr }.size,
+                                datoValutert = refusjonsRapportBestilling.header.valutert,
+                                bankkonto = Bankkonto(refusjonsRapportBestilling.header.bankkonto),
+                                antallRader = refusjonsRapportBestilling.datarec.size,
+                                antallUnderenheter = refusjonsRapportBestilling.datarec.distinctBy { it.bedriftsnummer }.size,
+                                antallPersoner = refusjonsRapportBestilling.datarec.distinctBy { it.fnr }.size,
                             ),
-                            { variant: VariantFormat ->
-                                when (variant) {
-                                    VariantFormat.Pdf -> null
-                                    VariantFormat.Csv -> data.tilCSV().encodeToByteString()
-                                }
-                            },
+                            generatorLambda,
                         )
                     }
 
