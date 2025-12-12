@@ -5,7 +5,6 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.extensions.testcontainers.toDataSource
 import io.kotest.inspectors.forExactly
 import io.kotest.matchers.collections.shouldContainExactly
-import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.ktor.server.plugins.di.dependencies
@@ -75,7 +74,6 @@ class BestillingProsessorTest :
                 ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                     val rapportService: RapportService = application.dependencies.resolve()
-
                     val bestilling =
                         TestData.createRefusjonsRapportBestilling(
                             datarec =
@@ -95,7 +93,7 @@ class BestillingProsessorTest :
                     rapport.antallPersoner shouldBe 5
 
                     val varianter = rapportService.listVarianter(rapport.id)
-                    varianter.size shouldBeExactly 2
+                    varianter.size shouldBe 2
                     varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv, VariantFormat.Pdf)
                 }
             }
@@ -105,7 +103,6 @@ class BestillingProsessorTest :
                     dbContainer = dbContainer,
                     dependencyOverrides = {
                         dependencies.provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) }
-                        // Mock EregService to avoid external API calls
                         dependencies.provide<EregService> {
                             mockk<EregService>(relaxed = true) {
                                 coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
@@ -163,11 +160,14 @@ class BestillingProsessorTest :
                             val nye = after.filterNot { before.contains(it) }
                             nye.forEach { rapport ->
                                 val varianter = rapportService.listVarianter(rapport.id)
-                                varianter.size shouldBeGreaterThanOrEqual 1
-                                // TODO: Oppdatere test til å verifisere at PDF-variant er på plass når vi har laget det
+                                varianter.size shouldBe 2
                                 varianter.forExactly(1) {
                                     it.format shouldBe VariantFormat.Csv
                                     it.filnavn shouldBe "${rapport.orgnr.raw}_ref-arbg_1970-01-01_${rapport.id.raw}.csv"
+                                }
+                                varianter.forExactly(1) {
+                                    it.format shouldBe VariantFormat.Pdf
+                                    it.filnavn shouldBe "${rapport.orgnr.raw}_ref-arbg_1970-01-01_${rapport.id.raw}.pdf"
                                 }
                             }
                             nye.forExactly(1) { it.orgnr.raw shouldBe bestilling1.header.orgnr }
@@ -184,7 +184,6 @@ class BestillingProsessorTest :
                     dbContainer = dbContainer,
                     dependencyOverrides = {
                         dependencies.provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) }
-                        // Mock EregService to avoid external API calls
                         dependencies.provide<EregService> {
                             mockk<EregService>(relaxed = true) {
                                 coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
@@ -243,8 +242,7 @@ class BestillingProsessorTest :
                             val varianterMap =
                                 nye.associate { rapport ->
                                     val varianter = rapportService.listVarianter(rapport.id)
-                                    varianter.size shouldBeExactly 2
-                                    // TODO: Oppdatere test til å verifisere at PDF-variant er på plass når vi har laget det
+                                    varianter.size shouldBe 2
                                     varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv, VariantFormat.Pdf)
                                     rapport.id to varianter
                                 }
