@@ -174,10 +174,6 @@ data class RefusjonsRapportPdfPayload(
     /**
      * Konverterer refusjonsrapportens header og data til et PDF-payload-objekt.
      *
-     * Denne funksjonen grupperer utbetalingene etter underenhet (bedriftsnummer) og summerer beløpene for hver underenhet. Den bygger
-     * deretter en RefusjonsRapportPdfPayload som inneholder informasjon om rapporten, bedriften og underenhetene med deres respektive
-     * utbetalinger. Utbetalingene innen hver underenhet sorteres etter fødselsnummer, periodeFra og ytelse.
-     *
      * @param rapportSendt Datoen rapporten ble sendt. Standardverdi er dagens dato. Lagt til for fleksibilitet ved testing.
      * @param organisasjonsNavnOgAdresse Informasjon om hovedenheten som mottar rapporten.
      * @return RefusjonsRapportPdfPayload som representerer dataene i et format egnet for PDF-generering.
