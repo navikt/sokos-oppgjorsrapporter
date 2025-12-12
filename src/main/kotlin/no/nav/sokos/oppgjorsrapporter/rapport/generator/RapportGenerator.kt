@@ -199,7 +199,7 @@ data class RefusjonsRapportPdfPayload(
             bestilling.datarec
                 .map { data ->
                     data.tekst to
-                        Utbetaling(
+                        Postering(
                             orgnr = OrgNummer(data.bedriftsnummer),
                             fnr = Fodselsnummer(data.fnr),
                             navn = data.navn,
@@ -210,11 +210,11 @@ data class RefusjonsRapportPdfPayload(
                         )
                 }
                 .groupBy({ it.first }) { it.second }
-                .map { (ytelse, utbetalinger) ->
+                .map { (ytelse, posteringer) ->
                     Ytelse(
-                        totalbelop = Belop(utbetalinger.sumOf { it.belop.verdi }),
-                        ytelse,
-                        utbetalinger.sortedWith(compareBy({ it.orgnr.verdi }, { it.fnr.verdi }, { it.periodeFra })),
+                        ytelse = ytelse,
+                        totalbelop = Belop(posteringer.sumOf { it.belop.verdi }),
+                        posteringer.sortedWith(compareBy({ it.orgnr.verdi }, { it.fnr.verdi }, { it.periodeFra })),
                     )
                 }
                 .sortedBy { it.ytelse },
@@ -222,10 +222,10 @@ data class RefusjonsRapportPdfPayload(
 
     @Serializable data class Bedrift(val orgnr: OrgNummer, val navn: String, val kontonummer: Kontonummer, val adresse: String)
 
-    @Serializable data class Ytelse(val totalbelop: Belop, val ytelse: String, val utbetalinger: List<Utbetaling>)
+    @Serializable data class Ytelse(val ytelse: String, val totalbelop: Belop, val posteringer: List<Postering>)
 
     @Serializable
-    data class Utbetaling(
+    data class Postering(
         val orgnr: OrgNummer,
         val fnr: Fodselsnummer,
         val navn: String,
