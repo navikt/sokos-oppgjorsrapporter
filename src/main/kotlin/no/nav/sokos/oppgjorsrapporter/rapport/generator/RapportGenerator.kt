@@ -61,7 +61,7 @@ class RapportGenerator(
                     organisasjonsNavnOgAdresse = arbeidsgiverNavnOgAdresse,
                     rapportSendt = LocalDate.now(clock),
                 )
-            val pdfGenUrl = baseUrl.resolve("/api/v1/genpdf/oppgjorsrapporter/refusjonarbeidsgiver").toURL()
+            val pdfGenUrl = baseUrl.resolve("/api/v1/genpdf/oppgjorsrapporter/refusjon-arbg-sortert-etter-ytelse").toURL()
             val response =
                 client.post(pdfGenUrl) {
                     contentType(ContentType.Application.Json)
