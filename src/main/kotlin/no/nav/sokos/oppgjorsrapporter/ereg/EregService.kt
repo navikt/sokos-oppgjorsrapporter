@@ -32,7 +32,7 @@ class EregService(private val baseUrl: URI, private val client: HttpClient, priv
 
                 else -> {
                     val apiError = ApiError(response, response.eregErrorMessage() ?: "Noe gikk galt ved oppslag mot Ereg-tjenesten")
-                    logger.error { "Feil ved oppslag mot Ereg $apiError" }
+                    logger.warn { "Feil ved oppslag mot Ereg: $apiError" }
                     throw RuntimeException("Feil ved oppslag mot Ereg: $apiError")
                 }
             }
