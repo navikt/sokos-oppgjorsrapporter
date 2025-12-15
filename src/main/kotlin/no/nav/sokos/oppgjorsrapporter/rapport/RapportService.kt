@@ -5,7 +5,6 @@ import java.time.Instant
 import javax.sql.DataSource
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.bytestring.ByteString
-import kotliquery.Session
 import kotliquery.TransactionalSession
 import kotliquery.sessionOf
 import kotliquery.using
@@ -18,11 +17,19 @@ import org.threeten.extra.Interval
 import org.threeten.extra.LocalDateRange
 
 abstract class DatabaseSupport(private val dataSource: DataSource) {
-    protected fun <T> withSession(block: (Session) -> T): T = using(sessionOf(dataSource)) { block(it) }
-
-    protected fun <T> withTransaction(block: suspend (TransactionalSession) -> T): T = withSession {
-        it.transaction { tx -> runBlocking { block(tx) } }
-    }
+    protected fun <T> withTransaction(block: suspend (TransactionalSession) -> T): T =
+        // Vi har her med vilje ikke eksponert en `withSession`, siden kotliquery (til i alle fall v1.9.1) vil gjøre
+        // `Connection.autoCommit = true` på den underliggende connectioning - slik at kode a la:
+        //
+        //     sessionOf(dataSource) { session ->
+        //       session.transaction {
+        //         // Gjør noe transaksjonelt...
+        //       }
+        //       session.execute(query)
+        //     }
+        //
+        // vil kjøre `query` med autocommit påskrudd, selv om man har bedt dataSource om å lage connections med autoCommit avskrudd.
+        using(sessionOf(dataSource)) { it.transaction { tx -> runBlocking { block(tx) } } }
 }
 
 class RapportService(dataSource: DataSource, private val repository: RapportRepository, private val clock: Clock) :
