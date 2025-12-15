@@ -39,8 +39,8 @@ class RapportRepository(private val clock: Clock) {
                 FROM rapport.rapport_bestilling
                 WHERE ferdig_prosessert IS NULL
                   AND ( prosessering_feilet IS NULL OR
-                        prosessering_feilet + '1 day'::interval <= now() )
-                ORDER BY id
+                        prosessering_feilet + '10 minutes'::interval <= now() )
+                ORDER BY prosessering_feilet NULLS FIRST, id
                 LIMIT 1
                 FOR NO KEY UPDATE SKIP LOCKED
                 """
