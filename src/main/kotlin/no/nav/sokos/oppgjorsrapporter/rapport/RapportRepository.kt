@@ -1,5 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import io.micrometer.core.instrument.Tag
+import io.micrometer.core.instrument.Tags
 import java.time.Clock
 import java.time.Instant
 import kotlinx.io.bytestring.ByteString
@@ -76,20 +78,48 @@ class RapportRepository(private val clock: Clock) {
             .asUpdate
             .let { tx.run(it) }
 
-    fun antallUprosesserteBestillinger(tx: TransactionalSession, rapportType: RapportType): Long =
+    fun metrikkForUprosesserteBestillinger(tx: TransactionalSession): Iterable<Pair<Tags, Long>> =
         queryOf(
                 """
-                SELECT COUNT(*) AS antall
-                FROM rapport.rapport_bestilling
-                WHERE ferdig_prosessert IS NULL
-                  AND generer_som = CAST(:rapportType AS rapport.rapport_type)
+                WITH todo AS (SELECT COUNT(*)                        AS antall,
+                                     generer_som                     AS rapport_type,
+                                     mottatt_fra                     AS kilde,
+                                     prosessering_feilet IS NOT NULL AS har_feilet
+                              FROM rapport.rapport_bestilling
+                              WHERE ferdig_prosessert IS NULL
+                              GROUP BY rapport_type, kilde, har_feilet),
+                     done AS (SELECT DISTINCT 0           AS antall,
+                                              generer_som AS rapport_type,
+                                              mottatt_fra AS kilde,
+                                              feilverdier.har_feilet
+                              FROM rapport.rapport_bestilling b,
+                                   (VALUES (true), (false)) AS feilverdier(har_feilet)
+                              WHERE NOT EXISTS (SELECT 1
+                                                FROM todo b2
+                                                WHERE b.generer_som = b2.rapport_type
+                                                  AND b.mottatt_fra = b2.kilde
+                                                  AND feilverdier.har_feilet = b2.har_feilet
+                                                  AND b.ferdig_prosessert IS NULL))
+                SELECT *
+                FROM todo
+                UNION
+                SELECT *
+                FROM done
                 """
-                    .trimIndent(),
-                mapOf("rapportType" to rapportType.name),
+                    .trimIndent()
             )
-            .map { it.long("antall") }
-            .asSingle
-            .let { tx.run(it)!! }
+            .map {
+                Pair(
+                    Tags.of(
+                        Tag.of("rapporttype", it.string("rapport_type")),
+                        Tag.of("kilde", it.string("kilde")),
+                        Tag.of("feilet", it.boolean("har_feilet").toString()),
+                    ),
+                    it.long("antall"),
+                )
+            }
+            .asList
+            .let { tx.run(it) }
 
     fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         queryOf(

@@ -13,9 +13,9 @@ import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 
 class BestillingProsessor(
-    val rapportService: RapportService,
-    val applicationState: ApplicationState,
-    val rapportGenerator: RapportGenerator,
+    private val rapportService: RapportService,
+    private val applicationState: ApplicationState,
+    private val rapportGenerator: RapportGenerator,
 ) {
     private val logger: KLogger = KotlinLogging.logger {}
 
@@ -30,10 +30,21 @@ class BestillingProsessor(
                 delay(baseDelay)
             } else {
                 currentCoroutineContext().ensureActive()
-                if (prosesserEnBestilling() == null) {
+                val resultat = prosesserEnBestilling()
+                if (resultat == null) {
                     logger.debug { "Fant ingen uprosesserte bestillinger å prosessere; venter $t før neste forsøk" }
                     delay(t)
                     t = minOf((t * 1.5), maxDelay)
+                } else if (resultat.isFailure) {
+                    logger.info { "Fant en bestilling, men prosessering feilet; venter $baseDelay før neste forsøk" }
+                    // At prosessering av en bestilling feilet betyr ikke nødvendigvis at prosessering av andre bestillinger vil feile, så
+                    // vi gjør ikke eksponensiell backoff her - men det kan være lurt å legge inn *litt* venting mellom
+                    // prosesseringsforsøkene, for å unngå at vår overivrighet er det som faktisk fremprovoserer ytelsesproblemer i
+                    // systemene vi snakker med.
+                    //
+                    // Ventingen her må også se i sammenheng med hvor ofte RapportRepository.finnUprosessertBestilling vil anse en
+                    // bestilling som gjen-prosesserbar etter at prosessering har feilet.
+                    delay(baseDelay)
                 } else {
                     logger.info { "Bestilling prosessert; vil se etter flere bestillinger å prosessere umiddelbart" }
                     // Vi fant en bestilling å prosessere; resett eksponensiell backoff.
@@ -43,9 +54,9 @@ class BestillingProsessor(
         }
     }
 
-    fun prosesserEnBestilling(): Rapport? =
-        rapportService.prosesserBestilling { bestilling ->
-            val (ulagret: UlagretRapport?, generator: (suspend (VariantFormat) -> ByteString?)) =
+    fun prosesserEnBestilling(): Result<Rapport>? =
+        rapportService.prosesserBestilling { tx, bestilling ->
+            val (ulagret: UlagretRapport, generator: (suspend (VariantFormat) -> ByteString?)) =
                 when (bestilling.genererSom) {
                     RapportType.`ref-arbg` -> {
                         val refusjonsRapportBestilling =
@@ -74,22 +85,20 @@ class BestillingProsessor(
 
                     else -> error("Vet ikke hvordan bestilling av type ${bestilling.genererSom} skal prosesseres ennå")
                 }
-            ulagret?.let {
-                val rapport = rapportService.lagreRapport(ulagret)
+            rapportService.lagreRapport(tx, ulagret).also { rapport ->
                 VariantFormat.entries.forEach { format ->
-                    val bytes = generator.invoke(format)
-                    if (bytes != null) {
+                    generator.invoke(format)?.also { bytes ->
                         rapportService.lagreVariant(
+                            tx,
                             UlagretVariant(
                                 rapport.id,
                                 format,
                                 "${rapport.orgnr.raw}_${rapport.type.name}_${rapport.datoValutert}_${rapport.id.raw}.${format.name.lowercase()}",
                                 bytes,
-                            )
+                            ),
                         )
                     }
                 }
-                rapport
             }
         }
 }

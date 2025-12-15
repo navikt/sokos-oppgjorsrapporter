@@ -13,13 +13,14 @@ import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
+import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 
-class RapportMottak(private val refusjonMqConsumer: MqConsumer, private val rapportService: RapportService) {
+class RapportMottak(private val refusjonMqConsumer: MqConsumer, private val rapportService: RapportService, private val metrics: Metrics) {
     private val logger = KotlinLogging.logger {}
 
     suspend fun run() {
@@ -31,8 +32,10 @@ class RapportMottak(private val refusjonMqConsumer: MqConsumer, private val rapp
 
     fun process(melding: Melding) {
         val bestilling = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(melding.data)
+        val rapportType = RapportType.`ref-arbg`
+        metrics.tellMottak(rapportType, melding.kilde, bestilling.datarec.size)
         logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
-        rapportService.lagreBestilling(melding.kilde, RapportType.`ref-arbg`, melding.data)
+        rapportService.lagreBestilling(melding.kilde, rapportType, melding.data)
     }
 
     private suspend fun hentBestilling(block: suspend (Melding) -> Unit) {

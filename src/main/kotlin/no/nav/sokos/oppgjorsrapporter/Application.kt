@@ -50,7 +50,6 @@ import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
-import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 
 private val logger = KotlinLogging.logger {}
@@ -122,10 +121,10 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
 
             config.mqConfiguration.queues.forEach { inQueue ->
                 val consumerKey = "mq.consumer.${inQueue.key}"
-                provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.queueName, resolve()) }
+                provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.queueName) }
 
                 val mottakKey = "mq.mottak.${inQueue.key}"
-                provide(mottakKey) { RapportMottak(resolve(consumerKey), resolve()) }
+                provide(mottakKey) { RapportMottak(resolve(consumerKey), resolve(), resolve()) }
 
                 val job =
                     with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
@@ -148,15 +147,6 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
     // registered to this registry"-warnings.
     val metrics: Metrics by dependencies
     DatabaseConfig.dataSource.metricRegistry = metrics.registry
-
-    val rapportService: RapportService by dependencies
-    RapportType.entries.forEach { t ->
-        metrics.registerGauge(
-            "uprosessert_bestilling_${t.name}",
-            stateObject = rapportService,
-            valueFunction = { it.antallUprosesserteBestillinger(t).toDouble() },
-        )
-    }
 
     applicationLifecycleConfig()
     securityConfig()

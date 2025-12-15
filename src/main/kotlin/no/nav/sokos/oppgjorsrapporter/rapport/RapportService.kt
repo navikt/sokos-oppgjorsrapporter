@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import io.micrometer.core.instrument.Tags
 import java.time.Clock
 import java.time.Instant
 import javax.sql.DataSource
@@ -13,6 +14,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
+import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import org.threeten.extra.Interval
 import org.threeten.extra.LocalDateRange
 
@@ -32,8 +34,12 @@ abstract class DatabaseSupport(private val dataSource: DataSource) {
         using(sessionOf(dataSource)) { it.transaction { tx -> runBlocking { block(tx) } } }
 }
 
-class RapportService(dataSource: DataSource, private val repository: RapportRepository, private val clock: Clock) :
-    DatabaseSupport(dataSource) {
+class RapportService(
+    dataSource: DataSource,
+    private val repository: RapportRepository,
+    private val clock: Clock,
+    private val metrics: Metrics,
+) : DatabaseSupport(dataSource) {
     private val logger = KotlinLogging.logger {}
     private val systemBrukernavn = "system"
 
@@ -44,26 +50,33 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
         )
     }
 
-    fun <T> prosesserBestilling(block: suspend (RapportBestilling) -> T): T? = withTransaction { tx ->
+    fun <T> prosesserBestilling(process: suspend (TransactionalSession, RapportBestilling) -> T): Result<T>? = withTransaction { tx ->
+        val savepoint = tx.connection.underlying.setSavepoint()
         repository.finnUprosessertBestilling(tx)?.let { bestilling ->
-            // TODO: Er det innafor å la caller bestemme hele prosesserings-oppførselen?  Det gjør jo testing lettere, men...
-            try {
-                block(bestilling).also { repository.markerBestillingProsessert(tx, bestilling.id) }
-            } catch (e: Exception) {
-                logger.error { "Prosessering av bestilling ${bestilling.id.raw} feilet" }
-                logger.error(TEAM_LOGS_MARKER, e) { "Prosessering av $bestilling feilet" }
-                logger.error { "Prosessering av '${bestilling.genererSom}'-bestilling #${bestilling.id.raw} feilet" }
-                repository.markerBestillingProsesseringFeilet(tx, bestilling.id)
-                null
-            }
+            runCatching {
+                    // TODO: Er det innafor å la caller bestemme hele prosesserings-oppførselen?  Det gjør jo testing lettere, men...
+                    val res = process(tx, bestilling)
+                    repository.markerBestillingProsessert(tx, bestilling.id)
+                    metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, kilde = bestilling.mottattFra, feilet = false)
+                    res
+                }
+                .onFailure { e ->
+                    logger.error { "Prosessering av '${bestilling.genererSom}'-bestilling #${bestilling.id.raw} feilet" }
+                    logger.error(TEAM_LOGS_MARKER, e.cause) { "Prosessering av $bestilling feilet" }
+                    // Rull tilbake evt. database-endringer som ble gjort av `process` før ting feilet
+                    tx.connection.underlying.rollback(savepoint)
+
+                    metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, kilde = bestilling.mottattFra, feilet = true)
+                    repository.markerBestillingProsesseringFeilet(tx, bestilling.id)
+                }
         }
     }
 
-    fun antallUprosesserteBestillinger(rapportType: RapportType): Long = withTransaction {
-        repository.antallUprosesserteBestillinger(it, rapportType)
+    fun metrikkForUprosesserteBestillinger(): Iterable<Pair<Tags, Long>> = withTransaction {
+        repository.metrikkForUprosesserteBestillinger(it)
     }
 
-    fun lagreRapport(rapport: UlagretRapport): Rapport = withTransaction { tx ->
+    fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         repository.lagreRapport(tx, rapport).also { rapport ->
             val rapportEvent =
                 RapportAudit(
@@ -82,7 +95,6 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
             }
             repository.audit(tx, rapportEvent)
         }
-    }
 
     fun finnRapport(id: Rapport.Id): Rapport? = withTransaction { repository.finnRapport(it, id) }
 
@@ -123,7 +135,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
             }
     }
 
-    fun lagreVariant(variant: UlagretVariant): Variant = withTransaction { tx ->
+    fun lagreVariant(tx: TransactionalSession, variant: UlagretVariant): Variant =
         repository.lagreVariant(tx, variant).also {
             repository.audit(
                 tx,
@@ -138,7 +150,6 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
                 ),
             )
         }
-    }
 
     fun listVarianter(rapportId: Rapport.Id): List<Variant> = withTransaction { repository.listVarianter(it, rapportId) }
 

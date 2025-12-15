@@ -2,15 +2,17 @@ package no.nav.sokos.oppgjorsrapporter.metrics
 
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.request
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MultiGauge
 import io.micrometer.core.instrument.Tag
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import javax.jms.Message
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
 class Metrics(val registry: PrometheusMeterRegistry) {
     private val NAMESPACE = "sokos_oppgjorsrapporter"
 
     private val clientRequestsTeller =
-        io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_client_http_requests")
+        Counter.builder("${NAMESPACE}_client_http_requests")
             .description("Teller antall http requests til eksterne APIer")
             .withRegistry(registry)
 
@@ -27,25 +29,33 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .increment()
     }
 
-    private val mottatteJmsMeldingerTeller =
-        io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_received_jms_messages")
-            .description("Teller antall mottatte JMS-meldinger")
+    private val mottatteBestillingerTeller =
+        Counter.builder("${NAMESPACE}_bestilling_mottatt_count").description("Antall mottatte rapport-bestillinger").withRegistry(registry)
+    private val mottatteBestillingRaderTeller =
+        Counter.builder("${NAMESPACE}_bestilling_mottatt_rader")
+            .description("Antall mottatte rapport-bestillings-rader")
             .withRegistry(registry)
 
-    fun tellMottak(msg: Message, queueName: String) {
-        mottatteJmsMeldingerTeller
-            .withTags(
-                listOf(
-                    Tag.of("queue", queueName),
-                    Tag.of("class", msg.javaClass.canonicalName),
-                    Tag.of("type", msg.jmsType ?: "null"),
-                    Tag.of("destination", msg.jmsDestination?.toString() ?: "null"),
-                    Tag.of("reply_to", msg.jmsReplyTo?.toString() ?: "null"),
-                    Tag.of("priority", msg.jmsPriority.toString()),
-                )
-            )
-            .increment()
-    }
+    fun tellMottak(rapportType: RapportType, kilde: String, rader: Int) =
+        listOf(Tag.of("kilde", kilde), Tag.of("rapporttype", rapportType.name)).let { tags ->
+            mottatteBestillingerTeller.withTags(tags).increment()
+            mottatteBestillingRaderTeller.withTags(tags).increment(rader.toDouble())
+        }
+
+    private val uprosesserteBestillingerGauge =
+        MultiGauge.builder("${NAMESPACE}_bestilling_uprosessert_count")
+            .description("Antall uprosesserte bestillinger som finnes i databasen")
+            .register(registry)
+
+    fun oppdaterUprosesserteBestillinger(rows: Iterable<MultiGauge.Row<Number>>) = uprosesserteBestillingerGauge.register(rows, true)
+
+    private val prosesseringAvBestillingTeller =
+        Counter.builder("${NAMESPACE}_bestilling_prosessert_count")
+            .description("Antall forsøkte prosesseringer av rapport-bestillinger")
+            .withRegistry(registry)
+
+    fun tellBestillingsProsessering(rapportType: RapportType, kilde: String, feilet: Boolean) =
+        prosesseringAvBestillingTeller.withTags("rapporttype", rapportType.name, "kilde", kilde, "feilet", feilet.toString()).increment()
 
     fun <T> registerGauge(unprefixedName: String, tags: Iterable<Tag> = emptyList(), stateObject: T, valueFunction: (T) -> Double) =
         registry.gauge("${NAMESPACE}_$unprefixedName", tags, stateObject, valueFunction)

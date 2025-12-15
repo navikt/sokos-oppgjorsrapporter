@@ -87,7 +87,7 @@ class BestillingProsessorTest :
 
                     val sut: BestillingProsessor = application.dependencies.resolve()
 
-                    val rapport = sut.prosesserEnBestilling()!!
+                    val rapport = sut.prosesserEnBestilling()!!.getOrThrow()
                     rapport.antallRader shouldBe 10
                     rapport.antallUnderenheter shouldBe 3
                     rapport.antallPersoner shouldBe 5

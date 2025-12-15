@@ -16,6 +16,7 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
+import io.micrometer.core.instrument.MultiGauge
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
 import javax.sql.DataSource
@@ -27,6 +28,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.claimsFor
 import no.nav.sokos.oppgjorsrapporter.auth.getBruker
 import no.nav.sokos.oppgjorsrapporter.auth.getConsumerOrgnr
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import org.slf4j.Marker
 import org.slf4j.MarkerFactory
 import org.slf4j.event.Level
@@ -88,6 +90,7 @@ fun Routing.internalNaisRoutes(
     alivenessCheck: () -> Boolean = { applicationState.alive },
 ) {
     val metrics: Metrics by application.dependencies
+    val rapportService: RapportService by application.dependencies
 
     route("internal") {
         get("isAlive") {
@@ -103,6 +106,16 @@ fun Routing.internalNaisRoutes(
                     call.respondText(text = applicationState.readyErrors().joinToString("\n"), status = HttpStatusCode.InternalServerError)
             }
         }
-        get("metrics") { call.respondText(metrics.registry.scrape()) }
+        get("metrics") {
+            // For "vanlige" gauges kan man registrere en "valueFunction" som produserer gaugens numeriske verdi - men for MultiGauge ser
+            // det ikke ut til å finnes noe tilsvarende for å oppdatere alle multi-gaugens verdier (eller "rows") ved å kalle én funksjon.
+            // Vi gjør derfor slik "hent ut verdiene for alle dimensjoner av en multi-gauge i ett database-søk" her,°◊ og oppdaterer
+            // multi-gaugen med resultatene før registry-scraping rapporterer verdiene.
+            rapportService
+                .metrikkForUprosesserteBestillinger()
+                .map { (tags, verdi) -> MultiGauge.Row.of(tags, verdi) }
+                .let { rows -> metrics.oppdaterUprosesserteBestillinger(rows) }
+            call.respondText(metrics.registry.scrape())
+        }
     }
 }
