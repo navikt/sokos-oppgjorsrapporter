@@ -10,6 +10,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
 import io.restassured.RestAssured
+import io.restassured.specification.RequestSpecification
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -67,15 +68,18 @@ abstract class FullTestServer(protected val testClock: Clock) {
     protected fun tokenFromDefaultProvider(claims: Map<String, Any>? = null): String =
         mockOAuth2Server.tokenFromDefaultProvider(claims ?: defaultClaims)
 
-    open protected val defaultClaims: Map<String, Any> = emptyMap()
+    protected open val defaultClaims: Map<String, Any> = emptyMap()
 }
 
 class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T12:00:00Z"), ZoneOffset.UTC)) {
-    override protected val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf("group"))
+    protected override val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf("group"))
 
     val openApiValidationFilter = OpenApiValidationFilter("openapi/rapport-v1.yaml")
 
-    fun client(validationFilter: OpenApiValidationFilter? = openApiValidationFilter, authToken: String = tokenFromDefaultProvider()) =
+    fun client(
+        validationFilter: OpenApiValidationFilter? = openApiValidationFilter,
+        authToken: String = tokenFromDefaultProvider(),
+    ): RequestSpecification =
         RestAssured.given()
             .apply {
                 if (validationFilter != null) {

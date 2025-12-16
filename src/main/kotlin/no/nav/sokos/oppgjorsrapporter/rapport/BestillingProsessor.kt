@@ -89,7 +89,7 @@ class BestillingProsessor(
                 }
             rapportService.lagreRapport(tx, ulagret).also { rapport ->
                 VariantFormat.entries
-                    .map { format ->
+                    .mapNotNull { format ->
                         generator.invoke(format)?.let { bytes ->
                             rapportService.lagreVariant(
                                 tx,
@@ -102,7 +102,6 @@ class BestillingProsessor(
                             )
                         }
                     }
-                    .filterNotNull()
                     .forEach { variant -> metrics.tellGenerertRapportVariant(rapport.type, variant.format, variant.bytes) }
             }
         }

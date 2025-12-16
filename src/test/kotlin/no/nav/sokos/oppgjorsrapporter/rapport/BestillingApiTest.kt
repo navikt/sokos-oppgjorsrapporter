@@ -5,6 +5,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.restassured.RestAssured
+import io.restassured.specification.RequestSpecification
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -23,9 +24,9 @@ import org.junit.jupiter.api.Test
 import org.threeten.extra.MutableClock
 
 class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T12:00:00Z"), ZoneOffset.UTC)) {
-    override protected val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf("group"))
+    protected override val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf("group"))
 
-    fun client(authToken: String = tokenFromDefaultProvider()) =
+    fun client(authToken: String = tokenFromDefaultProvider()): RequestSpecification =
         RestAssured.given()
             .header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             .header(HttpHeaders.Authorization, "Bearer $authToken")
@@ -245,7 +246,7 @@ object NavneData {
             .trimIndent()
             .split("[*]?\\s+".toRegex())
             .map { it.trim() }
-            .filterNot { it.isBlank() || it.all { it.isDigit() } }
+            .filterNot { n -> n.isBlank() || n.all { it.isDigit() } }
             .toSet()
 
     val vanligeEtternavn =

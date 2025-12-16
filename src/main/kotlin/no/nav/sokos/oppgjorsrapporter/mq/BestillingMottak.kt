@@ -68,7 +68,7 @@ class BestillingMottak(private val consumers: List<MqConsumer>, private val rapp
 @Serializable
 data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>) {
     fun valider() {
-        listOf(
+        listOfNotNull(
                 // alle orgnr skal være gyldige
                 buildSet {
                         add(header.orgnr)
@@ -108,7 +108,6 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
                     .takeUnless { it == header.sumBelop }
                     ?.let { "header.sumBelop (${header.sumBelop}) stemmer ikke med summen av posteringer: $it" },
             )
-            .filter { it != null }
             .takeIf { it.isNotEmpty() }
             ?.let {
                 throw IllegalArgumentException(

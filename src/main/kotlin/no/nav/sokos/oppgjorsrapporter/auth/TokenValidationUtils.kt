@@ -26,8 +26,7 @@ fun TokenValidationContext.claimsFor(authType: AuthenticationType): JwtTokenClai
 fun TokenValidationContext.maskinportenAuthDetails() = runCatching {
     (this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("authorization_details") as? List<*>)
         ?.filterIsInstance<Map<*, *>>()
-        ?.filter { it["type"] == "urn:altinn:systemuser" }
-        ?.single() ?: throw BrukerIkkeFunnet()
+        ?.single { it["type"] == "urn:altinn:systemuser" } ?: throw BrukerIkkeFunnet()
 }
 
 fun TokenValidationContext.getSystembruker(): Result<Systembruker> =

@@ -206,8 +206,8 @@ data class InkluderOrgKriterier(
     override val inkluderArkiverte: Boolean,
 ) : DatoRangeKriterier {
     init {
-        require(inkluderte.isNotEmpty(), { "Mangler organisasjon" })
-        require(rapportTyper.isNotEmpty(), { "Mangler rapporttype" })
+        require(inkluderte.isNotEmpty()) { "Mangler organisasjon" }
+        require(rapportTyper.isNotEmpty()) { "Mangler rapporttype" }
     }
 }
 

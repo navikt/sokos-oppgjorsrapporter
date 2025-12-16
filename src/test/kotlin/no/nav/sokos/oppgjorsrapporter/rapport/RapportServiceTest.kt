@@ -183,7 +183,7 @@ class RapportServiceTest :
                         )
                     val rapport =
                         using(sessionOf(application.dependencies.resolve<DataSource>())) {
-                            it.transaction { sut.lagreRapport(it, ulagret) }
+                            it.transaction { tx -> sut.lagreRapport(tx, ulagret) }
                         }
                     rapport.id shouldBe Rapport.Id(2)
                     rapport.orgnr shouldBe ulagret.orgnr
