@@ -105,7 +105,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<AuthClient> {
                 DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.maskinportenProperties.altinn3BaseUrl)
             }
-            provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
+            provide<PdpService> { AltinnPdpService(config.securityProperties, resolve(), resolve()) }
         }
 
         val consumerKeys =

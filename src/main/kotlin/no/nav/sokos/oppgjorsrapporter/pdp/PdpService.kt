@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.pdp
 
+import io.micrometer.core.instrument.Timer
 import mu.KotlinLogging
 import no.nav.helsearbeidsgiver.altinn.pdp.PdpClient
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
@@ -7,13 +8,15 @@ import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.auth.pdpTokenGetter
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
+import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 
 interface PdpService {
     suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean
 }
 
-class AltinnPdpService(val securityProperties: PropertiesConfig.SecurityProperties, val authClient: AuthClient) : PdpService {
+class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, authClient: AuthClient, private val metrics: Metrics) :
+    PdpService {
     private val logger = KotlinLogging.logger {}
     val pdpClient =
         PdpClient(
@@ -22,16 +25,20 @@ class AltinnPdpService(val securityProperties: PropertiesConfig.SecurityProperti
             authClient.pdpTokenGetter(securityProperties.maskinportenProperties.pdpScope),
         )
 
-    override suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean = run {
+    override suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
         logger.info(TEAM_LOGS_MARKER) { "PDP orgnr: $orgnumre, systembruker: $systembruker, ressurs: $ressurs" }
-        runCatching {
+        val orgnummerSet = orgnumre.map { it.raw }.toSet()
+        val decisionCount = orgnummerSet.size.let { if (it >= 10) "10+" else it.toString() }
+        val sample = Timer.start(metrics.registry)
+        return runCatching {
                 pdpClient.systemHarRettighetForOrganisasjoner(
                     systembrukerId = systembruker.userId,
-                    orgnumre = orgnumre.map { it.raw }.toSet(),
+                    orgnumre = orgnummerSet,
                     ressurs = ressurs,
                 )
             }
             .getOrDefault(false) // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
+            .also { sample.stop(metrics.pdpKallTimer.withTags("decisioncount", decisionCount)) }
     }
 }
 

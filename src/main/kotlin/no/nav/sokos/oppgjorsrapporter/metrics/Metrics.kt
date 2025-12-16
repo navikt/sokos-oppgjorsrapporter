@@ -5,8 +5,10 @@ import io.ktor.client.statement.request
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MultiGauge
 import io.micrometer.core.instrument.Tag
+import io.micrometer.core.instrument.Timer
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.oppgjorsrapporter.rapport.VariantFormat
 
 class Metrics(val registry: PrometheusMeterRegistry) {
     private val NAMESPACE = "sokos_oppgjorsrapporter"
@@ -56,6 +58,15 @@ class Metrics(val registry: PrometheusMeterRegistry) {
 
     fun tellBestillingsProsessering(rapportType: RapportType, kilde: String, feilet: Boolean) =
         prosesseringAvBestillingTeller.withTags("rapporttype", rapportType.name, "kilde", kilde, "feilet", feilet.toString()).increment()
+
+    private val rapportBytesTeller =
+        Counter.builder("${NAMESPACE}_rapport_generert_bytes").description("Bytes med genererte rapporter").withRegistry(registry)
+
+    fun tellGenerertRapportVariant(rapportType: RapportType, format: VariantFormat, bytes: Long) =
+        rapportBytesTeller.withTags("rapporttype", rapportType.name, "format", format.contentType).increment(bytes.toDouble())
+
+    val pdpKallTimer =
+        Timer.builder("${NAMESPACE}_pdp_call_seconds").description("Hvor lang tid tar PDP-kallene våre").withRegistry(registry)
 
     fun <T> registerGauge(unprefixedName: String, tags: Iterable<Tag> = emptyList(), stateObject: T, valueFunction: (T) -> Double) =
         registry.gauge("${NAMESPACE}_$unprefixedName", tags, stateObject, valueFunction)

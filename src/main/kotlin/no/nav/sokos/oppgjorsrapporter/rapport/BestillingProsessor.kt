@@ -9,13 +9,15 @@ import kotlinx.io.bytestring.ByteString
 import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
+import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 
 class BestillingProsessor(
-    private val rapportService: RapportService,
     private val applicationState: ApplicationState,
+    private val metrics: Metrics,
     private val rapportGenerator: RapportGenerator,
+    private val rapportService: RapportService,
 ) {
     private val logger: KLogger = KotlinLogging.logger {}
 
@@ -86,19 +88,22 @@ class BestillingProsessor(
                     else -> error("Vet ikke hvordan bestilling av type ${bestilling.genererSom} skal prosesseres ennå")
                 }
             rapportService.lagreRapport(tx, ulagret).also { rapport ->
-                VariantFormat.entries.forEach { format ->
-                    generator.invoke(format)?.also { bytes ->
-                        rapportService.lagreVariant(
-                            tx,
-                            UlagretVariant(
-                                rapport.id,
-                                format,
-                                "${rapport.orgnr.raw}_${rapport.type.name}_${rapport.datoValutert}_${rapport.id.raw}.${format.name.lowercase()}",
-                                bytes,
-                            ),
-                        )
+                VariantFormat.entries
+                    .map { format ->
+                        generator.invoke(format)?.let { bytes ->
+                            rapportService.lagreVariant(
+                                tx,
+                                UlagretVariant(
+                                    rapport.id,
+                                    format,
+                                    "${rapport.orgnr.raw}_${rapport.type.name}_${rapport.datoValutert}_${rapport.id.raw}.${format.name.lowercase()}",
+                                    bytes,
+                                ),
+                            )
+                        }
                     }
-                }
+                    .filterNotNull()
+                    .forEach { variant -> metrics.tellGenerertRapportVariant(rapport.type, variant.format, variant.bytes) }
             }
         }
 }
