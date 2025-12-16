@@ -19,6 +19,7 @@ import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters.firstDayOfYear
 import java.time.temporal.TemporalAdjusters.lastDayOfYear
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.UseSerializers
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.*
@@ -248,13 +249,30 @@ fun Route.rapportApi() {
         PropertiesConfig.Profile.LOCAL ->
             authenticate(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name) {
                 post<ApiPaths.Bestilling, String> { bestilling, dokument ->
-                    (autentisertBruker() as? EntraId)?.let { bruker ->
-                        bestillingMottak.process(
-                            Melding("REST auth=${bruker.navIdent}", bestilling.rapportType, dokument),
-                            ekstraSjekk = true,
-                        )
-                        call.respond(HttpStatusCode.NoContent)
-                    } ?: call.respond(HttpStatusCode.Forbidden)
+                    when (val bruker = autentisertBruker()) {
+                        is EntraId ->
+                            runCatching {
+                                    bestillingMottak.process(
+                                        Melding("REST auth=${bruker.navIdent}", bestilling.rapportType, dokument),
+                                        ekstraSjekk = true,
+                                    )
+                                }
+                                .fold(
+                                    onSuccess = {
+                                        return@post call.respond(HttpStatusCode.NoContent)
+                                    },
+                                    onFailure = {
+                                        return@post when (it) {
+                                            is SerializationException ->
+                                                call.respond(HttpStatusCode.BadRequest, "Feil i bestilling: ${it.message}")
+                                            is IllegalArgumentException ->
+                                                call.respond(HttpStatusCode.BadRequest, it.message ?: "Bad Request")
+                                            else -> call.respond(HttpStatusCode.InternalServerError, it.message ?: "Internal Server Error")
+                                        }
+                                    },
+                                )
+                        else -> call.respond(HttpStatusCode.Forbidden)
+                    }
                 }
             }
         PropertiesConfig.Profile.PROD -> {}

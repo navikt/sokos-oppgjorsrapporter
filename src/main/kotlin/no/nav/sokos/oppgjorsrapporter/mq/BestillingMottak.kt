@@ -112,11 +112,11 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
             .takeIf { it.isNotEmpty() }
             ?.let {
                 throw IllegalArgumentException(
+                    """Bestillingen validerer ikke; fant følgende problemer:
+                        |${it.joinToString("\n|")}
                     """
-                    Bestillingen validerer ikke; fant følgende problemer:
-                    ${it.joinToString("\n")}
-                    """
-                        .trimIndent()
+                        .trimMargin()
+                        .trim()
                 )
             }
     }
