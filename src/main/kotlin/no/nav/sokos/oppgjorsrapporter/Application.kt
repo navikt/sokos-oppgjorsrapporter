@@ -30,7 +30,6 @@ import no.nav.sokos.oppgjorsrapporter.auth.DefaultAuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.NoOpAuthClient
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
-import no.nav.sokos.oppgjorsrapporter.config.DatabaseMigrator
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.applicationLifecycleConfig
@@ -38,6 +37,7 @@ import no.nav.sokos.oppgjorsrapporter.config.commonConfig
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
+import no.nav.sokos.oppgjorsrapporter.config.migrateDatabase
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
@@ -78,7 +78,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         // det fint om testene husker å lukke denne dataSourcen også når en testApplication avsluttes; se .cleanup() på
         // DataSource-registreringen under.
         val adminDataSource = createDataSource(config.postgresProperties.adminJdbcUrl)
-        DatabaseMigrator(adminDataSource, applicationState)
+        migrateDatabase(adminDataSource, applicationState)
         DatabaseConfig.init(config)
 
         provide { Metrics(PrometheusMeterRegistry(PrometheusConfig.DEFAULT)) }

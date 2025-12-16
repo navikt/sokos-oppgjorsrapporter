@@ -47,7 +47,7 @@ class BestillingMottak(private val consumers: List<MqConsumer>, private val rapp
                 else -> error("Vet ikke hvordan mottatte bestillinger for rapportType ${melding.rapportType} skal håndteres")
             }
         logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
-        rapportService.lagreBestilling(melding.kilde, melding.rapportType, melding.data)
+        val _ = rapportService.lagreBestilling(melding.kilde, melding.rapportType, melding.data)
         metrics.tellMottak(melding.rapportType, melding.kilde, rader)
     }
 

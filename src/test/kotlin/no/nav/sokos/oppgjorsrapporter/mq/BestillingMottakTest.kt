@@ -46,7 +46,11 @@ class BestillingMottakTest :
                         config.mqConfiguration,
                     )
 
-                    eventually(5.seconds) { verify(exactly = 1) { service.lagreBestilling(any(), any(), any()) } }
+                    eventually(5.seconds) {
+                        verify(exactly = 1) {
+                            val _ = service.lagreBestilling(any(), any(), any())
+                        }
+                    }
                 }
             }
         }

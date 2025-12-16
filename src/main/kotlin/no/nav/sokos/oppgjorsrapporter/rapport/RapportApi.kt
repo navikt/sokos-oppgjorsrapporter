@@ -215,19 +215,23 @@ fun Route.rapportApi() {
             val format =
                 VariantFormat.entries.find { f -> acceptItems.any { it.value == f.contentType } }
                     ?: return@get call.respond(HttpStatusCode.NotAcceptable)
-            rapportService.hentInnhold(
-                bruker = bruker,
-                rapportId = Rapport.Id(innhold.parent.id),
-                format = format,
-                harTilgang = { harTilgangTilRessurs(bruker, it.type, it.orgnr) },
-                process = { variant, innhold ->
-                    call.response.header(
-                        HttpHeaders.ContentDisposition,
-                        ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, variant.filnavn).toString(),
-                    )
-                    call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold.toByteArray() }
-                },
-            ) ?: call.respond(HttpStatusCode.NotFound)
+            val res =
+                rapportService.hentInnhold(
+                    bruker = bruker,
+                    rapportId = Rapport.Id(innhold.parent.id),
+                    format = format,
+                    harTilgang = { harTilgangTilRessurs(bruker, it.type, it.orgnr) },
+                    process = { variant, innhold ->
+                        call.response.header(
+                            HttpHeaders.ContentDisposition,
+                            ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, variant.filnavn).toString(),
+                        )
+                        call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold.toByteArray() }
+                    },
+                )
+            if (res == null) {
+                call.respond(HttpStatusCode.NotFound)
+            }
         }
     }
 

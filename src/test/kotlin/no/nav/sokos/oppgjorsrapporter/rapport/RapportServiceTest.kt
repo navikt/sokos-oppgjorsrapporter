@@ -63,7 +63,7 @@ class RapportServiceTest :
                     sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe null
 
                     val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
-                    sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
+                    val _ = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
                     sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 1
                 }
             }
@@ -92,7 +92,7 @@ class RapportServiceTest :
                     val sut: RapportService = application.dependencies.resolve()
                     val grunnlag = TestData.createRefusjonsRapportBestilling()
                     val dokument = RefusjonsRapportBestilling.json.encodeToString(grunnlag)
-                    sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
+                    val _ = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
                     val tags = Tags.of("rapporttype", "ref-arbg", "kilde", "test", "feilet", "false")
                     sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 1
 
@@ -378,13 +378,14 @@ class RapportServiceTest :
                     every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
                     val sut: RapportService = application.dependencies.resolve()
 
-                    sut.hentInnhold(
-                        bruker = EntraId("navIdent", listOf("group")),
-                        rapportId = Rapport.Id(4),
-                        format = VariantFormat.Pdf,
-                        harTilgang = { false },
-                    ) { _, _ ->
-                    }
+                    val _ =
+                        sut.hentInnhold(
+                            bruker = EntraId("navIdent", listOf("group")),
+                            rapportId = Rapport.Id(4),
+                            format = VariantFormat.Pdf,
+                            harTilgang = { false },
+                        ) { _, _ ->
+                        }
 
                     verify(exactly = 0) { mockedRepository.audit(any(), any()) }
                 }

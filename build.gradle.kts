@@ -124,6 +124,7 @@ kotlin {
         // Use Kotlin 2.2's experimental new defaulting rules for annotation targets - see
         // https://kotlinlang.org/docs/whatsnew22.html#new-defaulting-rules-for-use-site-annotation-targets
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        freeCompilerArgs.add("-Xreturn-value-checker=full")
     }
 }
 

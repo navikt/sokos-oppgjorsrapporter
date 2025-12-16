@@ -52,7 +52,7 @@ class RapportRepository(private val clock: Clock) {
             .asSingle
             .let { tx.run(it) }
 
-    fun markerBestillingProsesseringFeilet(tx: TransactionalSession, id: RapportBestilling.Id) =
+    fun markerBestillingProsesseringFeilet(tx: TransactionalSession, id: RapportBestilling.Id) {
         queryOf(
                 """
                 UPDATE rapport.rapport_bestilling
@@ -64,8 +64,9 @@ class RapportRepository(private val clock: Clock) {
             )
             .asUpdate
             .let { tx.run(it) }
+    }
 
-    fun markerBestillingProsessert(tx: TransactionalSession, id: RapportBestilling.Id) =
+    fun markerBestillingProsessert(tx: TransactionalSession, id: RapportBestilling.Id) {
         queryOf(
                 """
                 UPDATE rapport.rapport_bestilling
@@ -77,6 +78,7 @@ class RapportRepository(private val clock: Clock) {
             )
             .asUpdate
             .let { tx.run(it) }
+    }
 
     fun metrikkForUprosesserteBestillinger(tx: TransactionalSession): Iterable<Pair<Tags, Long>> =
         queryOf(
@@ -216,7 +218,7 @@ class RapportRepository(private val clock: Clock) {
             .asList
             .let { tx.run(it) }
 
-    fun markerRapportArkivert(tx: TransactionalSession, rapportId: Rapport.Id, skalArkiveres: Boolean): Int =
+    fun markerRapportArkivert(tx: TransactionalSession, rapportId: Rapport.Id, skalArkiveres: Boolean) {
         queryOf(
                 "UPDATE rapport.rapport SET arkivert = :arkivert WHERE id = :id",
                 mapOf(
@@ -231,6 +233,7 @@ class RapportRepository(private val clock: Clock) {
             )
             .asUpdate
             .let { tx.run(it) }
+    }
 
     fun lagreVariant(tx: TransactionalSession, variant: UlagretVariant): Variant =
         queryOf(
@@ -280,7 +283,7 @@ class RapportRepository(private val clock: Clock) {
             .asSingle
             .let { tx.run(it) }
 
-    fun audit(tx: TransactionalSession, data: RapportAudit) =
+    fun audit(tx: TransactionalSession, data: RapportAudit) {
         tx.execute(
             queryOf(
                 """
@@ -298,6 +301,7 @@ class RapportRepository(private val clock: Clock) {
                 ),
             )
         )
+    }
 
     fun hentAuditlog(tx: TransactionalSession, kriterier: RapportAuditKriterier): List<RapportAudit> =
         queryOf(
