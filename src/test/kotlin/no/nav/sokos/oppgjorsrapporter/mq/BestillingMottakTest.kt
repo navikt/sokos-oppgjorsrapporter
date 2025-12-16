@@ -9,17 +9,14 @@ import io.mockk.mockk
 import io.mockk.verify
 import javax.jms.Session
 import kotlin.time.Duration.Companion.seconds
-import mu.KLogger
-import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.config
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
-private val logger: KLogger = KotlinLogging.logger {}
-
-class RapportMottakTest :
+class BestillingMottakTest :
     FunSpec({
         context("test-container") {
             val dbContainer = TestContainer.postgres
@@ -36,14 +33,18 @@ class RapportMottakTest :
                     }
                 }
 
-            test("RapportMottak klarer å hente meldinger fra MQ") {
+            test("BestillingMottak klarer å hente meldinger fra MQ") {
                 val service: RapportService = mockk(relaxed = true)
                 TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
-                    // Send melding til køen RapportMottak leser fra, og verifiser at meldingen blir borte (og kanskje noe mer?)
+                    // Send melding til køen BestillingMottak leser fra, og verifiser at meldingen blir borte (og kanskje noe mer?)
                     val config = application.config()
                     val dokument = javaClass.getResource("/mq/refusjon_bestilling.json")?.readText()!!
 
-                    sendMelding(config.mqConfiguration.queues.find { it.key == "refusjon" }?.queueName!!, dokument, config.mqConfiguration)
+                    sendMelding(
+                        config.mqConfiguration.queues.find { it.rapportType == RapportType.`ref-arbg` }?.queueName!!,
+                        dokument,
+                        config.mqConfiguration,
+                    )
 
                     eventually(5.seconds) { verify(exactly = 1) { service.lagreBestilling(any(), any(), any()) } }
                 }

@@ -11,8 +11,9 @@ import kotlin.time.Duration.Companion.seconds
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
-class MqConsumer(private val config: PropertiesConfig.MqProperties, private val queueName: String) {
+class MqConsumer(private val config: PropertiesConfig.MqProperties, private val rapportType: RapportType, private val queueName: String) {
     private val logger = KotlinLogging.logger {}
 
     private lateinit var session: Session
@@ -48,7 +49,7 @@ class MqConsumer(private val config: PropertiesConfig.MqProperties, private val 
             return when (val message = mqConsumer.receive(0.5.seconds.inWholeMilliseconds)) {
                 is TextMessage ->
                     if (message.text != null) {
-                        Melding("MQ manager=${config.managerName} queue=$queueName", message.text)
+                        Melding("MQ manager=${config.managerName} queue=$queueName", rapportType, message.text)
                     } else {
                         logger.error { "Mottok TextMessage uten innhold; den vil bli ignorert (men hvorfor får vi den?)" }
                         null
@@ -69,7 +70,7 @@ class MqConsumer(private val config: PropertiesConfig.MqProperties, private val 
     }
 }
 
-data class Melding(val kilde: String, val data: String)
+data class Melding(val kilde: String, val rapportType: RapportType, val data: String)
 
 fun PropertiesConfig.MqProperties.connect(): Connection =
     this.let { cfg ->

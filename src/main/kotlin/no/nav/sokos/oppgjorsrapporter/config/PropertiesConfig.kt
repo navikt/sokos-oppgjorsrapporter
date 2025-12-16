@@ -3,6 +3,7 @@ package no.nav.sokos.oppgjorsrapporter.config
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.config.ApplicationConfigValue
 import java.net.URI
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
 fun configFrom(config: ApplicationConfig): PropertiesConfig.Configuration {
     val configSource = configSourceFrom(config)
@@ -85,14 +86,20 @@ object PropertiesConfig {
             port = source.get("mq.port").toInt(),
             managerName = source.get("mq.managerName"),
             channel = source.get("mq.channel"),
-            queues = listOf("refusjon").map { MqQueueProperties(source, it) },
+            queues = RapportType.entries.filter { it.configKey != null }.map { MqQueueProperties(source, it) },
             username = source.get("mq.username"),
             password = source.get("mq.password"),
         )
     }
 
-    data class MqQueueProperties(val key: String, val queueName: String) {
-        constructor(source: ConfigSource, key: String) : this(key, source.get("mq.$key.queueName"))
+    data class MqQueueProperties(val rapportType: RapportType, val queueName: String) {
+        constructor(source: ConfigSource, rapportType: RapportType) : this(rapportType, source.get("mq.${rapportType.configKey}.queueName"))
+
+        init {
+            require(rapportType.configKey != null) { "RapportType ${rapportType.name} har null configKey" }
+        }
+
+        val key: String = rapportType.configKey!!
     }
 
     data class InnholdGeneratorProperties(val eregBaseUrl: URI, val pdfGenBaseUrl: URI) {

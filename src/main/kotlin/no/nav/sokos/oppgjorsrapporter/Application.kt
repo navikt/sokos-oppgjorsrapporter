@@ -42,8 +42,8 @@ import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
+import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
-import no.nav.sokos.oppgjorsrapporter.mq.RapportMottak
 import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.LocalhostPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
@@ -108,7 +108,23 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
         }
 
-        if (config.mqConfiguration.enabled) {
+        val consumerKeys =
+            if (config.mqConfiguration.enabled) {
+                config.mqConfiguration.queues.map { inQueue ->
+                    val consumerKey = "mq.consumer.${inQueue.key}"
+                    provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.rapportType, inQueue.queueName) }
+                    consumerKey
+                }
+            } else {
+                emptyList()
+            }
+
+        provide {
+            val consumers: List<MqConsumer> = consumerKeys.map { resolve<MqConsumer>(it) }
+            BestillingMottak(consumers, resolve(), resolve())
+        }
+
+        if (consumerKeys.isNotEmpty()) {
             val mqErrors = mutableListOf<String>()
             applicationState.registerSystem("MQ") { mqErrors }
 
@@ -119,25 +135,17 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 applicationState.alive = false
             }
 
-            config.mqConfiguration.queues.forEach { inQueue ->
-                val consumerKey = "mq.consumer.${inQueue.key}"
-                provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.queueName) }
-
-                val mottakKey = "mq.mottak.${inQueue.key}"
-                provide(mottakKey) { RapportMottak(resolve(consumerKey), resolve(), resolve()) }
-
-                val job =
-                    with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                        launch { resolve<RapportMottak>(mottakKey).run() }
-                    }
-                provide("mq.consumejob.${inQueue.key}") { job }.cleanup { it.cancel() }
-            }
+            val job =
+                with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
+                    launch { resolve<BestillingMottak>().run() }
+                }
+            provide("job.${BestillingMottak::class.simpleName}") { job }.cleanup { it.cancel() }
         }
 
         provide(BestillingProsessor::class)
         val prosesserBestillingerJob =
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
-        provide("job.prosesserBestillinger") { prosesserBestillingerJob }.cleanup { it.cancel() }
+        provide("job.${BestillingProsessor::class.simpleName}") { prosesserBestillingerJob }.cleanup { it.cancel() }
     }
 
     // Flyttet ned hit, siden vi trenger en DataSource dersom install(MicrometerMetrics) skal inneholde PostgreSQLDatabaseMetrics

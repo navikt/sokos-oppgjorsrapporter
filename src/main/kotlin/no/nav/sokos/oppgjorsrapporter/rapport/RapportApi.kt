@@ -4,6 +4,7 @@ package no.nav.sokos.oppgjorsrapporter.rapport
 
 import io.ktor.http.*
 import io.ktor.resources.*
+import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.di.*
 import io.ktor.server.request.*
 import io.ktor.server.resources.*
@@ -21,7 +22,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.*
+import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
+import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
+import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
+import no.nav.sokos.oppgjorsrapporter.mq.Melding
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
@@ -33,14 +38,16 @@ private val logger = KotlinLogging.logger {}
 @Resource(path = "/api")
 class ApiPaths {
     @Resource("rapport/v1")
-    class Rapporter(val parent: ApiPaths = ApiPaths()) {
+    class Rapporter(@Suppress("unused") val parent: ApiPaths = ApiPaths()) {
         @Resource("{id}")
-        class Id(val parent: Rapporter = Rapporter(), val id: Long) {
+        class Id(@Suppress("unused") val parent: Rapporter = Rapporter(), val id: Long) {
             @Resource("innhold") class Innhold(val parent: Id)
 
-            @Resource("arkiver") class Arkiver(var parent: Id, val arkivert: Boolean = true)
+            @Resource("arkiver") class Arkiver(val parent: Id, val arkivert: Boolean = true)
         }
     }
+
+    @Resource("bestilling/v1") class Bestilling(@Suppress("unused") val parent: ApiPaths = ApiPaths(), val rapportType: RapportType)
 }
 
 object Api {
@@ -98,9 +105,11 @@ object Api {
 }
 
 fun Route.rapportApi() {
+    val bestillingMottak: BestillingMottak by application.dependencies
     val clock: Clock by application.dependencies
-    val rapportService: RapportService by application.dependencies
+    val config: PropertiesConfig.Configuration by application.dependencies
     val pdpService: PdpService by application.dependencies
+    val rapportService: RapportService by application.dependencies
 
     suspend fun harTilgangTilRessurs(bruker: AutentisertBruker, rapportType: RapportType, orgnr: OrgNr): Boolean {
         logger.debug(TEAM_LOGS_MARKER) { "Skal sjekke om $bruker har tilgang til $rapportType for $orgnr" }
@@ -232,6 +241,23 @@ fun Route.rapportApi() {
                 )
                 ?.let { call.respond(HttpStatusCode.NoContent) } ?: call.respond(HttpStatusCode.NotFound)
         }
+    }
+
+    when (config.applicationProperties.profile) {
+        PropertiesConfig.Profile.DEV,
+        PropertiesConfig.Profile.LOCAL ->
+            authenticate(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name) {
+                post<ApiPaths.Bestilling, String> { bestilling, dokument ->
+                    (autentisertBruker() as? EntraId)?.let { bruker ->
+                        bestillingMottak.process(
+                            Melding("REST auth=${bruker.navIdent}", bestilling.rapportType, dokument),
+                            ekstraSjekk = true,
+                        )
+                        call.respond(HttpStatusCode.NoContent)
+                    } ?: call.respond(HttpStatusCode.Forbidden)
+                }
+            }
+        PropertiesConfig.Profile.PROD -> {}
     }
 }
 
