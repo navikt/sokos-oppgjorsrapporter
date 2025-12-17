@@ -52,14 +52,20 @@ data class Organisasjon(val organisasjonsnummer: String, val navn: Navn, val adr
 
 @Serializable
 data class Adresse(
-    val adresselinje1: String,
+    val adresselinje1: String? = null,
     val adresselinje2: String? = null,
     val adresselinje3: String? = null,
-    val postnummer: String,
-    val poststed: String,
+    val postnummer: String? = null,
+    val poststed: String? = null,
 ) {
     override fun toString(): String {
-        val adresser = listOfNotNull(adresselinje1, adresselinje2, adresselinje3).filter { it.isNotBlank() }
-        return adresser.joinToString(", ") + ", $postnummer $poststed"
+        val adresser =
+            listOfNotNull(adresselinje1, adresselinje2, adresselinje3)
+                .filter { it.isNotBlank() }
+                .joinToString(", ")
+                .takeIf { it.isNotBlank() } ?: "Ingen adresse"
+        val sted =
+            listOfNotNull(postnummer, poststed).filter { it.isNotBlank() }.joinToString(" ").takeIf { it.isNotBlank() } ?: "Ukjent poststed"
+        return "$adresser, $sted"
     }
 }
