@@ -88,7 +88,7 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
                 antallUnderenheter = 1,
                 antallPersoner = 10,
                 antallPosteringer = 15,
-                ytelser = "abcdefg".asSequence().map { YtelseType(it, it.toString()) }.toList(),
+                ytelser = YtelseType.kjente.shuffled().take(7),
             )
         val dokument = RefusjonsRapportBestilling.json.encodeToString(bestilling)
         // Kommenter inn linja under og kjør denne test-metoden for å få et eksempel på et gyldig JSON-dokument
@@ -107,7 +107,48 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         assertThat(response.body().asString()).isEqualTo("")
     }
 
-    data class YtelseType(val kode: Char, val beskrivelse: String)
+    data class YtelseType(val kode: String, val beskrivelse: String) {
+        companion object {
+            // Funnet ved å kjøre denne spørringen mot databasen i dev (2025-12-17):
+            //
+            //  WITH as_jsonb AS (SELECT id,
+            //                         json(dokument)::jsonb AS jdok
+            //                  FROM rapport_bestilling
+            //                  WHERE dokument IS JSON),
+            //     extracted AS (SELECT id,
+            //                          jsonb_path_query(jdok, '$.datarec[*].kode')  AS kode,
+            //                          jsonb_path_query(jdok, '$.datarec[*].tekst') AS tekst
+            //                   FROM as_jsonb)
+            // SELECT DISTINCT kode, tekst
+            // FROM extracted
+            // ORDER BY kode;
+            val kjente =
+                listOf(
+                        "1" to "Foreldrepenger adopsjon",
+                        "2" to "Foreldrepenger f¦dsel",
+                        "2" to "Foreldrepenger renter",
+                        "3" to "Svangerskapspenger",
+                        "4" to "Sykepenger",
+                        "5" to "Forsikret i arb.giverper.",
+                        "6" to "Stort sykefrav{r",
+                        "7" to "Gravide",
+                        "8" to "Reisetilskudd",
+                        "9" to "Pleiepenger",
+                        "A" to "Trekk/Tilbakebetaling",
+                        "F" to "Foreldrepenger feriepenge",
+                        "H" to "Sykepenger feriepenger",
+                        "I" to "Forsikr arbg per feriepng",
+                        "J" to "Stort sykefrav{r feriepng",
+                        "K" to "Gravide feriepenger",
+                        "M" to "Pleie/oms/oppl{r feriepng",
+                        "M" to "Refusjon",
+                        "Y" to "Oppl{ringspenger",
+                        "Y" to "Refusjon",
+                        "Z" to "Omsorgspenger",
+                    )
+                    .map { YtelseType(it.first, it.second) }
+        }
+    }
 
     data class Person(val fnr: Fnr, val navn: String)
 
@@ -162,7 +203,7 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
             Data(
                 8020,
                 underenhetSeq.next().verdi,
-                ytelse.kode.toString(),
+                ytelse.kode,
                 ytelse.beskrivelse,
                 person.fnr.verdi,
                 person.navn,
