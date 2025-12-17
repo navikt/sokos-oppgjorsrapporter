@@ -102,6 +102,6 @@ spec:
     - name: MQ_REFUSJON_QUEUE
       value: QA.Q1_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG
     - name: EREG_URL
-      value: https://ereg-services-q1.intern.dev.nav.no/
+      value: https://ereg-services-q1.dev-fss-pub.nais.io/
     - name: PDF_GENERATOR_URL
       value: http://pengeflyt-pdfgen
