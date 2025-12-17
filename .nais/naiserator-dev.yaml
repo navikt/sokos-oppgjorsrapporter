@@ -92,6 +92,8 @@ spec:
     - secret: altinn-authorization-subscription
     - secret: sokos-oppgjorsrapporter-secrets
   env:
+    - name: APPLICATION_PROFILE
+      value: DEV
     - name: MQ_HOST
       value: mqls01.preprod.local
     - name: MQ_PORT
