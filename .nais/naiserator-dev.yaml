@@ -85,6 +85,7 @@ spec:
           namespace: nais-system
         - application: ereg-services-q1
           namespace: arbeidsforhold
+          cluster: dev-fss
         - application: pengeflyt-pdfgen
   envFrom:
     - secret: altinn-authorization-subscription
@@ -104,4 +105,3 @@ spec:
       value: https://ereg-services-q1.intern.dev.nav.no/
     - name: PDF_GENERATOR_URL
       value: http://pengeflyt-pdfgen
-
