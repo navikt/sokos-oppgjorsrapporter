@@ -80,6 +80,7 @@ spec:
         - host: mqls01.preprod.local
           ports:
             - port: 1413
+        - host: ereg-services-q1.dev-fss-pub.nais.io
       rules:
         - application: logging
           namespace: nais-system
