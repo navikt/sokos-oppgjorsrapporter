@@ -63,13 +63,6 @@ class BestillingProsessor(
                     RapportType.`ref-arbg` -> {
                         val refusjonsRapportBestilling =
                             RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
-                        // Er en separat val så vi får spesifisert "suspend" i typen.
-                        val generatorLambda: suspend (VariantFormat) -> ByteString? = { variant: VariantFormat ->
-                            when (variant) {
-                                VariantFormat.Pdf -> rapportGenerator.genererPdfInnhold(refusjonsRapportBestilling)
-                                VariantFormat.Csv -> rapportGenerator.genererCsvInnhold(refusjonsRapportBestilling)
-                            }
-                        }
                         Pair(
                             UlagretRapport(
                                 bestillingId = bestilling.id,
@@ -81,7 +74,12 @@ class BestillingProsessor(
                                 antallUnderenheter = refusjonsRapportBestilling.datarec.distinctBy { it.bedriftsnummer }.size,
                                 antallPersoner = refusjonsRapportBestilling.datarec.distinctBy { it.fnr }.size,
                             ),
-                            generatorLambda,
+                            suspend { variant: VariantFormat ->
+                                when (variant) {
+                                    VariantFormat.Pdf -> rapportGenerator.genererPdfInnhold(refusjonsRapportBestilling)
+                                    VariantFormat.Csv -> rapportGenerator.genererCsvInnhold(refusjonsRapportBestilling)
+                                }
+                            },
                         )
                     }
 
