@@ -93,6 +93,12 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .publishPercentileHistogram()
             .withRegistry(registry)
 
+    val rapportAlderVedForsteNedlasting =
+        DistributionSummary.builder("${NAMESPACE}_rapport_alder_ved_forste_nedlasting_seconds")
+            .description("Tid fra rapport-generering til første nedlasting av ekstern bruker")
+            .publishPercentileHistogram()
+            .withRegistry(registry)
+
     // Hjelpefunksjon for å kunne gjøre timing av suspend-funksjoner:
     suspend fun <T> coRecord(timer: (Result<T>) -> Timer, f: suspend () -> T): T =
         Timer.start(registry).let { sample -> runCatching { f() }.also { sample.stop(timer(it)) }.getOrThrow() }

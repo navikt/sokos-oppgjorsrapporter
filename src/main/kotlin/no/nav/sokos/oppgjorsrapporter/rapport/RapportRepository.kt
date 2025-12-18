@@ -7,6 +7,7 @@ import java.time.Instant
 import kotlinx.io.bytestring.ByteString
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
+import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 
 class RapportRepository(private val clock: Clock) {
     fun lagreBestilling(tx: TransactionalSession, bestilling: UlagretRapportBestilling): RapportBestilling =
@@ -234,6 +235,26 @@ class RapportRepository(private val clock: Clock) {
             .asUpdate
             .let { tx.run(it) }
     }
+
+    fun tidligereLastetNedAvEksternBruker(tx: TransactionalSession, id: Rapport.Id): Boolean =
+        queryOf(
+                """
+                SELECT CASE
+                           WHEN EXISTS (SELECT 1
+                                        FROM rapport.rapport_audit
+                                        WHERE rapport_id = :rapport_id
+                                          AND hendelse = :hendelse
+                                          AND brukernavn NOT LIKE '${EntraId.authType}:%')
+                               THEN TRUE
+                           ELSE FALSE
+                           END AS row_exists
+                """
+                    .trimIndent(),
+                mapOf("rapport_id" to id.raw, "hendelse" to RapportAudit.Hendelse.VARIANT_NEDLASTET.name),
+            )
+            .map { it.boolean("row_exists") }
+            .asSingle
+            .let { tx.run(it)!! }
 
     fun lagreVariant(tx: TransactionalSession, variant: UlagretVariant): Variant =
         queryOf(

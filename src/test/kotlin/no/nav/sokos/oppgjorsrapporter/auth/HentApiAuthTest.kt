@@ -112,6 +112,7 @@ class HentApiAuthTest : ApiTest() {
                 Variant(Variant.Id(1), resultat.id, VariantFormat.Pdf, "filnavn", TestData.minimalPdf.length.toLong()),
                 TestData.minimalPdf.encodeToByteString(),
             )
+        every { mockedRapportRepository.tidligereLastetNedAvEksternBruker(any(), any()) } returns false
         every { mockedRapportRepository.audit(any(), any()) } returns Unit
     }
 

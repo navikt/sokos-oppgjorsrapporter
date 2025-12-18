@@ -2,6 +2,7 @@ package no.nav.sokos.oppgjorsrapporter.rapport
 
 import io.micrometer.core.instrument.Tags
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import javax.sql.DataSource
 import kotlinx.coroutines.runBlocking
@@ -163,31 +164,46 @@ class RapportService(
         repository
             .finnRapport(tx, rapportId)
             ?.takeIf { harTilgang(it) }
-            ?.let { repository.hentInnhold(tx, rapportId, format) }
-            ?.let { (variant, innhold) ->
-                repository.audit(
-                    tx,
-                    RapportAudit(
-                        RapportAudit.Id(0),
-                        rapportId,
-                        variant.id,
-                        Instant.now(clock),
-                        RapportAudit.Hendelse.VARIANT_NEDLASTET,
-                        brukernavn(bruker),
-                        null,
-                    ),
-                )
-                process(variant, innhold)
+            ?.let { rapport ->
+                repository.hentInnhold(tx, rapportId, format)?.let { (variant, innhold) ->
+                    when (bruker) {
+                        // TODO: ID-porten-brukere skal, når vi får støtte for sånne, også regnes som eksterne her
+                        is Systembruker ->
+                            if (!repository.tidligereLastetNedAvEksternBruker(tx, rapportId)) {
+                                metrics.rapportAlderVedForsteNedlasting
+                                    .withTags("rapporttype", rapport.type.name, "format", variant.format.contentType)
+                                    .record(Duration.between(rapport.opprettet, Instant.now(clock)).toSeconds().toDouble())
+                            }
+                        is EntraId -> {}
+                    }
+                    repository.audit(
+                        tx,
+                        RapportAudit(
+                            RapportAudit.Id(0),
+                            rapportId,
+                            variant.id,
+                            Instant.now(clock),
+                            RapportAudit.Hendelse.VARIANT_NEDLASTET,
+                            brukernavn(bruker),
+                            null,
+                        ),
+                    )
+                    process(variant, innhold)
+                }
             }
     }
 
     fun hentAuditLog(kriterier: RapportAuditKriterier): List<RapportAudit> = withTransaction { repository.hentAuditlog(it, kriterier) }
 
     private fun brukernavn(bruker: AutentisertBruker) =
-        when (bruker) {
-            is EntraId -> "azure:NAVident=${bruker.navIdent}"
-            is Systembruker -> "systembruker:system=${bruker.systemId} org=${bruker.userOrg} id=${bruker.userId}"
-        }
+        listOf(
+                bruker.authType,
+                when (bruker) {
+                    is EntraId -> "NAVident=${bruker.navIdent}"
+                    is Systembruker -> "system=${bruker.systemId} userOrg=${bruker.userOrg.raw} id=${bruker.userId}"
+                },
+            )
+            .joinToString(":")
 }
 
 sealed interface RapportKriterier {
