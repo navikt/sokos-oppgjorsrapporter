@@ -1,6 +1,5 @@
 package no.nav.sokos.oppgjorsrapporter.pdp
 
-import io.micrometer.core.instrument.Timer
 import mu.KotlinLogging
 import no.nav.helsearbeidsgiver.altinn.pdp.PdpClient
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
@@ -28,17 +27,21 @@ class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, 
     override suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
         logger.info(TEAM_LOGS_MARKER) { "PDP orgnr: $orgnumre, systembruker: $systembruker, ressurs: $ressurs" }
         val orgnummerSet = orgnumre.map { it.raw }.toSet()
-        val decisionCount = orgnummerSet.size.let { if (it >= 10) "10+" else it.toString() }
-        val sample = Timer.start(metrics.registry)
+        val decisionCount = orgnummerSet.size
+        metrics.tellPdpKall(decisionCount)
         return runCatching {
-                pdpClient.systemHarRettighetForOrganisasjoner(
-                    systembrukerId = systembruker.userId,
-                    orgnumre = orgnummerSet,
-                    ressurs = ressurs,
-                )
+                metrics.coRecord({ result ->
+                    val countTag = decisionCount.let { if (it >= 10) "10+" else it.toString() }
+                    metrics.pdpKallTimer.withTags("decisioncount", countTag, "feilet", result.isFailure.toString())
+                }) {
+                    pdpClient.systemHarRettighetForOrganisasjoner(
+                        systembrukerId = systembruker.userId,
+                        orgnumre = orgnummerSet,
+                        ressurs = ressurs,
+                    )
+                }
             }
             .getOrDefault(false) // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
-            .also { sample.stop(metrics.pdpKallTimer.withTags("decisioncount", decisionCount)) }
     }
 }
 

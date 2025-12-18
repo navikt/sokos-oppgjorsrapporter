@@ -88,16 +88,29 @@ class BestillingProsessor(
             rapportService.lagreRapport(tx, ulagret).also { rapport ->
                 VariantFormat.entries
                     .mapNotNull { format ->
-                        generator.invoke(format)?.let { bytes ->
-                            rapportService.lagreVariant(
-                                tx,
-                                UlagretVariant(
-                                    rapport.id,
-                                    format,
-                                    "${rapport.orgnr.raw}_${rapport.type.name}_${rapport.datoValutert}_${rapport.id.raw}.${format.name.lowercase()}",
-                                    bytes,
-                                ),
+                        metrics.coRecord({ result ->
+                            metrics.rapportGenerertTimer.withTags(
+                                "format",
+                                format.contentType,
+                                "rapporttype",
+                                rapport.type.name,
+                                "kilde",
+                                bestilling.mottattFra,
+                                "feilet",
+                                result.isFailure.toString(),
                             )
+                        }) {
+                            generator.invoke(format)?.let { bytes ->
+                                rapportService.lagreVariant(
+                                    tx,
+                                    UlagretVariant(
+                                        rapport.id,
+                                        format,
+                                        "${rapport.orgnr.raw}_${rapport.type.name}_${rapport.datoValutert}_${rapport.id.raw}.${format.name.lowercase()}",
+                                        bytes,
+                                    ),
+                                )
+                            }
                         }
                     }
                     .forEach { variant -> metrics.tellGenerertRapportVariant(rapport.type, variant.format, variant.bytes) }

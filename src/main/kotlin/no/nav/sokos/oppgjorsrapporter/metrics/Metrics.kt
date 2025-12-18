@@ -59,15 +59,27 @@ class Metrics(val registry: PrometheusMeterRegistry) {
     fun tellBestillingsProsessering(rapportType: RapportType, kilde: String, feilet: Boolean) =
         prosesseringAvBestillingTeller.withTags("rapporttype", rapportType.name, "kilde", kilde, "feilet", feilet.toString()).increment()
 
+    val rapportGenerertTimer =
+        Timer.builder("${NAMESPACE}_rapport_generert_seconds").description("Tid brukt på å generere rapporter").withRegistry(registry)
+
     private val rapportBytesTeller =
         Counter.builder("${NAMESPACE}_rapport_generert_bytes").description("Bytes med genererte rapporter").withRegistry(registry)
 
     fun tellGenerertRapportVariant(rapportType: RapportType, format: VariantFormat, bytes: Long) =
         rapportBytesTeller.withTags("rapporttype", rapportType.name, "format", format.contentType).increment(bytes.toDouble())
 
-    val pdpKallTimer =
-        Timer.builder("${NAMESPACE}_pdp_call_seconds").description("Hvor lang tid tar PDP-kallene våre").withRegistry(registry)
+    private val pdpKallTeller = Counter.builder("${NAMESPACE}_pdp_call_count").description("Antall kall gjort mot PDP").register(registry)
+    private val pdpDecisionsTeller =
+        Counter.builder("${NAMESPACE}_pdp_decision_count").description("Antall avgjørelser PDP er bedt om").register(registry)
 
-    fun <T> registerGauge(unprefixedName: String, tags: Iterable<Tag> = emptyList(), stateObject: T, valueFunction: (T) -> Double) =
-        registry.gauge("${NAMESPACE}_$unprefixedName", tags, stateObject, valueFunction)
+    fun tellPdpKall(decisionCount: Int) {
+        pdpKallTeller.increment()
+        pdpDecisionsTeller.increment(decisionCount.toDouble())
+    }
+
+    val pdpKallTimer = Timer.builder("${NAMESPACE}_pdp_call_seconds").description("Tid brukt på PDP-kall").withRegistry(registry)
+
+    // Hjelpefunksjon for å kunne gjøre timing av suspend-funksjoner:
+    suspend fun <T> coRecord(timer: (Result<T>) -> Timer, f: suspend () -> T): T =
+        Timer.start(registry).let { sample -> runCatching { f() }.also { sample.stop(timer(it)) }.getOrThrow() }
 }
