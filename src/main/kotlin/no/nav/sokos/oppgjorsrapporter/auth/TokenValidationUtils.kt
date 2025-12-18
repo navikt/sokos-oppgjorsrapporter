@@ -70,8 +70,8 @@ internal class BrukerIkkeFunnet : RuntimeException() {
     override fun fillInStackTrace(): Throwable? = null
 }
 
-sealed interface AutentisertBruker
+sealed class AutentisertBruker(val authType: String)
 
-data class Systembruker(val userId: String, val userOrg: OrgNr, val systemId: String) : AutentisertBruker
+data class Systembruker(val userId: String, val userOrg: OrgNr, val systemId: String) : AutentisertBruker("systembruker")
 
-data class EntraId(val navIdent: String, val groups: List<String>) : AutentisertBruker
+data class EntraId(val navIdent: String, val groups: List<String>) : AutentisertBruker("entraid")

@@ -13,6 +13,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.application
+import io.micrometer.core.instrument.Tag
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -26,6 +27,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.*
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
+import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.Melding
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
@@ -109,6 +111,7 @@ fun Route.rapportApi() {
     val bestillingMottak: BestillingMottak by application.dependencies
     val clock: Clock by application.dependencies
     val config: PropertiesConfig.Configuration by application.dependencies
+    val metrics: Metrics by application.dependencies
     val pdpService: PdpService by application.dependencies
     val rapportService: RapportService by application.dependencies
 
@@ -195,6 +198,22 @@ fun Route.rapportApi() {
                     val key = r.orgnr to r.type
                     rapportTyperMedTilgang.contains(key)
                 }
+            metrics.rapportSokReturnertAntall
+                .withTags(
+                    listOf(
+                        Tag.of("auth_type", bruker.authType),
+                        Tag.of(
+                            "authorized_party",
+                            when (bruker) {
+                                is Systembruker -> tokenValidationContext().getConsumerOrgnr()
+                                is EntraId ->
+                                    (tokenValidationContext().claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name")
+                                        as? String) ?: "unknown"
+                            },
+                        ),
+                    )
+                )
+                .record(filtrerteRapporter.size.toDouble())
             call.respond(filtrerteRapporter.map(Api::RapportDTO))
         }
     }

@@ -62,22 +62,16 @@ fun Application.commonConfig() {
         timers { call, _ ->
             val validationCtx = call.principal<TokenValidationContextPrincipal>()?.context
             val bruker = validationCtx?.getBruker()?.getOrNull()
-            when (bruker) {
-                is Systembruker -> {
-                    tag("auth_type", "systembruker")
-                    tag("authorized_party", validationCtx.getConsumerOrgnr())
-                }
-                is EntraId -> {
-                    tag("auth_type", "entraid")
-                    val kallendeSystem =
+            tag("auth_type", bruker?.authType ?: "unknown")
+            tag(
+                "authorized_party",
+                when (bruker) {
+                    is Systembruker -> validationCtx.getConsumerOrgnr()
+                    is EntraId ->
                         (validationCtx.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name") as? String) ?: "unknown"
-                    tag("authorized_party", kallendeSystem)
-                }
-                null -> {
-                    tag("auth_type", "unknown")
-                    tag("authorized_party", "unknown")
-                }
-            }
+                    null -> "unknown"
+                },
+            )
         }
     }
 

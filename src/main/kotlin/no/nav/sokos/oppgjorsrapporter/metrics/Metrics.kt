@@ -3,6 +3,7 @@ package no.nav.sokos.oppgjorsrapporter.metrics
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.request
 import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.MultiGauge
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Timer
@@ -83,6 +84,12 @@ class Metrics(val registry: PrometheusMeterRegistry) {
     val pdpKallTimer =
         Timer.builder("${NAMESPACE}_pdp_call_seconds")
             .description("Tid brukt på PDP-kall")
+            .publishPercentileHistogram()
+            .withRegistry(registry)
+
+    val rapportSokReturnertAntall =
+        DistributionSummary.builder("${NAMESPACE}_api_rapport_sok_response_count")
+            .description("Antallet rapporter søke-APIet returnerer per respons")
             .publishPercentileHistogram()
             .withRegistry(registry)
 
