@@ -60,7 +60,10 @@ class Metrics(val registry: PrometheusMeterRegistry) {
         prosesseringAvBestillingTeller.withTags("rapporttype", rapportType.name, "kilde", kilde, "feilet", feilet.toString()).increment()
 
     val rapportGenerertTimer =
-        Timer.builder("${NAMESPACE}_rapport_generert_seconds").description("Tid brukt på å generere rapporter").withRegistry(registry)
+        Timer.builder("${NAMESPACE}_rapport_generert_seconds")
+            .description("Tid brukt på å generere rapporter")
+            .publishPercentileHistogram()
+            .withRegistry(registry)
 
     private val rapportBytesTeller =
         Counter.builder("${NAMESPACE}_rapport_generert_bytes").description("Bytes med genererte rapporter").withRegistry(registry)
@@ -77,7 +80,11 @@ class Metrics(val registry: PrometheusMeterRegistry) {
         pdpDecisionsTeller.increment(decisionCount.toDouble())
     }
 
-    val pdpKallTimer = Timer.builder("${NAMESPACE}_pdp_call_seconds").description("Tid brukt på PDP-kall").withRegistry(registry)
+    val pdpKallTimer =
+        Timer.builder("${NAMESPACE}_pdp_call_seconds")
+            .description("Tid brukt på PDP-kall")
+            .publishPercentileHistogram()
+            .withRegistry(registry)
 
     // Hjelpefunksjon for å kunne gjøre timing av suspend-funksjoner:
     suspend fun <T> coRecord(timer: (Result<T>) -> Timer, f: suspend () -> T): T =
