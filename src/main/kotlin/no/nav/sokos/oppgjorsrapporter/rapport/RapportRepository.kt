@@ -348,17 +348,23 @@ class RapportRepository(private val clock: Clock) {
     fun metrikkForRapporter(tx: TransactionalSession): Iterable<Pair<Tags, Long>> =
         queryOf(
                 """
-                WITH dimensjoner AS (SELECT *
-                                     FROM unnest(enum_range(null::rapport.rapport_type)) AS rapport_type,
-                                          (VALUES ('0'), ('1'), ('2+')) AS t1(antall_nedlastinger),
-                                          (VALUES ('entraid'), ('systembruker')) AS t2(auth_type)),
+                WITH rtyp AS (SELECT * FROM unnest(enum_range(null::rapport.rapport_type)) AS rapport_type),
+                     dim0 AS (SELECT *
+                              FROM rtyp,
+                              (VALUES ('0')) AS t1(antall_nedlastinger),
+                              (VALUES ('n/a')) AS t2(auth_type)),
+                     dimensjoner AS (SELECT *
+                                     FROM rtyp,
+                                          (VALUES ('1'), ('2+')) AS t1(antall_nedlastinger),
+                                          (VALUES ('entraid'), ('systembruker')) AS t2(auth_type)
+                                     UNION
+                                     SELECT * FROM dim0),
                      telling AS (SELECT r.id    AS rapport_id,
                                         r.type  AS rapport_type,
-                                        CASE COUNT(a.id)
-                                            WHEN 0 THEN '0'
-                                            WHEN 1 THEN '1'
-                                            ELSE '2+'
-                                            END AS antall_nedlastinger,
+                                        CASE WHEN COUNT(a.id) IS NULL THEN 'n/a'
+                                             WHEN COUNT(a.id) <= 1 THEN COUNT(a.id)::text
+                                             ELSE '2+'
+                                             END AS antall_nedlastinger,
                                         CASE
                                             WHEN brukernavn LIKE 'entraid:%'
                                               OR brukernavn LIKE 'azure:%' THEN 'entraid'
