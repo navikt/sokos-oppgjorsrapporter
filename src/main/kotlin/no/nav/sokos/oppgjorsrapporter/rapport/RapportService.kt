@@ -1,11 +1,13 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import io.micrometer.core.instrument.MultiGauge
+import io.micrometer.core.instrument.Tags
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import javax.sql.DataSource
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.bytestring.ByteString
-import kotliquery.Session
 import kotliquery.TransactionalSession
 import kotliquery.sessionOf
 import kotliquery.using
@@ -14,19 +16,32 @@ import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
+import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import org.threeten.extra.Interval
 import org.threeten.extra.LocalDateRange
 
 abstract class DatabaseSupport(private val dataSource: DataSource) {
-    protected fun <T> withSession(block: (Session) -> T): T = using(sessionOf(dataSource)) { block(it) }
-
-    protected fun <T> withTransaction(block: suspend (TransactionalSession) -> T): T = withSession {
-        it.transaction { tx -> runBlocking { block(tx) } }
-    }
+    protected fun <T> withTransaction(block: suspend (TransactionalSession) -> T): T =
+        // Vi har her med vilje ikke eksponert en `withSession`, siden kotliquery (til i alle fall v1.9.1) vil gjøre
+        // `Connection.autoCommit = true` på den underliggende connectioning - slik at kode a la:
+        //
+        //     sessionOf(dataSource) { session ->
+        //       session.transaction {
+        //         // Gjør noe transaksjonelt...
+        //       }
+        //       session.execute(query)
+        //     }
+        //
+        // vil kjøre `query` med autocommit påskrudd, selv om man har bedt dataSource om å lage connections med autoCommit avskrudd.
+        using(sessionOf(dataSource)) { it.transaction { tx -> runBlocking { block(tx) } } }
 }
 
-class RapportService(dataSource: DataSource, private val repository: RapportRepository, private val clock: Clock) :
-    DatabaseSupport(dataSource) {
+class RapportService(
+    dataSource: DataSource,
+    private val repository: RapportRepository,
+    private val clock: Clock,
+    private val metrics: Metrics,
+) : DatabaseSupport(dataSource) {
     private val logger = KotlinLogging.logger {}
     private val systemBrukernavn = "system"
 
@@ -37,25 +52,47 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
         )
     }
 
-    fun <T> prosesserBestilling(block: suspend (RapportBestilling) -> T): T? = withTransaction { tx ->
+    fun <T> prosesserBestilling(process: suspend (TransactionalSession, RapportBestilling) -> T): Result<T>? = withTransaction { tx ->
+        val savepoint = tx.connection.underlying.setSavepoint()
         repository.finnUprosessertBestilling(tx)?.let { bestilling ->
-            // TODO: Er det innafor å la caller bestemme hele prosesserings-oppførselen?  Det gjør jo testing lettere, men...
-            try {
-                block(bestilling).also { repository.markerBestillingProsessert(tx, bestilling.id) }
-            } catch (e: Exception) {
-                logger.error { "Prosessering av bestilling ${bestilling.id.raw} feilet" }
-                logger.error(TEAM_LOGS_MARKER, e) { "Prosessering av $bestilling feilet" }
-                repository.markerBestillingProsesseringFeilet(tx, bestilling.id)
-                null
-            }
+            runCatching {
+                    // TODO: Er det innafor å la caller bestemme hele prosesserings-oppførselen?  Det gjør jo testing lettere, men...
+                    val res = process(tx, bestilling)
+                    repository.markerBestillingProsessert(tx, bestilling.id)
+                    metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, kilde = bestilling.mottattFra, feilet = false)
+                    res
+                }
+                .onFailure { e ->
+                    logger.error { "Prosessering av '${bestilling.genererSom}'-bestilling #${bestilling.id.raw} feilet" }
+                    logger.error(TEAM_LOGS_MARKER, e.cause) { "Prosessering av $bestilling feilet" }
+                    // Rull tilbake evt. database-endringer som ble gjort av `process` før ting feilet
+                    tx.connection.underlying.rollback(savepoint)
+
+                    metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, kilde = bestilling.mottattFra, feilet = true)
+                    repository.markerBestillingProsesseringFeilet(tx, bestilling.id)
+                }
         }
     }
 
-    fun antallUprosesserteBestillinger(rapportType: RapportType): Long = withTransaction {
-        repository.antallUprosesserteBestillinger(it, rapportType)
+    fun metrikkForUprosesserteBestillinger(): Iterable<Pair<Tags, Long>> = withTransaction {
+        repository.metrikkForUprosesserteBestillinger(it)
     }
 
-    fun lagreRapport(rapport: UlagretRapport): Rapport = withTransaction { tx ->
+    fun oppdaterMultiGauges() {
+        withTransaction { tx ->
+            repository
+                .metrikkForUprosesserteBestillinger(tx)
+                .map { (tags, verdi) -> MultiGauge.Row.of(tags, verdi) }
+                .let { rows -> metrics.oppdaterUprosesserteBestillinger(rows) }
+
+            repository
+                .metrikkForRapporter(tx)
+                .map { (tags, verdi) -> MultiGauge.Row.of(tags, verdi) }
+                .let { rows -> metrics.oppdaterRapportData(rows) }
+        }
+    }
+
+    fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         repository.lagreRapport(tx, rapport).also { rapport ->
             val rapportEvent =
                 RapportAudit(
@@ -74,7 +111,6 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
             }
             repository.audit(tx, rapportEvent)
         }
-    }
 
     fun finnRapport(id: Rapport.Id): Rapport? = withTransaction { repository.finnRapport(it, id) }
 
@@ -115,7 +151,7 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
             }
     }
 
-    fun lagreVariant(variant: UlagretVariant): Variant = withTransaction { tx ->
+    fun lagreVariant(tx: TransactionalSession, variant: UlagretVariant): Variant =
         repository.lagreVariant(tx, variant).also {
             repository.audit(
                 tx,
@@ -130,7 +166,6 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
                 ),
             )
         }
-    }
 
     fun listVarianter(rapportId: Rapport.Id): List<Variant> = withTransaction { repository.listVarianter(it, rapportId) }
 
@@ -144,31 +179,46 @@ class RapportService(dataSource: DataSource, private val repository: RapportRepo
         repository
             .finnRapport(tx, rapportId)
             ?.takeIf { harTilgang(it) }
-            ?.let { repository.hentInnhold(tx, rapportId, format) }
-            ?.let { (variant, innhold) ->
-                repository.audit(
-                    tx,
-                    RapportAudit(
-                        RapportAudit.Id(0),
-                        rapportId,
-                        variant.id,
-                        Instant.now(clock),
-                        RapportAudit.Hendelse.VARIANT_NEDLASTET,
-                        brukernavn(bruker),
-                        null,
-                    ),
-                )
-                process(variant, innhold)
+            ?.let { rapport ->
+                repository.hentInnhold(tx, rapportId, format)?.let { (variant, innhold) ->
+                    when (bruker) {
+                        // TODO: ID-porten-brukere skal, når vi får støtte for sånne, også regnes som eksterne her
+                        is Systembruker ->
+                            if (!repository.tidligereLastetNedAvEksternBruker(tx, rapportId)) {
+                                metrics.rapportAlderVedForsteNedlasting
+                                    .withTags("rapporttype", rapport.type.name, "format", variant.format.contentType)
+                                    .record(Duration.between(rapport.opprettet, Instant.now(clock)).toSeconds().toDouble())
+                            }
+                        is EntraId -> {}
+                    }
+                    repository.audit(
+                        tx,
+                        RapportAudit(
+                            RapportAudit.Id(0),
+                            rapportId,
+                            variant.id,
+                            Instant.now(clock),
+                            RapportAudit.Hendelse.VARIANT_NEDLASTET,
+                            brukernavn(bruker),
+                            null,
+                        ),
+                    )
+                    process(variant, innhold)
+                }
             }
     }
 
     fun hentAuditLog(kriterier: RapportAuditKriterier): List<RapportAudit> = withTransaction { repository.hentAuditlog(it, kriterier) }
 
     private fun brukernavn(bruker: AutentisertBruker) =
-        when (bruker) {
-            is EntraId -> "azure:NAVident=${bruker.navIdent}"
-            is Systembruker -> "systembruker:system=${bruker.systemId} org=${bruker.userOrg} id=${bruker.userId}"
-        }
+        listOf(
+                bruker.authType,
+                when (bruker) {
+                    is EntraId -> "NAVident=${bruker.navIdent}"
+                    is Systembruker -> "system=${bruker.systemId} userOrg=${bruker.userOrg.raw} id=${bruker.userId}"
+                },
+            )
+            .joinToString(":")
 }
 
 sealed interface RapportKriterier {
@@ -187,8 +237,8 @@ data class InkluderOrgKriterier(
     override val inkluderArkiverte: Boolean,
 ) : DatoRangeKriterier {
     init {
-        require(inkluderte.isNotEmpty(), { "Mangler organisasjon" })
-        require(rapportTyper.isNotEmpty(), { "Mangler rapporttype" })
+        require(inkluderte.isNotEmpty()) { "Mangler organisasjon" }
+        require(rapportTyper.isNotEmpty()) { "Mangler rapporttype" }
     }
 }
 

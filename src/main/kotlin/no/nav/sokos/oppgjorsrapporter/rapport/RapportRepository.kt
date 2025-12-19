@@ -1,10 +1,13 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import io.micrometer.core.instrument.Tag
+import io.micrometer.core.instrument.Tags
 import java.time.Clock
 import java.time.Instant
 import kotlinx.io.bytestring.ByteString
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
+import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 
 class RapportRepository(private val clock: Clock) {
     fun lagreBestilling(tx: TransactionalSession, bestilling: UlagretRapportBestilling): RapportBestilling =
@@ -39,8 +42,8 @@ class RapportRepository(private val clock: Clock) {
                 FROM rapport.rapport_bestilling
                 WHERE ferdig_prosessert IS NULL
                   AND ( prosessering_feilet IS NULL OR
-                        prosessering_feilet + '1 day'::interval <= now() )
-                ORDER BY id
+                        prosessering_feilet + '10 minutes'::interval <= now() )
+                ORDER BY prosessering_feilet NULLS FIRST, id
                 LIMIT 1
                 FOR NO KEY UPDATE SKIP LOCKED
                 """
@@ -50,7 +53,7 @@ class RapportRepository(private val clock: Clock) {
             .asSingle
             .let { tx.run(it) }
 
-    fun markerBestillingProsesseringFeilet(tx: TransactionalSession, id: RapportBestilling.Id) =
+    fun markerBestillingProsesseringFeilet(tx: TransactionalSession, id: RapportBestilling.Id) {
         queryOf(
                 """
                 UPDATE rapport.rapport_bestilling
@@ -62,8 +65,9 @@ class RapportRepository(private val clock: Clock) {
             )
             .asUpdate
             .let { tx.run(it) }
+    }
 
-    fun markerBestillingProsessert(tx: TransactionalSession, id: RapportBestilling.Id) =
+    fun markerBestillingProsessert(tx: TransactionalSession, id: RapportBestilling.Id) {
         queryOf(
                 """
                 UPDATE rapport.rapport_bestilling
@@ -75,21 +79,7 @@ class RapportRepository(private val clock: Clock) {
             )
             .asUpdate
             .let { tx.run(it) }
-
-    fun antallUprosesserteBestillinger(tx: TransactionalSession, rapportType: RapportType): Long =
-        queryOf(
-                """
-                SELECT COUNT(*) AS antall
-                FROM rapport.rapport_bestilling
-                WHERE ferdig_prosessert IS NULL
-                  AND generer_som = CAST(:rapportType AS rapport.rapport_type)
-                """
-                    .trimIndent(),
-                mapOf("rapportType" to rapportType.name),
-            )
-            .map { it.long("antall") }
-            .asSingle
-            .let { tx.run(it)!! }
+    }
 
     fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         queryOf(
@@ -186,7 +176,7 @@ class RapportRepository(private val clock: Clock) {
             .asList
             .let { tx.run(it) }
 
-    fun markerRapportArkivert(tx: TransactionalSession, rapportId: Rapport.Id, skalArkiveres: Boolean): Int =
+    fun markerRapportArkivert(tx: TransactionalSession, rapportId: Rapport.Id, skalArkiveres: Boolean) {
         queryOf(
                 "UPDATE rapport.rapport SET arkivert = :arkivert WHERE id = :id",
                 mapOf(
@@ -201,6 +191,27 @@ class RapportRepository(private val clock: Clock) {
             )
             .asUpdate
             .let { tx.run(it) }
+    }
+
+    fun tidligereLastetNedAvEksternBruker(tx: TransactionalSession, id: Rapport.Id): Boolean =
+        queryOf(
+                """
+                SELECT CASE
+                           WHEN EXISTS (SELECT 1
+                                        FROM rapport.rapport_audit
+                                        WHERE rapport_id = :rapport_id
+                                          AND hendelse = :hendelse
+                                          AND brukernavn NOT LIKE '${EntraId.authType}:%')
+                               THEN TRUE
+                           ELSE FALSE
+                           END AS row_exists
+                """
+                    .trimIndent(),
+                mapOf("rapport_id" to id.raw, "hendelse" to RapportAudit.Hendelse.VARIANT_NEDLASTET.name),
+            )
+            .map { it.boolean("row_exists") }
+            .asSingle
+            .let { tx.run(it)!! }
 
     fun lagreVariant(tx: TransactionalSession, variant: UlagretVariant): Variant =
         queryOf(
@@ -250,7 +261,7 @@ class RapportRepository(private val clock: Clock) {
             .asSingle
             .let { tx.run(it) }
 
-    fun audit(tx: TransactionalSession, data: RapportAudit) =
+    fun audit(tx: TransactionalSession, data: RapportAudit) {
         tx.execute(
             queryOf(
                 """
@@ -268,6 +279,7 @@ class RapportRepository(private val clock: Clock) {
                 ),
             )
         )
+    }
 
     fun hentAuditlog(tx: TransactionalSession, kriterier: RapportAuditKriterier): List<RapportAudit> =
         queryOf(
@@ -287,6 +299,101 @@ class RapportRepository(private val clock: Clock) {
                 ),
             )
             .map { RapportAudit(it) }
+            .asList
+            .let { tx.run(it) }
+
+    fun metrikkForUprosesserteBestillinger(tx: TransactionalSession): Iterable<Pair<Tags, Long>> =
+        queryOf(
+                """
+                WITH kilder AS (SELECT DISTINCT CASE
+                                                    WHEN mottatt_fra LIKE 'REST%' THEN 'REST'
+                                                    ELSE mottatt_fra
+                                                    END AS kilde
+                                FROM rapport.rapport_bestilling),
+                     dimensjoner AS (SELECT rapport_type, k.kilde, har_feilet
+                                     FROM unnest(enum_range(null::rapport.rapport_type)) AS rapport_type,
+                                          kilder k,
+                                          (VALUES (true), (false)) AS t1(har_feilet)),
+                     uferdig AS (SELECT generer_som                     AS rapport_type,
+                                        CASE
+                                            WHEN mottatt_fra LIKE 'REST%' THEN 'REST'
+                                            ELSE mottatt_fra
+                                            END                         AS kilde,
+                                        prosessering_feilet IS NOT NULL AS har_feilet
+                                 FROM rapport.rapport_bestilling
+                                 WHERE ferdig_prosessert IS NULL)
+                SELECT COUNT(uferdig.*) AS antall,
+                       rapport_type,
+                       kilde,
+                       har_feilet
+                FROM dimensjoner d
+                         LEFT JOIN uferdig USING (rapport_type, kilde, har_feilet)
+                GROUP BY rapport_type, kilde, har_feilet
+                """
+                    .trimIndent()
+            )
+            .map {
+                Pair(
+                    Tags.of(
+                        Tag.of("rapporttype", it.string("rapport_type")),
+                        Tag.of("kilde", it.string("kilde")),
+                        Tag.of("feilet", it.boolean("har_feilet").toString()),
+                    ),
+                    it.long("antall"),
+                )
+            }
+            .asList
+            .let { tx.run(it) }
+
+    fun metrikkForRapporter(tx: TransactionalSession): Iterable<Pair<Tags, Long>> =
+        queryOf(
+                """
+                WITH rtyp AS (SELECT * FROM unnest(enum_range(null::rapport.rapport_type)) AS rapport_type),
+                     dim0 AS (SELECT *
+                              FROM rtyp,
+                                   (VALUES ('0')) AS t1(antall_nedlastinger),
+                                   (VALUES ('n/a')) AS t2(auth_type)),
+                     dimensjoner AS (SELECT *
+                                     FROM rtyp,
+                                          (VALUES ('1'), ('2+')) AS t1(antall_nedlastinger),
+                                          (VALUES ('entraid'), ('systembruker')) AS t2(auth_type)
+                                     UNION
+                                     SELECT *
+                                     FROM dim0),
+                     telling AS (SELECT r.id    AS rapport_id,
+                                        r.type  AS rapport_type,
+                                        CASE
+                                            WHEN COUNT(a.id) <= 1 THEN COUNT(a.id)::text
+                                            ELSE '2+'
+                                            END AS antall_nedlastinger,
+                                        CASE
+                                            WHEN brukernavn IS NULL THEN 'n/a'
+                                            WHEN brukernavn LIKE 'entraid:%'
+                                                OR brukernavn LIKE 'azure:%' THEN 'entraid'
+                                            ELSE 'systembruker'
+                                            END AS auth_type
+                                 FROM rapport.rapport r
+                                          LEFT JOIN rapport.rapport_audit a
+                                                    ON a.rapport_id = r.id AND a.hendelse = :hendelse
+                                 GROUP BY r.id, r.type, a.brukernavn)
+                SELECT COUNT(DISTINCT t.rapport_id) AS antall_rapporter, rapport_type, antall_nedlastinger, auth_type
+                FROM dimensjoner d
+                         LEFT JOIN telling t USING (rapport_type, antall_nedlastinger, auth_type)
+                GROUP BY (rapport_type, antall_nedlastinger, auth_type)
+                """
+                    .trimIndent(),
+                mapOf("hendelse" to RapportAudit.Hendelse.VARIANT_NEDLASTET.name),
+            )
+            .map {
+                Pair(
+                    Tags.of(
+                        Tag.of("rapporttype", it.string("rapport_type")),
+                        Tag.of("auth_type", it.string("auth_type")),
+                        Tag.of("nedlastinger", it.string("antall_nedlastinger")),
+                    ),
+                    it.long("antall_rapporter"),
+                )
+            }
             .asList
             .let { tx.run(it) }
 }

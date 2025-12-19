@@ -26,8 +26,7 @@ fun TokenValidationContext.claimsFor(authType: AuthenticationType): JwtTokenClai
 fun TokenValidationContext.maskinportenAuthDetails() = runCatching {
     (this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("authorization_details") as? List<*>)
         ?.filterIsInstance<Map<*, *>>()
-        ?.filter { it["type"] == "urn:altinn:systemuser" }
-        ?.single() ?: throw BrukerIkkeFunnet()
+        ?.single { it["type"] == "urn:altinn:systemuser" } ?: throw BrukerIkkeFunnet()
 }
 
 fun TokenValidationContext.getSystembruker(): Result<Systembruker> =
@@ -71,8 +70,22 @@ internal class BrukerIkkeFunnet : RuntimeException() {
     override fun fillInStackTrace(): Throwable? = null
 }
 
-sealed interface AutentisertBruker
+// Konstruksjonene under er nokså krøkkete, men er den beste Kotlin-måten jeg har funnet for å si: "Alle AutentisertBruker-subtyper må
+// `authType`" samtidig som "`authType` for en AutentisertBruker-subtype skal være mulig å få tak i uten å ha noen instans av typen".
+interface HasAuthType {
+    val authType: String
+}
 
-data class Systembruker(val userId: String, val userOrg: OrgNr, val systemId: String) : AutentisertBruker
+sealed interface AutentisertBruker : HasAuthType
 
-data class EntraId(val navIdent: String, val groups: List<String>) : AutentisertBruker
+data class Systembruker(val userId: String, val userOrg: OrgNr, val systemId: String) : AutentisertBruker, HasAuthType by Companion {
+    companion object : HasAuthType {
+        override val authType = "systembruker"
+    }
+}
+
+data class EntraId(val navIdent: String, val groups: List<String>) : AutentisertBruker, HasAuthType by Companion {
+    companion object : HasAuthType {
+        override val authType = "entraid"
+    }
+}

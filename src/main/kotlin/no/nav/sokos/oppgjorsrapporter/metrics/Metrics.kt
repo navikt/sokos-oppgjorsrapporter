@@ -2,72 +2,20 @@ package no.nav.sokos.oppgjorsrapporter.metrics
 
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.request
-import io.ktor.server.request.httpMethod
-import io.ktor.server.routing.RoutingContext
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.DistributionSummary
+import io.micrometer.core.instrument.MultiGauge
 import io.micrometer.core.instrument.Tag
+import io.micrometer.core.instrument.Timer
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import javax.jms.Message
-import no.nav.sokos.oppgjorsrapporter.auth.EntraId
-import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
-import no.nav.sokos.oppgjorsrapporter.auth.getBruker
-import no.nav.sokos.oppgjorsrapporter.auth.getConsumerOrgnr
-import no.nav.sokos.oppgjorsrapporter.auth.tokenValidationContext
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.oppgjorsrapporter.rapport.VariantFormat
 
 class Metrics(val registry: PrometheusMeterRegistry) {
     private val NAMESPACE = "sokos_oppgjorsrapporter"
 
-    private val apiRequestsTeller =
-        io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_http_requests")
-            .description("Teller antall http requests til Oppgjørsrapporter-API")
-            .withRegistry(registry)
-    private val apiRequestsSystembrukerTeller =
-        io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_http_requests_systembruker")
-            .description("Teller antall systembruker-autentiserte requests til Oppgjørsrapporter-API")
-            .withRegistry(registry)
-
-    suspend fun tellApiRequest(ctx: RoutingContext) {
-        val metode = ctx.call.request.httpMethod
-        // Finn "symbolsk" path til requesten, i.e. uten at path-parameters er byttet ut med sine faktiske verdier
-        val path =
-            ctx.call.pipelineCall.route
-                .toString()
-                // Her har vi noe som kan se slik ut: "/(authenticate INTERNE_BRUKERE_AZUREAD_JWT,
-                // API_INTEGRASJON_ALTINN_SYSTEMBRUKER)/api/rapport/v1/{id}/[inkluderArkiverte?]/[orgnr?]/(method:GET)"
-                .split("/")
-                .filterNot {
-                    // Dropp "(authenticate ...)"-segmenter og "(method:...)"-segmenter
-                    it.startsWith("(") ||
-                        // Dropp "[queryParam]"-segmenter
-                        it.startsWith("[")
-                }
-                .joinToString("/")
-        val ctx = ctx.tokenValidationContext()
-        val basisTags = listOf<Tag>(Tag.of("ressurs", path), Tag.of("metode", metode.value))
-        val auth =
-            ctx.getBruker()
-                .fold(
-                    {
-                        when (it) {
-                            is Systembruker -> {
-                                val systembrukerTags =
-                                    listOf(
-                                        Tag.of("systembruker_orgnr", it.userOrg.raw),
-                                        Tag.of("system_id", it.systemId),
-                                        Tag.of("consumer_orgnr", ctx.getConsumerOrgnr()),
-                                    )
-                                apiRequestsSystembrukerTeller.withTags(basisTags.plus(systembrukerTags)).increment()
-                                "systembruker"
-                            }
-                            is EntraId -> "azure"
-                        }
-                    },
-                    { "unknown" },
-                )
-        apiRequestsTeller.withTags(basisTags.plus(Tag.of("auth", auth))).increment()
-    }
-
     private val clientRequestsTeller =
-        io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_client_http_requests")
+        Counter.builder("${NAMESPACE}_client_http_requests")
             .description("Teller antall http requests til eksterne APIer")
             .withRegistry(registry)
 
@@ -84,26 +32,81 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .increment()
     }
 
-    private val mottatteJmsMeldingerTeller =
-        io.micrometer.core.instrument.Counter.builder("${NAMESPACE}_received_jms_messages")
-            .description("Teller antall mottatte JMS-meldinger")
+    private val mottatteBestillingerTeller =
+        Counter.builder("${NAMESPACE}_bestilling_mottatt_count").description("Antall mottatte rapport-bestillinger").withRegistry(registry)
+    private val mottatteBestillingRaderTeller =
+        Counter.builder("${NAMESPACE}_bestilling_mottatt_rader")
+            .description("Antall mottatte rapport-bestillings-rader")
             .withRegistry(registry)
 
-    fun tellMottak(msg: Message, queueName: String) {
-        mottatteJmsMeldingerTeller
-            .withTags(
-                listOf(
-                    Tag.of("queue", queueName),
-                    Tag.of("class", msg.javaClass.canonicalName),
-                    Tag.of("type", msg.jmsType ?: "null"),
-                    Tag.of("destination", msg.jmsDestination?.toString() ?: "null"),
-                    Tag.of("reply_to", msg.jmsReplyTo?.toString() ?: "null"),
-                    Tag.of("priority", msg.jmsPriority.toString()),
-                )
-            )
-            .increment()
+    fun tellMottak(rapportType: RapportType, kilde: String, rader: Int) =
+        listOf(Tag.of("kilde", kilde), Tag.of("rapporttype", rapportType.name)).let { tags ->
+            mottatteBestillingerTeller.withTags(tags).increment()
+            mottatteBestillingRaderTeller.withTags(tags).increment(rader.toDouble())
+        }
+
+    private val uprosesserteBestillingerGauge =
+        MultiGauge.builder("${NAMESPACE}_bestilling_uprosessert_count")
+            .description("Antall uprosesserte bestillinger som finnes i databasen")
+            .register(registry)
+
+    fun oppdaterUprosesserteBestillinger(rows: Iterable<MultiGauge.Row<Number>>) = uprosesserteBestillingerGauge.register(rows, true)
+
+    private val prosesseringAvBestillingTeller =
+        Counter.builder("${NAMESPACE}_bestilling_prosessert_count")
+            .description("Antall forsøkte prosesseringer av rapport-bestillinger")
+            .withRegistry(registry)
+
+    fun tellBestillingsProsessering(rapportType: RapportType, kilde: String, feilet: Boolean) =
+        prosesseringAvBestillingTeller.withTags("rapporttype", rapportType.name, "kilde", kilde, "feilet", feilet.toString()).increment()
+
+    val rapportGenerertTimer =
+        Timer.builder("${NAMESPACE}_rapport_generert_seconds")
+            .description("Tid brukt på å generere rapporter")
+            .publishPercentileHistogram()
+            .withRegistry(registry)
+
+    private val rapportBytesTeller =
+        Counter.builder("${NAMESPACE}_rapport_generert_bytes").description("Bytes med genererte rapporter").withRegistry(registry)
+
+    fun tellGenerertRapportVariant(rapportType: RapportType, format: VariantFormat, bytes: Long) =
+        rapportBytesTeller.withTags("rapporttype", rapportType.name, "format", format.contentType).increment(bytes.toDouble())
+
+    private val pdpKallTeller = Counter.builder("${NAMESPACE}_pdp_call_count").description("Antall kall gjort mot PDP").register(registry)
+    private val pdpDecisionsTeller =
+        Counter.builder("${NAMESPACE}_pdp_decision_count").description("Antall avgjørelser PDP er bedt om").register(registry)
+
+    fun tellPdpKall(decisionCount: Int) {
+        pdpKallTeller.increment()
+        pdpDecisionsTeller.increment(decisionCount.toDouble())
     }
 
-    fun <T> registerGauge(unprefixedName: String, tags: Iterable<Tag> = emptyList(), stateObject: T, valueFunction: (T) -> Double) =
-        registry.gauge("${NAMESPACE}_$unprefixedName", tags, stateObject, valueFunction)
+    val pdpKallTimer =
+        Timer.builder("${NAMESPACE}_pdp_call_seconds")
+            .description("Tid brukt på PDP-kall")
+            .publishPercentileHistogram()
+            .withRegistry(registry)
+
+    val rapportSokReturnertAntall =
+        DistributionSummary.builder("${NAMESPACE}_api_rapport_sok_response_count")
+            .description("Antallet rapporter søke-APIet returnerer per respons")
+            .publishPercentileHistogram()
+            .withRegistry(registry)
+
+    // Siden Timer måler i nanosekunder, brukes den ikke her; det kunne gitt overflow-trøbbel når summen av alle timer-registreringer når
+    // Long.MAX_VALUE (eller ~292.3 år)
+    val rapportAlderVedForsteNedlasting =
+        DistributionSummary.builder("${NAMESPACE}_rapport_alder_ved_forste_nedlasting_seconds")
+            .description("Tid fra rapport-generering til første nedlasting av ekstern bruker")
+            .publishPercentileHistogram()
+            .withRegistry(registry)
+
+    private val rapporterGauge =
+        MultiGauge.builder("${NAMESPACE}_rapport_count").description("Antall rapporter i databasen").register(registry)
+
+    fun oppdaterRapportData(rows: Iterable<MultiGauge.Row<Number>>) = rapporterGauge.register(rows, true)
+
+    // Hjelpefunksjon for å kunne gjøre timing av suspend-funksjoner:
+    suspend fun <T> coRecord(timer: (Result<T>) -> Timer, f: suspend () -> T): T =
+        Timer.start(registry).let { sample -> runCatching { f() }.also { sample.stop(timer(it)) }.getOrThrow() }
 }

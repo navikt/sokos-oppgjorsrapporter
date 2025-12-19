@@ -48,7 +48,3 @@ private class LocalDevConfigSource(config: ApplicationConfig) : ConfigSource {
 
     override fun get(key: String): String = fallback.get(key)
 }
-
-class MapOverridingConfigSource(private val overrides: Map<String, String>, private val fallback: ConfigSource) : ConfigSource {
-    override fun get(key: String): String = overrides[key] ?: fallback.get(key)
-}

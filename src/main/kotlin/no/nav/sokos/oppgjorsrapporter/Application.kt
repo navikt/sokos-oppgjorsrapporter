@@ -30,7 +30,6 @@ import no.nav.sokos.oppgjorsrapporter.auth.DefaultAuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.NoOpAuthClient
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
-import no.nav.sokos.oppgjorsrapporter.config.DatabaseMigrator
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.applicationLifecycleConfig
@@ -38,19 +37,19 @@ import no.nav.sokos.oppgjorsrapporter.config.commonConfig
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
+import no.nav.sokos.oppgjorsrapporter.config.migrateDatabase
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
+import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
-import no.nav.sokos.oppgjorsrapporter.mq.RapportMottak
 import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.LocalhostPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
-import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 
 private val logger = KotlinLogging.logger {}
@@ -79,7 +78,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         // det fint om testene husker å lukke denne dataSourcen også når en testApplication avsluttes; se .cleanup() på
         // DataSource-registreringen under.
         val adminDataSource = createDataSource(config.postgresProperties.adminJdbcUrl)
-        DatabaseMigrator(adminDataSource, applicationState)
+        migrateDatabase(adminDataSource, applicationState)
         DatabaseConfig.init(config)
 
         provide { Metrics(PrometheusMeterRegistry(PrometheusConfig.DEFAULT)) }
@@ -106,10 +105,26 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<AuthClient> {
                 DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.maskinportenProperties.altinn3BaseUrl)
             }
-            provide<PdpService> { AltinnPdpService(config.securityProperties, resolve()) }
+            provide<PdpService> { AltinnPdpService(config.securityProperties, resolve(), resolve()) }
         }
 
-        if (config.mqConfiguration.enabled) {
+        val consumerKeys =
+            if (config.mqConfiguration.enabled) {
+                config.mqConfiguration.queues.map { inQueue ->
+                    val consumerKey = "mq.consumer.${inQueue.key}"
+                    provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.rapportType, inQueue.queueName) }
+                    consumerKey
+                }
+            } else {
+                emptyList()
+            }
+
+        provide {
+            val consumers: List<MqConsumer> = consumerKeys.map { resolve<MqConsumer>(it) }
+            BestillingMottak(consumers, resolve(), resolve())
+        }
+
+        if (consumerKeys.isNotEmpty()) {
             val mqErrors = mutableListOf<String>()
             applicationState.registerSystem("MQ") { mqErrors }
 
@@ -120,25 +135,17 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 applicationState.alive = false
             }
 
-            config.mqConfiguration.queues.forEach { inQueue ->
-                val consumerKey = "mq.consumer.${inQueue.key}"
-                provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.queueName, resolve()) }
-
-                val mottakKey = "mq.mottak.${inQueue.key}"
-                provide(mottakKey) { RapportMottak(resolve(consumerKey), resolve()) }
-
-                val job =
-                    with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                        launch { resolve<RapportMottak>(mottakKey).run() }
-                    }
-                provide("mq.consumejob.${inQueue.key}") { job }.cleanup { it.cancel() }
-            }
+            val job =
+                with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
+                    launch { resolve<BestillingMottak>().run() }
+                }
+            provide("job.${BestillingMottak::class.simpleName}") { job }.cleanup { it.cancel() }
         }
 
         provide(BestillingProsessor::class)
         val prosesserBestillingerJob =
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
-        provide("job.prosesserBestillinger") { prosesserBestillingerJob }.cleanup { it.cancel() }
+        provide("job.${BestillingProsessor::class.simpleName}") { prosesserBestillingerJob }.cleanup { it.cancel() }
     }
 
     // Flyttet ned hit, siden vi trenger en DataSource dersom install(MicrometerMetrics) skal inneholde PostgreSQLDatabaseMetrics
@@ -148,15 +155,6 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
     // registered to this registry"-warnings.
     val metrics: Metrics by dependencies
     DatabaseConfig.dataSource.metricRegistry = metrics.registry
-
-    val rapportService: RapportService by dependencies
-    RapportType.entries.forEach { t ->
-        metrics.registerGauge(
-            "uprosessert_bestilling_${t.name}",
-            stateObject = rapportService,
-            valueFunction = { it.antallUprosesserteBestillinger(t).toDouble() },
-        )
-    }
 
     applicationLifecycleConfig()
     securityConfig()

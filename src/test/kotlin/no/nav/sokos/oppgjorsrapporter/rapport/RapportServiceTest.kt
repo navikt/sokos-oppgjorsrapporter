@@ -6,9 +6,12 @@ import io.kotest.matchers.collections.shouldContainInOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.date.before
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldInclude
 import io.ktor.server.plugins.di.*
+import io.micrometer.core.instrument.Tags
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -16,13 +19,17 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.*
 import java.util.concurrent.CountDownLatch
+import javax.sql.DataSource
 import kotlinx.coroutines.async
 import kotlinx.io.bytestring.append
 import kotlinx.io.bytestring.buildByteString
 import kotlinx.io.bytestring.encodeToByteString
+import kotliquery.sessionOf
+import kotliquery.using
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
@@ -53,11 +60,12 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
-                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 0
+                    val tags = Tags.of("rapporttype", "ref-arbg", "kilde", "test", "feilet", "false")
+                    sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe null
 
                     val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
-                    sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
-                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 1
+                    val _ = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
+                    sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 1
                 }
             }
 
@@ -68,12 +76,58 @@ class RapportServiceTest :
                     val sut: RapportService = application.dependencies.resolve()
                     val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
                     val bestilling = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
-                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 1
+                    val tags = Tags.of("rapporttype", "ref-arbg", "kilde", "test", "feilet", "false")
+                    sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 1
 
-                    val prosessertId = sut.prosesserBestilling { it.id }
+                    val prosessertId = sut.prosesserBestilling { _, bestilling -> bestilling.id }
 
-                    prosessertId shouldBe bestilling.id
-                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 0
+                    prosessertId?.getOrThrow() shouldBe bestilling.id
+                    sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 0
+                }
+            }
+
+            test("prosessering av en rapport-bestilling som feiler vil ikke etterlate rester i databasen") {
+                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+
+                    val sut: RapportService = application.dependencies.resolve()
+                    val grunnlag = TestData.createRefusjonsRapportBestilling()
+                    val dokument = RefusjonsRapportBestilling.json.encodeToString(grunnlag)
+                    val _ = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
+                    val tags = Tags.of("rapporttype", "ref-arbg", "kilde", "test", "feilet", "false")
+                    sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 1
+
+                    var tilbakeRulletRapport: Rapport? = null
+                    val resultat =
+                        sut.prosesserBestilling { tx, bestilling ->
+                            tilbakeRulletRapport =
+                                sut.lagreRapport(
+                                    tx,
+                                    UlagretRapport(
+                                        bestillingId = bestilling.id,
+                                        orgnr = OrgNr(grunnlag.header.orgnr),
+                                        type = bestilling.genererSom,
+                                        datoValutert = grunnlag.header.valutert,
+                                        bankkonto = Bankkonto(grunnlag.header.bankkonto),
+                                        antallRader = grunnlag.datarec.size,
+                                        antallUnderenheter = grunnlag.datarec.distinctBy { it.bedriftsnummer }.size,
+                                        antallPersoner = grunnlag.datarec.distinctBy { it.fnr }.size,
+                                    ),
+                                )
+                            throw IllegalStateException("Noe feilet")
+                        }
+
+                    resultat.shouldNotBeNull()
+                    resultat shouldBeFailure { it.message shouldInclude "Noe feilet" }
+
+                    tilbakeRulletRapport.shouldNotBeNull()
+                    sut.finnRapport(tilbakeRulletRapport.id) shouldBe null
+
+                    val metrikkerEtter = sut.metrikkForUprosesserteBestillinger()
+                    metrikkerEtter.find { it.first == tags }?.second shouldBe 0
+                    metrikkerEtter
+                        .find { it.first == Tags.of("rapporttype", "ref-arbg", "kilde", "test", "feilet", "true") }
+                        ?.second shouldBe 1
                 }
             }
 
@@ -84,30 +138,31 @@ class RapportServiceTest :
                     val sut: RapportService = application.dependencies.resolve()
                     val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
                     val bestilling = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
-                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 1
+                    val tags = Tags.of("rapporttype", "ref-arbg", "kilde", "test", "feilet", "false")
+                    sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 1
 
                     val laasTattLatch = CountDownLatch(1)
                     val prosesseringKanStarteLatch = CountDownLatch(1)
                     val prosesseringFerdigLatch = CountDownLatch(1)
 
                     val prosessertId = async {
-                        sut.prosesserBestilling {
+                        sut.prosesserBestilling { _, bestilling ->
                                 laasTattLatch.countDown()
                                 prosesseringKanStarteLatch.await()
-                                it.id
+                                bestilling.id
                             }
                             .also { prosesseringFerdigLatch.countDown() }
                     }
 
                     laasTattLatch.await()
-                    sut.prosesserBestilling { it.id } shouldBe null
-                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 1
+                    sut.prosesserBestilling { _, bestilling -> bestilling.id } shouldBe null
+                    sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 1
 
                     prosesseringKanStarteLatch.countDown()
                     prosesseringFerdigLatch.await()
 
-                    prosessertId.await() shouldBe bestilling.id
-                    sut.antallUprosesserteBestillinger(RapportType.`ref-arbg`) shouldBe 0
+                    prosessertId.await()?.getOrThrow() shouldBe bestilling.id
+                    sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 0
                 }
             }
 
@@ -127,7 +182,10 @@ class RapportServiceTest :
                             antallUnderenheter = 1,
                             antallPersoner = 2,
                         )
-                    val rapport = sut.lagreRapport(ulagret)
+                    val rapport =
+                        using(sessionOf(application.dependencies.resolve<DataSource>())) {
+                            it.transaction { tx -> sut.lagreRapport(tx, ulagret) }
+                        }
                     rapport.id shouldBe Rapport.Id(2)
                     rapport.orgnr shouldBe ulagret.orgnr
                     rapport.type shouldBe ulagret.type
@@ -190,7 +248,7 @@ class RapportServiceTest :
 
                     val arkivertLog = sut.hentAuditLog(RapportAuditKriterier(rapportId)).single()
                     arkivertLog.hendelse shouldBe RapportAudit.Hendelse.RAPPORT_ARKIVERT
-                    arkivertLog.brukernavn shouldBe "azure:NAVident=enBruker"
+                    arkivertLog.brukernavn shouldBe "entraid:NAVident=enBruker"
 
                     val dearkivert = sut.markerRapportArkivert(bruker, rapportId, { true }, false).shouldNotBeNull()
                     dearkivert.id shouldBe rapportId
@@ -198,7 +256,7 @@ class RapportServiceTest :
 
                     val dearkivertLog = sut.hentAuditLog(RapportAuditKriterier(rapportId)).filterNot { it == arkivertLog }.single()
                     dearkivertLog.hendelse shouldBe RapportAudit.Hendelse.RAPPORT_DEARKIVERT
-                    dearkivertLog.brukernavn shouldBe "azure:NAVident=enBruker"
+                    dearkivertLog.brukernavn shouldBe "entraid:NAVident=enBruker"
                 }
             }
 
@@ -258,17 +316,24 @@ class RapportServiceTest :
                             antallUnderenheter = 1,
                             antallPersoner = 2,
                         )
-                    val rapport = sut.lagreRapport(ulagretRapport)
+                    val variant =
+                        using(sessionOf(application.dependencies.resolve<DataSource>())) {
+                            it.transaction { tx ->
+                                val rapport = sut.lagreRapport(tx, ulagretRapport)
 
-                    val innhold = UUID.randomUUID().toString().encodeToByteString()
-                    val ulagretVariant = UlagretVariant(rapport.id, VariantFormat.Pdf, rapport.filnavn(VariantFormat.Pdf), innhold)
+                                val innhold = UUID.randomUUID().toString().encodeToByteString()
+                                val ulagretVariant =
+                                    UlagretVariant(rapport.id, VariantFormat.Pdf, rapport.filnavn(VariantFormat.Pdf), innhold)
 
-                    val variant = sut.lagreVariant(ulagretVariant)
-                    variant.id shouldBe Variant.Id(3)
-                    variant.rapportId shouldBe rapport.id
-                    variant.format shouldBe VariantFormat.Pdf
-                    variant.filnavn shouldBe "39487569_ref-arbg_2023-07-14.pdf"
-                    variant.bytes shouldBe 36
+                                val variant = sut.lagreVariant(tx, ulagretVariant)
+                                variant.id shouldBe Variant.Id(3)
+                                variant.rapportId shouldBe rapport.id
+                                variant.format shouldBe VariantFormat.Pdf
+                                variant.filnavn shouldBe "39487569_ref-arbg_2023-07-14.pdf"
+                                variant.bytes shouldBe 36
+                                variant
+                            }
+                        }
 
                     val auditLog = sut.hentAuditLog(RapportAuditKriterier(variant.rapportId, variantId = variant.id)).single()
                     auditLog.hendelse shouldBe RapportAudit.Hendelse.VARIANT_OPPRETTET
@@ -303,7 +368,38 @@ class RapportServiceTest :
                     auditLog.rapportId shouldBe rapportId
                     auditLog.variantId shouldBe Variant.Id(7)
                     auditLog.hendelse shouldBe RapportAudit.Hendelse.VARIANT_NEDLASTET
-                    auditLog.brukernavn shouldBe "azure:NAVident=navIdent"
+                    auditLog.brukernavn shouldBe "entraid:NAVident=navIdent"
+                }
+            }
+
+            test("systembruker kan hente innholdet fra en variant") {
+                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                    TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+
+                    val sut: RapportService = application.dependencies.resolve()
+                    val rapportId = Rapport.Id(4)
+                    val innhold =
+                        sut.hentInnhold(
+                            bruker = Systembruker("userId", OrgNr("123456789"), "systemId"),
+                            rapportId = rapportId,
+                            format = VariantFormat.Pdf,
+                            harTilgang = { true },
+                        ) { _, data ->
+                            data
+                        }
+
+                    val expected = buildByteString {
+                        append("PDF".encodeToByteString())
+                        append(0.toByte())
+                        append("4".encodeToByteString())
+                    }
+                    innhold shouldBe expected
+
+                    val auditLog = sut.hentAuditLog(RapportAuditKriterier(rapportId)).single()
+                    auditLog.rapportId shouldBe rapportId
+                    auditLog.variantId shouldBe Variant.Id(7)
+                    auditLog.hendelse shouldBe RapportAudit.Hendelse.VARIANT_NEDLASTET
+                    auditLog.brukernavn shouldBe "systembruker:system=systemId userOrg=123456789 id=userId"
                 }
             }
 
@@ -314,13 +410,14 @@ class RapportServiceTest :
                     every { mockedRepository.hentInnhold(any(), any(), any()) } answers { callOriginal() }
                     val sut: RapportService = application.dependencies.resolve()
 
-                    sut.hentInnhold(
-                        bruker = EntraId("navIdent", listOf("group")),
-                        rapportId = Rapport.Id(4),
-                        format = VariantFormat.Pdf,
-                        harTilgang = { false },
-                    ) { _, _ ->
-                    }
+                    val _ =
+                        sut.hentInnhold(
+                            bruker = EntraId("navIdent", listOf("group")),
+                            rapportId = Rapport.Id(4),
+                            format = VariantFormat.Pdf,
+                            harTilgang = { false },
+                        ) { _, _ ->
+                        }
 
                     verify(exactly = 0) { mockedRepository.audit(any(), any()) }
                 }

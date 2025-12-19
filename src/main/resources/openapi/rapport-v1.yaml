@@ -168,7 +168,18 @@ components:
             Returner kun rapporter utstedt til det angitte organisasjonsnummeret.
 
             Hvis `orgnr` ikke er angitt, avgjøres hvilke orgnummer det skal returneres rapporter for av hvordan brukeren er autentisert.
-            For systembruker-autentisering brukes orgnummeret systembrukeren agerer på vegne av ('systemuser_org').
+            
+            For systembruker-autentisering brukes da i stedet orgnummeret systembrukeren er laget for ('systemuser_org').
+            
+            #### OBS: agent-systembruker må huske å angi `orgnr`
+            For "vanlig" systembruker vil det kunne fungere greit å bruke orgnummer fra systembruker-tokenet, mens for
+            "agent"-systembrukere vil det neppe gi ønsket oppførsel (da disse systembrukerne er laget for f.eks. en regnskapsfører som
+            agerer på vegne av sine kunder - og da er det jo sjelden lista med rapporter for regnskapsfører-virksomheten man er
+            interessert i).
+            
+            Det er dessverre ikke mulig å se forskjell på autentiseringstokenet mellom disse to typene systembrukere.
+            
+            Dette betyr at man **alltid må** huske å angi `orgnr` i request-body dersom man bruker agent-systembruker.
           type: string
           example: "983887457"
           nullable: true

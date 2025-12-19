@@ -56,6 +56,8 @@ class EregServiceTest {
 
         val eregService = EregService(URI("http://dummy-ereg-url"), mockHttpClient, mockk<Metrics>(relaxed = true))
 
-        assertThrows<RuntimeException> { eregService.hentOrganisasjonsNavnOgAdresse("990983666") }
+        assertThrows<RuntimeException> {
+            val _ = eregService.hentOrganisasjonsNavnOgAdresse("990983666")
+        }
     }
 }

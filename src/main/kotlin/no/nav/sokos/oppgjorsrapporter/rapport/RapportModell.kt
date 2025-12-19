@@ -15,10 +15,10 @@ import kotliquery.Row
 
 @Serializable @JvmInline value class Bankkonto(val raw: String)
 
-enum class RapportType(val altinnRessurs: String) {
-    @JsonNames("K27") `ref-arbg`("nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver"),
-    @JsonNames("T12") `trekk-hend`("Ikke definert ennå"),
-    @JsonNames("T14") `trekk-kred`("Ikke definert ennå"),
+enum class RapportType(val altinnRessurs: String, val configKey: String?) {
+    @JsonNames("K27") `ref-arbg`("nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver", "refusjon"),
+    @JsonNames("T12") `trekk-hend`("Ikke definert ennå", null),
+    @JsonNames("T14") `trekk-kred`("Ikke definert ennå", null),
 }
 
 sealed interface RapportBestillingFelter {

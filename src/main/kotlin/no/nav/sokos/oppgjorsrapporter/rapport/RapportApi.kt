@@ -4,6 +4,7 @@ package no.nav.sokos.oppgjorsrapporter.rapport
 
 import io.ktor.http.*
 import io.ktor.resources.*
+import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.di.*
 import io.ktor.server.request.*
 import io.ktor.server.resources.*
@@ -12,17 +13,23 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.application
+import io.micrometer.core.instrument.Tag
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters.firstDayOfYear
 import java.time.temporal.TemporalAdjusters.lastDayOfYear
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.UseSerializers
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.*
+import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
+import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
+import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
+import no.nav.sokos.oppgjorsrapporter.mq.Melding
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
@@ -34,14 +41,16 @@ private val logger = KotlinLogging.logger {}
 @Resource(path = "/api")
 class ApiPaths {
     @Resource("rapport/v1")
-    class Rapporter(val parent: ApiPaths = ApiPaths()) {
+    class Rapporter(@Suppress("unused") val parent: ApiPaths = ApiPaths()) {
         @Resource("{id}")
-        class Id(val parent: Rapporter = Rapporter(), val id: Long) {
+        class Id(@Suppress("unused") val parent: Rapporter = Rapporter(), val id: Long) {
             @Resource("innhold") class Innhold(val parent: Id)
 
-            @Resource("arkiver") class Arkiver(var parent: Id, val arkivert: Boolean = true)
+            @Resource("arkiver") class Arkiver(val parent: Id, val arkivert: Boolean = true)
         }
     }
+
+    @Resource("bestilling/v1") class Bestilling(@Suppress("unused") val parent: ApiPaths = ApiPaths(), val rapportType: RapportType)
 }
 
 object Api {
@@ -99,10 +108,12 @@ object Api {
 }
 
 fun Route.rapportApi() {
+    val bestillingMottak: BestillingMottak by application.dependencies
     val clock: Clock by application.dependencies
-    val rapportService: RapportService by application.dependencies
-    val pdpService: PdpService by application.dependencies
+    val config: PropertiesConfig.Configuration by application.dependencies
     val metrics: Metrics by application.dependencies
+    val pdpService: PdpService by application.dependencies
+    val rapportService: RapportService by application.dependencies
 
     suspend fun harTilgangTilRessurs(bruker: AutentisertBruker, rapportType: RapportType, orgnr: OrgNr): Boolean {
         logger.debug(TEAM_LOGS_MARKER) { "Skal sjekke om $bruker har tilgang til $rapportType for $orgnr" }
@@ -126,7 +137,6 @@ fun Route.rapportApi() {
 
     post<ApiPaths.Rapporter, Api.RapportListeRequest> { _, reqBody ->
         // TODO: Listen med tilgjengelige rapporter kan bli lang; trenger vi å lage noe slags paging?
-        metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
             val datoRange =
                 try {
@@ -188,12 +198,27 @@ fun Route.rapportApi() {
                     val key = r.orgnr to r.type
                     rapportTyperMedTilgang.contains(key)
                 }
+            metrics.rapportSokReturnertAntall
+                .withTags(
+                    listOf(
+                        Tag.of("auth_type", bruker.authType),
+                        Tag.of(
+                            "authorized_party",
+                            when (bruker) {
+                                is Systembruker -> tokenValidationContext().getConsumerOrgnr()
+                                is EntraId ->
+                                    (tokenValidationContext().claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name")
+                                        as? String) ?: "unknown"
+                            },
+                        ),
+                    )
+                )
+                .record(filtrerteRapporter.size.toDouble())
             call.respond(filtrerteRapporter.map(Api::RapportDTO))
         }
     }
 
     get<ApiPaths.Rapporter.Id> { rapport ->
-        metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
             val rapport = rapportService.finnRapport(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
             if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
@@ -204,30 +229,32 @@ fun Route.rapportApi() {
     }
 
     get<ApiPaths.Rapporter.Id.Innhold> { innhold ->
-        metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
             val acceptItems = call.request.acceptItems()
             val format =
                 VariantFormat.entries.find { f -> acceptItems.any { it.value == f.contentType } }
                     ?: return@get call.respond(HttpStatusCode.NotAcceptable)
-            rapportService.hentInnhold(
-                bruker = bruker,
-                rapportId = Rapport.Id(innhold.parent.id),
-                format = format,
-                harTilgang = { harTilgangTilRessurs(bruker, it.type, it.orgnr) },
-                process = { variant, innhold ->
-                    call.response.header(
-                        HttpHeaders.ContentDisposition,
-                        ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, variant.filnavn).toString(),
-                    )
-                    call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold.toByteArray() }
-                },
-            ) ?: call.respond(HttpStatusCode.NotFound)
+            val res =
+                rapportService.hentInnhold(
+                    bruker = bruker,
+                    rapportId = Rapport.Id(innhold.parent.id),
+                    format = format,
+                    harTilgang = { harTilgangTilRessurs(bruker, it.type, it.orgnr) },
+                    process = { variant, innhold ->
+                        call.response.header(
+                            HttpHeaders.ContentDisposition,
+                            ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, variant.filnavn).toString(),
+                        )
+                        call.respondBytes(ContentType.parse(format.contentType), HttpStatusCode.OK) { innhold.toByteArray() }
+                    },
+                )
+            if (res == null) {
+                call.respond(HttpStatusCode.NotFound)
+            }
         }
     }
 
     put<ApiPaths.Rapporter.Id.Arkiver> { arkiver ->
-        metrics.tellApiRequest(this)
         autentisertBruker().let { bruker ->
             rapportService
                 .markerRapportArkivert(
@@ -238,6 +265,40 @@ fun Route.rapportApi() {
                 )
                 ?.let { call.respond(HttpStatusCode.NoContent) } ?: call.respond(HttpStatusCode.NotFound)
         }
+    }
+
+    when (config.applicationProperties.profile) {
+        PropertiesConfig.Profile.DEV,
+        PropertiesConfig.Profile.LOCAL ->
+            authenticate(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name) {
+                post<ApiPaths.Bestilling, String> { bestilling, dokument ->
+                    when (val bruker = autentisertBruker()) {
+                        is EntraId ->
+                            runCatching {
+                                    bestillingMottak.process(
+                                        Melding("REST auth=${bruker.navIdent}", bestilling.rapportType, dokument),
+                                        ekstraSjekk = true,
+                                    )
+                                }
+                                .fold(
+                                    onSuccess = {
+                                        return@post call.respond(HttpStatusCode.NoContent)
+                                    },
+                                    onFailure = {
+                                        return@post when (it) {
+                                            is SerializationException ->
+                                                call.respond(HttpStatusCode.BadRequest, "Feil i bestilling: ${it.message}")
+                                            is IllegalArgumentException ->
+                                                call.respond(HttpStatusCode.BadRequest, it.message ?: "Bad Request")
+                                            else -> call.respond(HttpStatusCode.InternalServerError, it.message ?: "Internal Server Error")
+                                        }
+                                    },
+                                )
+                        else -> call.respond(HttpStatusCode.Forbidden)
+                    }
+                }
+            }
+        PropertiesConfig.Profile.PROD -> {}
     }
 }
 

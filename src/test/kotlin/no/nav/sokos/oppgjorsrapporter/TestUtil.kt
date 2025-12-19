@@ -105,15 +105,12 @@ object TestUtil {
     fun loadDataSet(fileToLoad: String, dataSource: DataSource) =
         withEmptyDatabase(dataSource) {
             val sql = readFile(fileToLoad)
-            val connection = dataSource.connection
-            try {
+            dataSource.connection.use { connection ->
                 connection.transactionIsolation = TRANSACTION_SERIALIZABLE
                 connection.autoCommit = false
                 logger.debug { "Loading data set from $fileToLoad" }
                 connection.prepareStatement(sql).execute()
                 connection.commit()
-            } finally {
-                connection.close()
             }
         }
 

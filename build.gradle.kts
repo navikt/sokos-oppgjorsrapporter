@@ -25,9 +25,11 @@ val tokenSupportVersion = "6.0.0"
 val utilsVersion = "0.10.1"
 
 plugins {
+    val kotlinVersion = "2.3.0"
+
     application
-    kotlin("jvm") version "2.2.21"
-    kotlin("plugin.serialization") version "2.2.21"
+    kotlin("jvm") version kotlinVersion
+    kotlin("plugin.serialization") version kotlinVersion
     id("com.diffplug.spotless") version "8.1.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.3"
 }
@@ -122,6 +124,7 @@ kotlin {
         // Use Kotlin 2.2's experimental new defaulting rules for annotation targets - see
         // https://kotlinlang.org/docs/whatsnew22.html#new-defaulting-rules-for-use-site-annotation-targets
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        freeCompilerArgs.add("-Xreturn-value-checker=full")
     }
 }
 

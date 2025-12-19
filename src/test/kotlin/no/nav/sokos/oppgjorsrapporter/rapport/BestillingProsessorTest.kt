@@ -79,15 +79,16 @@ class BestillingProsessorTest :
                             datarec =
                                 (1..10).map { i -> TestData.createDataRec(bedriftsnummer = "12345678${i % 3}", fnr = "123456${i % 5}8901") }
                         )
-                    rapportService.lagreBestilling(
-                        "test",
-                        RapportType.`ref-arbg`,
-                        RefusjonsRapportBestilling.json.encodeToString((bestilling)),
-                    )
+                    val _ =
+                        rapportService.lagreBestilling(
+                            "test",
+                            RapportType.`ref-arbg`,
+                            RefusjonsRapportBestilling.json.encodeToString((bestilling)),
+                        )
 
                     val sut: BestillingProsessor = application.dependencies.resolve()
 
-                    val rapport = sut.prosesserEnBestilling()!!
+                    val rapport = sut.prosesserEnBestilling()!!.getOrThrow()
                     rapport.antallRader shouldBe 10
                     rapport.antallUnderenheter shouldBe 3
                     rapport.antallPersoner shouldBe 5
@@ -136,18 +137,20 @@ class BestillingProsessorTest :
 
                     val bestilling1 =
                         TestData.createRefusjonsRapportBestilling(headerOrgnr = "123456789", headerValutert = LocalDate.now(clock))
-                    rapportService.lagreBestilling(
-                        "test",
-                        RapportType.`ref-arbg`,
-                        RefusjonsRapportBestilling.json.encodeToString((bestilling1)),
-                    )
+                    val _ =
+                        rapportService.lagreBestilling(
+                            "test",
+                            RapportType.`ref-arbg`,
+                            RefusjonsRapportBestilling.json.encodeToString((bestilling1)),
+                        )
                     val bestilling2 =
                         TestData.createRefusjonsRapportBestilling(headerOrgnr = "987654321", headerValutert = LocalDate.now(clock))
-                    rapportService.lagreBestilling(
-                        "test",
-                        RapportType.`ref-arbg`,
-                        RefusjonsRapportBestilling.json.encodeToString((bestilling2)),
-                    )
+                    val _ =
+                        rapportService.lagreBestilling(
+                            "test",
+                            RapportType.`ref-arbg`,
+                            RefusjonsRapportBestilling.json.encodeToString((bestilling2)),
+                        )
 
                     val applicationState: ApplicationState = application.dependencies.resolve()
                     val preDisabled = applicationState.disableBackgroundJobs
@@ -214,21 +217,23 @@ class BestillingProsessorTest :
                     val before = rapportService.listRapporter(kriterier)
 
                     val bestilling1 = TestData.createRefusjonsRapportBestilling(headerOrgnr = "123456789", headerValutert = LocalDate.now())
-                    rapportService.lagreBestilling(
-                        "test",
-                        RapportType.`ref-arbg`,
-                        RefusjonsRapportBestilling.json.encodeToString((bestilling1)),
-                    )
+                    val _ =
+                        rapportService.lagreBestilling(
+                            "test",
+                            RapportType.`ref-arbg`,
+                            RefusjonsRapportBestilling.json.encodeToString((bestilling1)),
+                        )
                     val bestilling2 =
                         bestilling1.copy(
                             header = bestilling1.header.let { it.copy(sumBelop = it.sumBelop * 2.toBigDecimal()) },
                             datarec = bestilling1.datarec.map { it.copy(belop = it.belop * 2.toBigDecimal()) },
                         )
-                    rapportService.lagreBestilling(
-                        "test",
-                        RapportType.`ref-arbg`,
-                        RefusjonsRapportBestilling.json.encodeToString((bestilling2)),
-                    )
+                    val _ =
+                        rapportService.lagreBestilling(
+                            "test",
+                            RapportType.`ref-arbg`,
+                            RefusjonsRapportBestilling.json.encodeToString((bestilling2)),
+                        )
 
                     val applicationState: ApplicationState = application.dependencies.resolve()
                     val preDisabled = applicationState.disableBackgroundJobs
