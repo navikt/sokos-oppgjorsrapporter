@@ -93,11 +93,18 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .publishPercentileHistogram()
             .withRegistry(registry)
 
+    // Siden Timer måler i nanosekunder, brukes den ikke her; det kunne gitt overflow-trøbbel når summen av alle timer-registreringer når
+    // Long.MAX_VALUE (eller ~292.3 år)
     val rapportAlderVedForsteNedlasting =
         DistributionSummary.builder("${NAMESPACE}_rapport_alder_ved_forste_nedlasting_seconds")
             .description("Tid fra rapport-generering til første nedlasting av ekstern bruker")
             .publishPercentileHistogram()
             .withRegistry(registry)
+
+    private val rapporterGauge =
+        MultiGauge.builder("${NAMESPACE}_rapport_count").description("Antall rapporter i databasen").register(registry)
+
+    fun oppdaterRapportData(rows: Iterable<MultiGauge.Row<Number>>) = rapporterGauge.register(rows, true)
 
     // Hjelpefunksjon for å kunne gjøre timing av suspend-funksjoner:
     suspend fun <T> coRecord(timer: (Result<T>) -> Timer, f: suspend () -> T): T =

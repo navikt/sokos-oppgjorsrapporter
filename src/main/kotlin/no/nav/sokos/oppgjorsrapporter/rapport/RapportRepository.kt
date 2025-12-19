@@ -81,49 +81,6 @@ class RapportRepository(private val clock: Clock) {
             .let { tx.run(it) }
     }
 
-    fun metrikkForUprosesserteBestillinger(tx: TransactionalSession): Iterable<Pair<Tags, Long>> =
-        queryOf(
-                """
-                WITH todo AS (SELECT COUNT(*)                        AS antall,
-                                     generer_som                     AS rapport_type,
-                                     mottatt_fra                     AS kilde,
-                                     prosessering_feilet IS NOT NULL AS har_feilet
-                              FROM rapport.rapport_bestilling
-                              WHERE ferdig_prosessert IS NULL
-                              GROUP BY rapport_type, kilde, har_feilet),
-                     done AS (SELECT DISTINCT 0           AS antall,
-                                              generer_som AS rapport_type,
-                                              mottatt_fra AS kilde,
-                                              feilverdier.har_feilet
-                              FROM rapport.rapport_bestilling b,
-                                   (VALUES (true), (false)) AS feilverdier(har_feilet)
-                              WHERE NOT EXISTS (SELECT 1
-                                                FROM todo b2
-                                                WHERE b.generer_som = b2.rapport_type
-                                                  AND b.mottatt_fra = b2.kilde
-                                                  AND feilverdier.har_feilet = b2.har_feilet
-                                                  AND b.ferdig_prosessert IS NULL))
-                SELECT *
-                FROM todo
-                UNION
-                SELECT *
-                FROM done
-                """
-                    .trimIndent()
-            )
-            .map {
-                Pair(
-                    Tags.of(
-                        Tag.of("rapporttype", it.string("rapport_type")),
-                        Tag.of("kilde", it.string("kilde")),
-                        Tag.of("feilet", it.boolean("har_feilet").toString()),
-                    ),
-                    it.long("antall"),
-                )
-            }
-            .asList
-            .let { tx.run(it) }
-
     fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         queryOf(
                 """
@@ -342,6 +299,93 @@ class RapportRepository(private val clock: Clock) {
                 ),
             )
             .map { RapportAudit(it) }
+            .asList
+            .let { tx.run(it) }
+
+    fun metrikkForUprosesserteBestillinger(tx: TransactionalSession): Iterable<Pair<Tags, Long>> =
+        queryOf(
+                """
+                WITH kilder AS (SELECT DISTINCT CASE
+                                                    WHEN mottatt_fra LIKE 'REST%' THEN 'REST'
+                                                    ELSE mottatt_fra
+                                                    END AS kilde
+                                FROM rapport.rapport_bestilling),
+                     dimensjoner AS (SELECT rapport_type, k.kilde, har_feilet
+                                     FROM unnest(enum_range(null::rapport.rapport_type)) AS rapport_type,
+                                          kilder k,
+                                          (VALUES (true), (false)) AS t1(har_feilet)),
+                     uferdig AS (SELECT generer_som                     AS rapport_type,
+                                        CASE
+                                            WHEN mottatt_fra LIKE 'REST%' THEN 'REST'
+                                            ELSE mottatt_fra
+                                            END                         AS kilde,
+                                        prosessering_feilet IS NOT NULL AS har_feilet
+                                 FROM rapport.rapport_bestilling
+                                 WHERE ferdig_prosessert IS NULL)
+                SELECT COUNT(uferdig.*) AS antall,
+                       rapport_type,
+                       kilde,
+                       har_feilet
+                FROM dimensjoner d
+                         LEFT JOIN uferdig USING (rapport_type, kilde, har_feilet)
+                GROUP BY rapport_type, kilde, har_feilet
+                """
+                    .trimIndent()
+            )
+            .map {
+                Pair(
+                    Tags.of(
+                        Tag.of("rapporttype", it.string("rapport_type")),
+                        Tag.of("kilde", it.string("kilde")),
+                        Tag.of("feilet", it.boolean("har_feilet").toString()),
+                    ),
+                    it.long("antall"),
+                )
+            }
+            .asList
+            .let { tx.run(it) }
+
+    fun metrikkForRapporter(tx: TransactionalSession): Iterable<Pair<Tags, Long>> =
+        queryOf(
+                """
+                WITH dimensjoner AS (SELECT *
+                                     FROM unnest(enum_range(null::rapport.rapport_type)) AS rapport_type,
+                                          (VALUES ('0'), ('1'), ('2+')) AS t1(antall_nedlastinger),
+                                          (VALUES ('entraid'), ('systembruker')) AS t2(auth_type)),
+                     telling AS (SELECT r.id    AS rapport_id,
+                                        r.type  AS rapport_type,
+                                        CASE COUNT(a.id)
+                                            WHEN 0 THEN '0'
+                                            WHEN 1 THEN '1'
+                                            ELSE '2+'
+                                            END AS antall_nedlastinger,
+                                        CASE
+                                            WHEN brukernavn LIKE 'entraid:%'
+                                              OR brukernavn LIKE 'azure:%' THEN 'entraid'
+                                            ELSE 'systembruker'
+                                            END AS auth_type
+                                 FROM rapport.rapport r
+                                          LEFT JOIN rapport.rapport_audit a
+                                                    ON a.rapport_id = r.id AND a.hendelse = :hendelse
+                                 GROUP BY r.id, r.type, a.brukernavn)
+                SELECT COUNT(DISTINCT t.rapport_id) AS antall_rapporter, rapport_type, antall_nedlastinger, auth_type
+                FROM dimensjoner d
+                         LEFT JOIN telling t USING (rapport_type, antall_nedlastinger, auth_type)
+                GROUP BY (rapport_type, antall_nedlastinger, auth_type)
+                """
+                    .trimIndent(),
+                mapOf("hendelse" to RapportAudit.Hendelse.VARIANT_NEDLASTET.name),
+            )
+            .map {
+                Pair(
+                    Tags.of(
+                        Tag.of("rapporttype", it.string("rapport_type")),
+                        Tag.of("auth_type", it.string("auth_type")),
+                        Tag.of("nedlastinger", it.string("antall_nedlastinger")),
+                    ),
+                    it.long("antall_rapporter"),
+                )
+            }
             .asList
             .let { tx.run(it) }
 }

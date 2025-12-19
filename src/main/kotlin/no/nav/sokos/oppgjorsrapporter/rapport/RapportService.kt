@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import io.micrometer.core.instrument.MultiGauge
 import io.micrometer.core.instrument.Tags
 import java.time.Clock
 import java.time.Duration
@@ -75,6 +76,20 @@ class RapportService(
 
     fun metrikkForUprosesserteBestillinger(): Iterable<Pair<Tags, Long>> = withTransaction {
         repository.metrikkForUprosesserteBestillinger(it)
+    }
+
+    fun oppdaterMultiGauges() {
+        withTransaction { tx ->
+            repository
+                .metrikkForUprosesserteBestillinger(tx)
+                .map { (tags, verdi) -> MultiGauge.Row.of(tags, verdi) }
+                .let { rows -> metrics.oppdaterUprosesserteBestillinger(rows) }
+
+            repository
+                .metrikkForRapporter(tx)
+                .map { (tags, verdi) -> MultiGauge.Row.of(tags, verdi) }
+                .let { rows -> metrics.oppdaterRapportData(rows) }
+        }
     }
 
     fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
