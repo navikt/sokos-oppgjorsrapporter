@@ -12,6 +12,7 @@ import io.ktor.utils.io.ByteReadChannel
 import io.mockk.mockk
 import java.net.URI
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.utils.eregResponse
@@ -41,6 +42,23 @@ class EregServiceTest {
                     adresse = "Sannergata 2, 0557 Oslo",
                 )
             )
+    }
+
+    @Test
+    fun `hentOrganisasjonsNavnOgAdresse må håndtere at ereg-responsen ikke inneholder noen adresse`() = runTest {
+        val mockEngine = MockEngine {
+            respond(
+                content = ByteReadChannel(Json.encodeToString(Organisasjon("123456789", Navn("Min org"), null))),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+        val mockHttpClient = HttpClient(mockEngine) { install(ContentNegotiation) { json(commonJsonConfig) } }
+
+        val eregService = EregService(URI("http://dummy-ereg-url"), mockHttpClient, mockk(relaxed = true))
+
+        assertThat(eregService.hentOrganisasjonsNavnOgAdresse("990983666"))
+            .isEqualTo(OrganisasjonsNavnOgAdresse(organisasjonsnummer = "123456789", navn = "Min org", adresse = "Ingen adresse"))
     }
 
     @Test

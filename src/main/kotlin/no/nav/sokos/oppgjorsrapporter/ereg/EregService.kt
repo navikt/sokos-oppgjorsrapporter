@@ -43,9 +43,24 @@ class EregService(private val baseUrl: URI, private val client: HttpClient, priv
 data class OrganisasjonsNavnOgAdresse(val organisasjonsnummer: String, val navn: String, val adresse: String)
 
 @Serializable
-data class Organisasjon(val organisasjonsnummer: String, val navn: Navn, val adresse: Adresse) {
+data class Organisasjon(val organisasjonsnummer: String, val navn: Navn, val adresse: Adresse? = null) {
+    private fun formatterAdresse(): String =
+        adresse?.let {
+            with(it) {
+                listOfNotNull(
+                        adresselinje1,
+                        adresselinje2,
+                        adresselinje3,
+                        listOfNotNull(postnummer, poststed).filter { it.isNotBlank() }.joinToString(" "),
+                    )
+                    .filter { it.isNotBlank() }
+                    .joinToString(", ")
+                    .takeIf { it.isNotBlank() }
+            }
+        } ?: "Ingen adresse"
+
     fun tilOrganisasjonsNavnOgAdresse() =
-        OrganisasjonsNavnOgAdresse(organisasjonsnummer = organisasjonsnummer, navn = navn.sammensattnavn, adresse = adresse.toString())
+        OrganisasjonsNavnOgAdresse(organisasjonsnummer = organisasjonsnummer, navn = navn.sammensattnavn, adresse = formatterAdresse())
 }
 
 @Serializable data class Navn(val sammensattnavn: String)
@@ -57,15 +72,4 @@ data class Adresse(
     val adresselinje3: String? = null,
     val postnummer: String? = null,
     val poststed: String? = null,
-) {
-    override fun toString(): String {
-        val adresser =
-            listOfNotNull(adresselinje1, adresselinje2, adresselinje3)
-                .filter { it.isNotBlank() }
-                .joinToString(", ")
-                .takeIf { it.isNotBlank() } ?: "Ingen adresse"
-        val sted =
-            listOfNotNull(postnummer, poststed).filter { it.isNotBlank() }.joinToString(" ").takeIf { it.isNotBlank() } ?: "Ukjent poststed"
-        return "$adresser, $sted"
-    }
-}
+)
