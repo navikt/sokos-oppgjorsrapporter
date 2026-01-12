@@ -103,5 +103,6 @@
     <logger name="no.nav.sokos.oppgjorsrapporter" level="INFO"/>
     <logger name="no.nav.security.token.support" level="TRACE"/>
 <!--    <logger name="io.micrometer.prometheusmetrics.PrometheusMeterRegistry" level="DEBUG"/>-->
+    <logger name="http-client.ereg" level="DEBUG"/>
 
 </configuration>
