@@ -74,6 +74,9 @@ spec:
         - application: azure-token-generator
           namespace: nais
           cluster: dev-gcp
+        - application: sokos-up-oppgjorsrapporter
+          namespace: okonomi
+          cluster: dev-gcp
     outbound:
       external:
         - host: platform.tt02.altinn.no
