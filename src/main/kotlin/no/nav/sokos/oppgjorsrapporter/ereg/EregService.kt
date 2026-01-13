@@ -45,8 +45,8 @@ data class OrganisasjonsNavnOgAdresse(val organisasjonsnummer: String, val navn:
 @Serializable
 data class Organisasjon(val organisasjonsnummer: String, val navn: Navn, val adresse: Adresse? = null) {
     private fun formatterAdresse(): String =
-        adresse?.let {
-            with(it) {
+        adresse?.let { adr ->
+            with(adr) {
                 listOfNotNull(
                         adresselinje1,
                         adresselinje2,
