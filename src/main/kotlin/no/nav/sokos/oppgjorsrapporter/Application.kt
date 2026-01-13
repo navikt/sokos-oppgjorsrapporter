@@ -5,6 +5,9 @@ import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.engine.apache5.Apache5EngineConfig
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.config.ApplicationConfig
@@ -90,11 +93,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         // tjeneste, slik at vi kan justere konfig for JSON-enkoding og -dekoding uavhengig av hva andre tjenester krever i sin
         // input/output.
         provide<EregService> {
-            val client = HttpClient(Apache5) { configure() }
+            val client = HttpClient(Apache5) { configure("ereg") }
             EregService(config.innholdGeneratorProperties.eregBaseUrl, client, resolve())
         }
         provide<RapportGenerator> {
-            val client = HttpClient(Apache5) { configure() }
+            val client = HttpClient(Apache5) { configure("pdfgen") }
             RapportGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, resolve(), client, resolve(), resolve())
         }
 
@@ -173,7 +176,18 @@ fun Application.resolveConfig(appConfig: ApplicationConfig = environment.config)
         configFrom(appConfig).also { attributes.put(ConfigAttributeKey, it) }
     }
 
-private fun HttpClientConfig<Apache5EngineConfig>.configure() {
+private fun HttpClientConfig<Apache5EngineConfig>.configure(system: String) {
     expectSuccess = true
     install(ContentNegotiation) { json(commonJsonConfig) }
+    install(Logging) {
+        val httpLogger = KotlinLogging.logger("http-client.$system")
+        logger =
+            object : Logger {
+                override fun log(message: String) {
+                    httpLogger.debug(TEAM_LOGS_MARKER, message)
+                }
+            }
+        level = LogLevel.ALL
+        sanitizeHeader { false }
+    }
 }
