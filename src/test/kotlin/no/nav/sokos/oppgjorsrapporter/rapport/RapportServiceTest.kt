@@ -12,6 +12,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldInclude
 import io.ktor.server.plugins.di.*
 import io.micrometer.core.instrument.Tags
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -30,6 +31,8 @@ import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
+import no.nav.sokos.oppgjorsrapporter.ereg.EregService
+import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
@@ -87,7 +90,21 @@ class RapportServiceTest :
             }
 
             test("prosessering av en rapport-bestilling som feiler vil ikke etterlate rester i databasen") {
-                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = {
+                        dependencies.provide<EregService> {
+                            mockk<EregService>(relaxed = true) {
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
+                                    OrganisasjonsNavnOgAdresse(
+                                        navn = "Test Organisasjon",
+                                        adresse = "Testveien 1, 0123 Oslo",
+                                        organisasjonsnummer = "123456789",
+                                    )
+                            }
+                        }
+                    },
+                ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -112,6 +129,7 @@ class RapportServiceTest :
                                         antallRader = grunnlag.datarec.size,
                                         antallUnderenheter = grunnlag.datarec.distinctBy { it.bedriftsnummer }.size,
                                         antallPersoner = grunnlag.datarec.distinctBy { it.fnr }.size,
+                                        navn = "Test Organisasjon",
                                     ),
                                 )
                             throw IllegalStateException("Noe feilet")
@@ -167,7 +185,21 @@ class RapportServiceTest :
             }
 
             test("kan lagre en rapport i databasen") {
-                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = {
+                        dependencies.provide<EregService> {
+                            mockk<EregService>(relaxed = true) {
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
+                                    OrganisasjonsNavnOgAdresse(
+                                        navn = "Test Organisasjon",
+                                        adresse = "Testveien 1, 0123 Oslo",
+                                        organisasjonsnummer = "123456789",
+                                    )
+                            }
+                        }
+                    },
+                ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -178,6 +210,7 @@ class RapportServiceTest :
                             type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
                             bankkonto = Bankkonto("53785238218"),
+                            navn = "Test Organisasjon",
                             antallRader = 3,
                             antallUnderenheter = 1,
                             antallPersoner = 2,
@@ -301,7 +334,21 @@ class RapportServiceTest :
             }
 
             test("kan lagre en rapport-variant i databasen") {
-                TestUtil.withFullApplication(dbContainer) {
+                TestUtil.withFullApplication(
+                    dbContainer,
+                    dependencyOverrides = {
+                        dependencies.provide<EregService> {
+                            mockk<EregService>(relaxed = true) {
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
+                                    OrganisasjonsNavnOgAdresse(
+                                        navn = "Test Organisasjon",
+                                        adresse = "Testveien 1, 0123 Oslo",
+                                        organisasjonsnummer = "123456789",
+                                    )
+                            }
+                        }
+                    },
+                ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -312,6 +359,7 @@ class RapportServiceTest :
                             type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
                             bankkonto = Bankkonto("53785238218"),
+                            navn = "Test Organisasjon",
                             antallRader = 3,
                             antallUnderenheter = 1,
                             antallPersoner = 2,

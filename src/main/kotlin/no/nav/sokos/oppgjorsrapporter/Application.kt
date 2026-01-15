@@ -98,7 +98,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         }
         provide<RapportGenerator> {
             val client = HttpClient(Apache5) { configure("pdfgen") }
-            RapportGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, resolve(), client, resolve(), resolve())
+            RapportGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, client, resolve(), resolve())
         }
 
         if (config.applicationProperties.profile == PropertiesConfig.Profile.LOCAL) {

@@ -284,6 +284,10 @@ components:
         datoValutert:
           type: "string"
           format: "date"
+        bankkonto:
+          type: "string"
+        navn:
+          type: "string"
         opprettet:
           $ref: "#/components/schemas/Instant"
         arkivert:

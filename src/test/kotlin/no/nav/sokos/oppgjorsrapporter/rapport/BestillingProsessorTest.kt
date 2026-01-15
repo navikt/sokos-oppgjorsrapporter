@@ -67,7 +67,7 @@ class BestillingProsessorTest :
                         }
                         dependencies.provide<RapportGenerator> {
                             mockk<RapportGenerator>(relaxed = true) {
-                                coEvery { genererPdfInnhold(any()) } returns ByteString("test pdf content".toByteArray())
+                                coEvery { genererPdfInnhold(any(), any()) } returns ByteString("test pdf content".toByteArray())
                             }
                         }
                     },
@@ -116,7 +116,7 @@ class BestillingProsessorTest :
                         }
                         dependencies.provide<RapportGenerator> {
                             mockk<RapportGenerator>(relaxed = true) {
-                                coEvery { genererPdfInnhold(any()) } returns ByteString("test pdf content".toByteArray())
+                                coEvery { genererPdfInnhold(any(), any()) } returns ByteString("test pdf content".toByteArray())
                             }
                         }
                     },
@@ -199,7 +199,7 @@ class BestillingProsessorTest :
                         }
                         dependencies.provide<RapportGenerator> {
                             mockk<RapportGenerator>(relaxed = true) {
-                                coEvery { genererPdfInnhold(any()) } returns ByteString("test pdf content".toByteArray())
+                                coEvery { genererPdfInnhold(any(), any()) } returns ByteString("test pdf content".toByteArray())
                             }
                         }
                     },

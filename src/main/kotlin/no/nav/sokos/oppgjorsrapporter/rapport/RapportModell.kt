@@ -63,6 +63,7 @@ sealed interface RapportFelter {
     val type: RapportType
     val datoValutert: LocalDate
     val bankkonto: Bankkonto?
+    val navn: String?
     val antallRader: Int
     val antallUnderenheter: Int?
     val antallPersoner: Int?
@@ -74,6 +75,7 @@ data class UlagretRapport(
     override val type: RapportType,
     override val datoValutert: LocalDate,
     override val bankkonto: Bankkonto?,
+    override val navn: String?,
     override val antallRader: Int,
     override val antallUnderenheter: Int?,
     override val antallPersoner: Int?,
@@ -86,6 +88,7 @@ data class Rapport(
     override val type: RapportType,
     override val datoValutert: LocalDate,
     override val bankkonto: Bankkonto?,
+    override val navn: String?,
     override val antallRader: Int,
     override val antallUnderenheter: Int?,
     override val antallPersoner: Int?,
@@ -106,6 +109,7 @@ data class Rapport(
         type = RapportType.valueOf(row.string("type")),
         datoValutert = row.localDate("dato_valutert"),
         bankkonto = row.stringOrNull("bankkonto")?.let { Bankkonto(it) },
+        navn = row.stringOrNull("navn"),
         antallRader = row.int("antall_rader"),
         antallUnderenheter = row.intOrNull("antall_underenheter"),
         antallPersoner = row.intOrNull("antall_personer"),

@@ -21,6 +21,7 @@ object TestData {
             type = RapportType.`ref-arbg`,
             datoValutert = LocalDate.parse("2024-11-01"),
             bankkonto = Bankkonto("12345678901"),
+            navn = "Test Bedrift AS",
             antallRader = 3,
             antallUnderenheter = 1,
             antallPersoner = 2,

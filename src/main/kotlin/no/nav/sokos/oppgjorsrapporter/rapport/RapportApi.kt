@@ -98,12 +98,23 @@ object Api {
         val orgnr: OrgNr,
         val type: RapportType,
         val datoValutert: LocalDate,
+        val bankkonto: Bankkonto?,
+        val navn: String?,
         @Serializable(with = InstantAsStringSerializer::class) val opprettet: Instant,
         val arkivert: Boolean,
     ) {
         constructor(
             rapport: Rapport
-        ) : this(rapport.id, rapport.orgnr, rapport.type, rapport.datoValutert, rapport.opprettet, rapport.erArkivert)
+        ) : this(
+            rapport.id,
+            rapport.orgnr,
+            rapport.type,
+            rapport.datoValutert,
+            rapport.bankkonto,
+            rapport.navn,
+            rapport.opprettet,
+            rapport.erArkivert,
+        )
     }
 }
 
