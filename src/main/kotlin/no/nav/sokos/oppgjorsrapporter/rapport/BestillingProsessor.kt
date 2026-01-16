@@ -9,6 +9,7 @@ import kotlinx.io.bytestring.ByteString
 import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
+import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
@@ -18,6 +19,7 @@ class BestillingProsessor(
     private val metrics: Metrics,
     private val rapportGenerator: RapportGenerator,
     private val rapportService: RapportService,
+    private val eregService: EregService,
 ) {
     private val logger: KLogger = KotlinLogging.logger {}
 
@@ -63,10 +65,12 @@ class BestillingProsessor(
                     RapportType.`ref-arbg` -> {
                         val refusjonsRapportBestilling =
                             RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
+                        val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(refusjonsRapportBestilling.header.orgnr)
                         Pair(
                             UlagretRapport(
                                 bestillingId = bestilling.id,
                                 orgnr = OrgNr(refusjonsRapportBestilling.header.orgnr),
+                                orgNavn = OrgNavn(organisasjonsNavnOgAdresse.navn),
                                 type = bestilling.genererSom,
                                 datoValutert = refusjonsRapportBestilling.header.valutert,
                                 bankkonto = Bankkonto(refusjonsRapportBestilling.header.bankkonto),
@@ -76,7 +80,8 @@ class BestillingProsessor(
                             ),
                             suspend { variant: VariantFormat ->
                                 when (variant) {
-                                    VariantFormat.Pdf -> rapportGenerator.genererPdfInnhold(refusjonsRapportBestilling)
+                                    VariantFormat.Pdf ->
+                                        rapportGenerator.genererPdfInnhold(refusjonsRapportBestilling, organisasjonsNavnOgAdresse)
                                     VariantFormat.Csv -> rapportGenerator.genererCsvInnhold(refusjonsRapportBestilling)
                                 }
                             },

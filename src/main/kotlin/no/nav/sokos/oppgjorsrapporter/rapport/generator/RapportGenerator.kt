@@ -28,7 +28,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.encoding.Encoder
 import mu.KotlinLogging
-import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.Data
@@ -39,22 +38,18 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.LocalDateSomNorskDatoSer
 import no.nav.sokos.oppgjorsrapporter.serialization.AsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 
-class RapportGenerator(
-    private val baseUrl: URI,
-    private val eregService: EregService,
-    private val client: HttpClient,
-    private val metrics: Metrics,
-    private val clock: Clock,
-) {
+class RapportGenerator(private val baseUrl: URI, private val client: HttpClient, private val metrics: Metrics, private val clock: Clock) {
     private val logger = KotlinLogging.logger {}
 
     fun genererCsvInnhold(bestilling: RefusjonsRapportBestilling): ByteString {
         return bestilling.tilCSV().encodeToByteString()
     }
 
-    suspend fun genererPdfInnhold(bestilling: RefusjonsRapportBestilling): ByteString {
+    suspend fun genererPdfInnhold(
+        bestilling: RefusjonsRapportBestilling,
+        arbeidsgiverNavnOgAdresse: OrganisasjonsNavnOgAdresse,
+    ): ByteString {
         return run {
-            val arbeidsgiverNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(bestilling.header.orgnr)
             val payload =
                 RefusjonsRapportPdfPayload(
                     bestilling = bestilling,

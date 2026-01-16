@@ -84,14 +84,15 @@ class RapportRepository(private val clock: Clock) {
     fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         queryOf(
                 """
-                INSERT INTO rapport.rapport(bestilling_id, orgnr, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer)
-                VALUES (:bestilling_id, :orgnr, CAST(:type AS rapport.rapport_type), :dato_valutert, :bankkonto, :antall_rader, :antall_underenheter, :antall_personer)
+                INSERT INTO rapport.rapport(bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer)
+                VALUES (:bestilling_id, :orgnr, :org_navn, CAST(:type AS rapport.rapport_type), :dato_valutert, :bankkonto, :antall_rader, :antall_underenheter, :antall_personer)
                 RETURNING *
                 """
                     .trimIndent(),
                 mapOf(
                     "bestilling_id" to rapport.bestillingId.raw,
                     "orgnr" to rapport.orgnr.raw,
+                    "org_navn" to rapport.orgNavn?.raw,
                     "type" to rapport.type.name,
                     "dato_valutert" to rapport.datoValutert,
                     "bankkonto" to rapport.bankkonto?.raw,
@@ -107,7 +108,7 @@ class RapportRepository(private val clock: Clock) {
     fun finnRapport(tx: TransactionalSession, id: Rapport.Id): Rapport? =
         queryOf(
                 """
-                SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert
+                SELECT id, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert
                 FROM rapport.rapport
                 WHERE id = :id
                 """
@@ -133,7 +134,7 @@ class RapportRepository(private val clock: Clock) {
                         }
                     queryOf(
                         """
-                            SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert
+                            SELECT id, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert
                             FROM rapport.rapport
                             WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                               AND (arkivert IS NULL OR :inkluderArkiverte)
@@ -155,7 +156,7 @@ class RapportRepository(private val clock: Clock) {
                 is EtterIdKriterier -> {
                     queryOf(
                         """
-                        SELECT id, bestilling_id, orgnr, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert
+                        SELECT id, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert
                         FROM rapport.rapport
                         WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                           AND (arkivert IS NULL OR :inkluderArkiverte)

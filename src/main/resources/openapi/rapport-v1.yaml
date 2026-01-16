@@ -11,7 +11,7 @@ info:
     * Oppgjørsrapport arbeidsgiver - refusjoner fra Nav (tidl. K27),
     * Trekkoppgjør kreditor (tidl. T14), og
     * Trekkhendelser (tidl. T12)
-  version: 1.0.0
+  version: 1.1.0
 
 servers:
   - url: https://sokos-oppgjorsrapporter.ekstern.dev.nav.no/
@@ -279,11 +279,15 @@ components:
           format: "int64"
         orgnr:
           type: "string"
+        orgNavn:
+          type: "string"
         type:
           $ref: "#/components/schemas/RapportType"
         datoValutert:
           type: "string"
           format: "date"
+        bankkonto:
+          type: "string"
         opprettet:
           $ref: "#/components/schemas/Instant"
         arkivert:

@@ -10,8 +10,10 @@ import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldInclude
+import io.ktor.server.application.Application
 import io.ktor.server.plugins.di.*
 import io.micrometer.core.instrument.Tags
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -30,6 +32,8 @@ import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
+import no.nav.sokos.oppgjorsrapporter.ereg.EregService
+import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
@@ -38,6 +42,18 @@ class RapportServiceTest :
     FunSpec({
         context("RapportService") {
             val dbContainer = TestContainer.postgres
+            val eregDependencyOverride: Application.() -> Unit = {
+                dependencies.provide<EregService> {
+                    mockk<EregService>(relaxed = true) {
+                        coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
+                            OrganisasjonsNavnOgAdresse(
+                                navn = "Test Organisasjon",
+                                adresse = "Testveien 1, 0123 Oslo",
+                                organisasjonsnummer = "123456789",
+                            )
+                    }
+                }
+            }
 
             test("kan lagre en rapport-bestilling i databasen") {
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
@@ -87,7 +103,7 @@ class RapportServiceTest :
             }
 
             test("prosessering av en rapport-bestilling som feiler vil ikke etterlate rester i databasen") {
-                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                TestUtil.withFullApplication(dbContainer = dbContainer, dependencyOverrides = eregDependencyOverride) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -106,6 +122,7 @@ class RapportServiceTest :
                                     UlagretRapport(
                                         bestillingId = bestilling.id,
                                         orgnr = OrgNr(grunnlag.header.orgnr),
+                                        orgNavn = OrgNavn("Test Organisasjon"),
                                         type = bestilling.genererSom,
                                         datoValutert = grunnlag.header.valutert,
                                         bankkonto = Bankkonto(grunnlag.header.bankkonto),
@@ -167,7 +184,7 @@ class RapportServiceTest :
             }
 
             test("kan lagre en rapport i databasen") {
-                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                TestUtil.withFullApplication(dbContainer = dbContainer, dependencyOverrides = eregDependencyOverride) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -175,6 +192,7 @@ class RapportServiceTest :
                         UlagretRapport(
                             bestillingId = RapportBestilling.Id(1),
                             orgnr = OrgNr("39487569"),
+                            orgNavn = OrgNavn("Test Organisasjon"),
                             type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
                             bankkonto = Bankkonto("53785238218"),
@@ -188,6 +206,7 @@ class RapportServiceTest :
                         }
                     rapport.id shouldBe Rapport.Id(2)
                     rapport.orgnr shouldBe ulagret.orgnr
+                    rapport.orgNavn shouldBe ulagret.orgNavn
                     rapport.type shouldBe ulagret.type
                     rapport.antallRader shouldBe 3
                     rapport.antallUnderenheter shouldBe 1
@@ -301,7 +320,7 @@ class RapportServiceTest :
             }
 
             test("kan lagre en rapport-variant i databasen") {
-                TestUtil.withFullApplication(dbContainer) {
+                TestUtil.withFullApplication(dbContainer, dependencyOverrides = eregDependencyOverride) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
@@ -309,6 +328,7 @@ class RapportServiceTest :
                         UlagretRapport(
                             bestillingId = RapportBestilling.Id(1),
                             orgnr = OrgNr("39487569"),
+                            orgNavn = OrgNavn("Test Organisasjon"),
                             type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
                             bankkonto = Bankkonto("53785238218"),

@@ -15,6 +15,8 @@ import kotliquery.Row
 
 @Serializable @JvmInline value class Bankkonto(val raw: String)
 
+@Serializable @JvmInline value class OrgNavn(val raw: String)
+
 enum class RapportType(val altinnRessurs: String, val configKey: String?) {
     @JsonNames("K27") `ref-arbg`("nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver", "refusjon"),
     @JsonNames("T12") `trekk-hend`("Ikke definert ennå", null),
@@ -60,6 +62,7 @@ data class RapportBestilling(
 sealed interface RapportFelter {
     val bestillingId: RapportBestilling.Id
     val orgnr: OrgNr
+    val orgNavn: OrgNavn?
     val type: RapportType
     val datoValutert: LocalDate
     val bankkonto: Bankkonto?
@@ -71,6 +74,7 @@ sealed interface RapportFelter {
 data class UlagretRapport(
     override val bestillingId: RapportBestilling.Id,
     override val orgnr: OrgNr,
+    override val orgNavn: OrgNavn?,
     override val type: RapportType,
     override val datoValutert: LocalDate,
     override val bankkonto: Bankkonto?,
@@ -83,6 +87,7 @@ data class Rapport(
     val id: Id,
     override val bestillingId: RapportBestilling.Id,
     override val orgnr: OrgNr,
+    override val orgNavn: OrgNavn?,
     override val type: RapportType,
     override val datoValutert: LocalDate,
     override val bankkonto: Bankkonto?,
@@ -103,6 +108,7 @@ data class Rapport(
         id = Id(row.long("id")),
         bestillingId = RapportBestilling.Id(row.long("bestilling_id")),
         orgnr = OrgNr(row.string("orgnr")),
+        orgNavn = row.stringOrNull("org_navn")?.let { OrgNavn(it) },
         type = RapportType.valueOf(row.string("type")),
         datoValutert = row.localDate("dato_valutert"),
         bankkonto = row.stringOrNull("bankkonto")?.let { Bankkonto(it) },

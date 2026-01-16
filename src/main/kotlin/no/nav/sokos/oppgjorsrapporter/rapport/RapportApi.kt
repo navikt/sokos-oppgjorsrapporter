@@ -96,14 +96,25 @@ object Api {
     data class RapportDTO(
         val id: Rapport.Id,
         val orgnr: OrgNr,
+        val orgNavn: OrgNavn?,
         val type: RapportType,
         val datoValutert: LocalDate,
+        val bankkonto: Bankkonto?,
         @Serializable(with = InstantAsStringSerializer::class) val opprettet: Instant,
         val arkivert: Boolean,
     ) {
         constructor(
             rapport: Rapport
-        ) : this(rapport.id, rapport.orgnr, rapport.type, rapport.datoValutert, rapport.opprettet, rapport.erArkivert)
+        ) : this(
+            rapport.id,
+            rapport.orgnr,
+            rapport.orgNavn,
+            rapport.type,
+            rapport.datoValutert,
+            rapport.bankkonto,
+            rapport.opprettet,
+            rapport.erArkivert,
+        )
     }
 }
 
