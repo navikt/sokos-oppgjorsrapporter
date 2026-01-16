@@ -206,6 +206,7 @@ class RapportServiceTest :
                         }
                     rapport.id shouldBe Rapport.Id(2)
                     rapport.orgnr shouldBe ulagret.orgnr
+                    rapport.orgNavn shouldBe ulagret.orgNavn
                     rapport.type shouldBe ulagret.type
                     rapport.antallRader shouldBe 3
                     rapport.antallUnderenheter shouldBe 1

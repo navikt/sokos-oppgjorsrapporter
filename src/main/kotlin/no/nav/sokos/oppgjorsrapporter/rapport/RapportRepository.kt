@@ -92,6 +92,7 @@ class RapportRepository(private val clock: Clock) {
                 mapOf(
                     "bestilling_id" to rapport.bestillingId.raw,
                     "orgnr" to rapport.orgnr.raw,
+                    "org_navn" to rapport.orgNavn?.raw,
                     "type" to rapport.type.name,
                     "dato_valutert" to rapport.datoValutert,
                     "bankkonto" to rapport.bankkonto?.raw,
