@@ -1,8 +1,8 @@
 group = "no.nav.sokos"
 
-val flywayVersion = "11.18.0"
+val flywayVersion = "11.20.1"
 val hikariVersion = "7.0.2"
-val ibmMqVersion = "9.4.4.0"
+val ibmMqVersion = "9.4.4.1"
 val janinoVersion = "3.1.12"
 val jsonUnitVersion = "5.1.0"
 val konfigVersion = "1.6.10.0"
@@ -11,15 +11,15 @@ val kotlinLoggingVersion = "3.0.5"
 val kotlinxSerializationVersion = "1.9.0"
 val kotliqueryVersion = "1.9.1"
 val ktorVersion = "3.3.3"
-val logbackVersion = "1.5.21"
+val logbackVersion = "1.5.24"
 val logstashVersion = "9.0"
-val micrometerVersion = "1.16.0"
+val micrometerVersion = "1.16.1"
 val mockOAuth2ServerVersion = "3.0.1"
 val mockkVersion = "1.14.7"
 val pdpClientVersion = "1.1.0"
 val postgresVersion = "42.7.8"
 val swaggerRequestValidatorVersion = "2.46.0"
-val testcontainersVersion = "2.0.2"
+val testcontainersVersion = "2.0.3"
 val threetenExtraVersion = "1.8.0"
 val tokenSupportVersion = "6.0.0"
 val utilsVersion = "0.10.1"
@@ -31,7 +31,7 @@ plugins {
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
     id("com.diffplug.spotless") version "8.1.0"
-    id("org.jetbrains.kotlinx.kover") version "0.9.3"
+    id("org.jetbrains.kotlinx.kover") version "0.9.4"
 }
 
 application {
@@ -109,7 +109,7 @@ dependencies {
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("com.atlassian.oai:swagger-request-validator-restassured:${swaggerRequestValidatorVersion}")
     testImplementation("org.testcontainers:testcontainers-postgresql:$testcontainersVersion")
-    testImplementation("com.ibm.mq:mq-java-testcontainer:2.0.1")
+    testImplementation("com.ibm.mq:mq-java-testcontainer:2.0.3")
     testImplementation("net.javacrumbs.json-unit:json-unit:${jsonUnitVersion}")
     testImplementation("net.javacrumbs.json-unit:json-unit-assertj:${jsonUnitVersion}")
 }
