@@ -12,7 +12,6 @@ import io.ktor.utils.io.ByteReadChannel
 import io.mockk.mockk
 import java.net.URI
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.utils.eregResponse
@@ -48,7 +47,18 @@ class EregServiceTest {
     fun `hentOrganisasjonsNavnOgAdresse må håndtere at ereg-responsen ikke inneholder noen adresse`() = runTest {
         val mockEngine = MockEngine {
             respond(
-                content = ByteReadChannel(Json.encodeToString(Organisasjon("123456789", Navn("Min org"), null))),
+                content =
+                    ByteReadChannel(
+                        """
+                        {
+                            "organisasjonsnummer": "123456789",
+                            "navn": {
+                                "sammensattnavn": "Min org"
+                            }
+                        }
+                        """
+                            .trimIndent()
+                    ),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json"),
             )
@@ -57,7 +67,7 @@ class EregServiceTest {
 
         val eregService = EregService(URI("http://dummy-ereg-url"), mockHttpClient, mockk(relaxed = true))
 
-        assertThat(eregService.hentOrganisasjonsNavnOgAdresse("990983666"))
+        assertThat(eregService.hentOrganisasjonsNavnOgAdresse("123456789"))
             .isEqualTo(OrganisasjonsNavnOgAdresse(organisasjonsnummer = "123456789", navn = "Min org", adresse = "Ingen adresse"))
     }
 

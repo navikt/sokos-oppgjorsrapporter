@@ -7,7 +7,10 @@ import io.ktor.client.request.header
 import io.ktor.http.isSuccess
 import java.net.URI
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
+import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.ApiError
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.eregErrorMessage
@@ -37,6 +40,10 @@ class EregService(private val baseUrl: URI, private val client: HttpClient, priv
                 }
             }
         }
+    }
+
+    companion object : HttpClientSetup {
+        override val jsonConfig: Json = commonJsonConfig
     }
 }
 

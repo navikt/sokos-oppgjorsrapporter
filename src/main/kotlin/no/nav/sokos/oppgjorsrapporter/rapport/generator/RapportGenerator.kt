@@ -27,7 +27,10 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
+import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.Data
@@ -78,6 +81,10 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
                 }
             }
         }
+    }
+
+    companion object : HttpClientSetup {
+        override val jsonConfig: Json = commonJsonConfig
     }
 }
 

@@ -27,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.slf4j.MDCContext
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.DefaultAuthClient
@@ -37,7 +38,6 @@ import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.applicationLifecycleConfig
 import no.nav.sokos.oppgjorsrapporter.config.commonConfig
-import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.migrateDatabase
@@ -93,11 +93,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         // tjeneste, slik at vi kan justere konfig for JSON-enkoding og -dekoding uavhengig av hva andre tjenester krever i sin
         // input/output.
         provide<EregService> {
-            val client = HttpClient(Apache5) { configure("ereg") }
+            val client = HttpClient(Apache5) { configure(EregService.Companion) }
             EregService(config.innholdGeneratorProperties.eregBaseUrl, client, resolve())
         }
         provide<RapportGenerator> {
-            val client = HttpClient(Apache5) { configure("pdfgen") }
+            val client = HttpClient(Apache5) { configure(RapportGenerator.Companion) }
             RapportGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, client, resolve(), resolve())
         }
 
@@ -176,11 +176,13 @@ fun Application.resolveConfig(appConfig: ApplicationConfig = environment.config)
         configFrom(appConfig).also { attributes.put(ConfigAttributeKey, it) }
     }
 
-private fun HttpClientConfig<Apache5EngineConfig>.configure(system: String) {
+private fun <T : HttpClientSetup> HttpClientConfig<Apache5EngineConfig>.configure(companionObject: T) {
     expectSuccess = true
-    install(ContentNegotiation) { json(commonJsonConfig) }
+    install(ContentNegotiation) { json(companionObject.jsonConfig) }
     install(Logging) {
-        val httpLogger = KotlinLogging.logger("http-client.$system")
+        // Dropp companion-object-navn-suffikset i logger-navnet
+        val clsName = companionObject.javaClass.simpleName.takeWhile { it != '$' }
+        val httpLogger = KotlinLogging.logger("http-client.$clsName")
         logger =
             object : Logger {
                 override fun log(message: String) {
@@ -190,4 +192,8 @@ private fun HttpClientConfig<Apache5EngineConfig>.configure(system: String) {
         level = LogLevel.ALL
         sanitizeHeader { false }
     }
+}
+
+interface HttpClientSetup {
+    val jsonConfig: Json
 }
