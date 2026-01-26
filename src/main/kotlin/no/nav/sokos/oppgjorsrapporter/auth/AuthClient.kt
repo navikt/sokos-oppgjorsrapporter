@@ -8,18 +8,17 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.parameters
 import java.net.URI
-import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 
 interface AuthClient {
-    fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): () -> String
+    fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): suspend () -> String
 
     suspend fun altinnExchange(maskinportenToken: String): String
 }
 
 class NoOpAuthClient : AuthClient {
-    override fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): () -> String = { "dummy-token" }
+    override fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): suspend () -> String = { "dummy-token" }
 
     override suspend fun altinnExchange(maskinportenToken: String): String = "dummy-token"
 }
@@ -28,8 +27,8 @@ class DefaultAuthClient(private val tokenEndpoint: String, private val altinn3Ba
     private val logger = KotlinLogging.logger {}
     private val httpClient = createHttpClient()
 
-    override fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): () -> String = {
-        runBlocking { token(identityProvider, target).accessToken }
+    override fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): suspend () -> String = {
+        token(identityProvider, target).accessToken
     }
 
     internal suspend fun token(provider: AuthClientIdentityProvider, target: String): TokenResponse =
