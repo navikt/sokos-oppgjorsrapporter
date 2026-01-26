@@ -164,8 +164,8 @@ object TestUtil {
                             """
                                 SELECT setval(
                                     pg_get_serial_sequence('$tableName', '$column'),
-                                    (SELECT MAX($column) FROM $tableName),
-                                    true
+                                    (SELECT COALESCE(MAX($column), 0) FROM $tableName) + 1,
+                                    false
                                 );
                             """
                                 .trimIndent()
