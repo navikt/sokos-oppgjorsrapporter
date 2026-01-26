@@ -106,7 +106,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<PdpService> { LocalhostPdpService }
         } else {
             provide<AuthClient> {
-                DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.maskinportenProperties.altinn3BaseUrl)
+                DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.altinnProperties.baseUrl)
             }
             provide<PdpService> { AltinnPdpService(config.securityProperties, resolve(), resolve()) }
         }

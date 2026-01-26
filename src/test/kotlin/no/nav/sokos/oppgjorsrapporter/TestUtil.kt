@@ -45,7 +45,7 @@ object TestUtil {
 
     fun testApplicationProfile() =
         MapApplicationConfig().apply {
-            put("APPLICATION_PROFILE", "LOCAL")
+            put("application.profile", "LOCAL")
             put("application.disable_background_jobs", "true")
         }
 
@@ -56,7 +56,7 @@ object TestUtil {
             if (enabled) {
                 put("mq.host", container.host)
                 put("mq.port", container.port.toString())
-                put("mq.managerName", container.queueManager)
+                put("mq.manager_name", container.queueManager)
                 put("mq.channel", container.channel)
                 put("mq.username", container.appUser)
                 put("mq.password", container.appPassword)
@@ -178,9 +178,9 @@ object TestUtil {
 
 fun MockOAuth2Server.authConfigOverrides() =
     MapApplicationConfig().apply {
-        put("AZURE_APP_CLIENT_ID", "default")
-        put("AZURE_APP_WELL_KNOWN_URL", wellKnownUrl("default").toString())
-        put("maskinporten.wellKnownUrl", wellKnownUrl("maskinporten").toString())
+        put("auth.entra_id.client_id", "default")
+        put("auth.entra_id.well_known_url", wellKnownUrl("default").toString())
+        put("auth.maskinporten.well_known_url", wellKnownUrl("maskinporten").toString())
     }
 
 fun MockOAuth2Server.withTestApplication(
