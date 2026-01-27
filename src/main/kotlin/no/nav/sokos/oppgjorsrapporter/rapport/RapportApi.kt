@@ -31,6 +31,7 @@ import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.Melding
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
@@ -47,6 +48,10 @@ class ApiPaths {
             @Resource("innhold") class Innhold(val parent: Id)
 
             @Resource("arkiver") class Arkiver(val parent: Id, val arkivert: Boolean = true)
+
+            // Midlertidig internt endepunkt for å teste utsending av varsler, uten at vi trenger å skru på utsending for *alle* nye
+            // rapporter ennå.
+            @Resource("varsel") class Varsel(val parent: Id)
         }
     }
 
@@ -125,6 +130,7 @@ fun Route.rapportApi() {
     val metrics: Metrics by application.dependencies
     val pdpService: PdpService by application.dependencies
     val rapportService: RapportService by application.dependencies
+    val varselService: VarselService by application.dependencies
 
     suspend fun harTilgangTilRessurs(bruker: AutentisertBruker, rapportType: RapportType, orgnr: OrgNr): Boolean {
         logger.debug(TEAM_LOGS_MARKER) { "Skal sjekke om $bruker har tilgang til $rapportType for $orgnr" }
@@ -307,6 +313,12 @@ fun Route.rapportApi() {
                                 )
                         else -> call.respond(HttpStatusCode.Forbidden)
                     }
+                }
+
+                // Midlertidig endepunkt for å teste varsel-utsending
+                post<ApiPaths.Rapporter.Id.Varsel> { rapport ->
+                    varselService.registrerVarsel(Rapport.Id(rapport.parent.id))
+                    call.respond(HttpStatusCode.NoContent)
                 }
             }
         PropertiesConfig.Profile.PROD -> {}

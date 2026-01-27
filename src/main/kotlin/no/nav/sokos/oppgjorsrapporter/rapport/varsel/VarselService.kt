@@ -37,6 +37,11 @@ class VarselService(
 ) : DatabaseSupport(dataSource) {
     private val logger: KLogger = KotlinLogging.logger {}
 
+    fun registrerVarsel(forRapport: Rapport.Id) = withTransaction { tx ->
+        val rapport = rapportRepository.finnRapport(tx, forRapport)!!
+        registrerVarsel(tx, rapport)
+    }
+
     fun registrerVarsel(tx: TransactionalSession, forRapport: Rapport) {
         VarselSystem.entries.forEach {
             val _ = repository.lagre(tx, UlagretVarsel(forRapport.id, it, Instant.now(clock)))

@@ -59,6 +59,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 
@@ -181,6 +182,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         val prosesserBestillingerJob =
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
         provide("job.${BestillingProsessor::class.simpleName}") { prosesserBestillingerJob }.cleanup { it.cancel() }
+
+        provide(VarselProsessor::class)
+        val prosesserVarslerJob =
+            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<VarselProsessor>().run() } }
+        provide("job.${VarselProsessor::class.simpleName}") { prosesserVarslerJob }.cleanup { it.cancel() }
     }
 
     // Flyttet ned hit, siden vi trenger en DataSource dersom install(MicrometerMetrics) skal inneholde PostgreSQLDatabaseMetrics
