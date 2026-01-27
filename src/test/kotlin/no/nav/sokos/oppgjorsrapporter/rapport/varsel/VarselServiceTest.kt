@@ -76,18 +76,17 @@ class VarselServiceTest :
                     coEvery { dialogportenClient.opprettDialog(any()) }.returns(dialogUuid)
 
                     val sut: VarselService = application.dependencies.resolve()
-                    using(sessionOf(application.dependencies.resolve<DataSource>())) {
-                        it.transaction { tx ->
-                            val res = sut.sendVarsel()!!.getOrThrow()
 
-                            res shouldBe Pair(varsel, dialogUuid)
-                        }
-                    }
+                    val res = sut.sendVarsel()!!.getOrThrow()
+                    res shouldBe varsel
+
                     coVerify(ordering = Ordering.SEQUENCE) {
                         val _ = repository.finnUprosessertVarsel(any(), any())
                         val _ = dialogportenClient.opprettDialog(any())
                         repository.slett(any(), varsel.id)
                     }
+                    val oppdatertRapport = application.dependencies.resolve<RapportService>().finnRapport(Rapport.Id(1))!!
+                    oppdatertRapport.dialogportenUuid shouldBe dialogUuid
                 }
             }
 
@@ -112,13 +111,9 @@ class VarselServiceTest :
                     every { repository.oppdater(any(), capture(varselSlot)) }.returns(1)
 
                     val sut: VarselService = application.dependencies.resolve()
-                    using(sessionOf(application.dependencies.resolve<DataSource>())) {
-                        it.transaction { tx ->
-                            val res = sut.sendVarsel()!!
 
-                            res.shouldBeFailure()
-                        }
-                    }
+                    val res = sut.sendVarsel()!!
+                    res.shouldBeFailure()
 
                     varselSlot.captured.opprettet shouldBe varsel.opprettet
                     varselSlot.captured.antallForsok shouldBe (varsel.antallForsok + 1)

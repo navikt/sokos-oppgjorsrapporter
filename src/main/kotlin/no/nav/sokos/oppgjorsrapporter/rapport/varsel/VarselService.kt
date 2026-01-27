@@ -19,9 +19,11 @@ import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.ApiAction
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.Content
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.CreateDialogRequest
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.GuiAction
+import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.DatabaseSupport
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
 enum class VarselSystem {
     dialogporten
@@ -34,6 +36,7 @@ class VarselService(
     private val rapportRepository: RapportRepository,
     private val dialogportenClient: DialogportenClient,
     private val clock: Clock,
+    private val metrics: Metrics,
 ) : DatabaseSupport(dataSource) {
     private val logger: KLogger = KotlinLogging.logger {}
 
@@ -48,31 +51,40 @@ class VarselService(
         }
     }
 
-    fun sendVarsel(): Result<Pair<Varsel, UUID>>? = withTransaction { tx ->
+    fun sendVarsel(): Result<Varsel>? = withTransaction { tx ->
         repository.finnUprosessertVarsel(tx, Instant.now(clock))?.let { varsel ->
+            var operasjon: String? = null
+            var rapportType: RapportType? = null
             runCatching {
                     val rapport =
                         rapportRepository.finnRapport(tx, varsel.rapportId)
                             ?: throw IllegalStateException("Fant ikke ${varsel.rapportId} for ${varsel.id}")
+                    rapportType = rapport.type
                     when (varsel.system) {
                         VarselSystem.dialogporten -> {
-                            val dialogUuid =
-                                rapport.dialogportenUuid?.also { eksisterendeUuid ->
-                                    dialogportenClient.arkiverDialog(eksisterendeUuid, rapport.erArkivert)
-                                }
-                                    ?: opprettDialog(rapport).also { nyDialogUuid ->
-                                        if (rapportRepository.settDialogUuid(tx, rapport.id, nyDialogUuid) == 0) {
-                                            logger.info { "Noe har satt dialogporten_uuid på ${rapport.id} underveis i jobben med $varsel" }
-                                        } else {
-                                            logger.debug { "Satt dialogporten_uuid på ${rapport.id} til $nyDialogUuid" }
-                                        }
+                            if (rapport.dialogportenUuid == null) {
+                                operasjon = "opprette"
+                                opprettDialog(rapport).let { nyDialogUuid ->
+                                    if (rapportRepository.settDialogUuid(tx, rapport.id, nyDialogUuid) == 0) {
+                                        logger.info { "Noe har satt dialogporten_uuid på ${rapport.id} underveis i jobben med $varsel" }
+                                    } else {
+                                        logger.debug { "Satt dialogporten_uuid på ${rapport.id} til $nyDialogUuid" }
                                     }
-                            varsel to dialogUuid
+                                }
+                            } else {
+                                operasjon = if (rapport.erArkivert) "arkiver" else "dearkiver"
+                                dialogportenClient.arkiverDialog(rapport.dialogportenUuid, rapport.erArkivert)
+                            }
                         }
                     }
+                    varsel
                 }
-                .onSuccess { (v, _) -> repository.slett(tx, v.id) }
+                .onSuccess { v ->
+                    metrics.tellVarselProsessering(varsel.system, rapportType, operasjon, feilet = false)
+                    repository.slett(tx, v.id)
+                }
                 .onFailure { err ->
+                    metrics.tellVarselProsessering(varsel.system, rapportType, operasjon, feilet = true)
                     logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel:" }
                     val (antall, neste) =
                         with(varsel) {

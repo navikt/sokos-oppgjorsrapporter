@@ -30,7 +30,7 @@ class VarselProsessor(private val applicationState: ApplicationState, private va
                     t = minOf((t * 1.5), maxDelay)
                 } else {
                     resultat.fold(
-                        { (varsel, _) ->
+                        { varsel ->
                             logger.info { "Varsel for ${varsel.rapportId} prosessert; vil se etter flere varsler å prosessere umiddelbart" }
                             t = baseDelay
                         },
