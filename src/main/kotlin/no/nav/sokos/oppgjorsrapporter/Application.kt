@@ -4,6 +4,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.engine.apache5.Apache5EngineConfig
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -32,6 +35,7 @@ import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.DefaultAuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.NoOpAuthClient
+import no.nav.sokos.oppgjorsrapporter.auth.dialogportenTokenGetter
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
@@ -43,6 +47,7 @@ import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.migrateDatabase
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
+import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenClient
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
@@ -54,6 +59,8 @@ import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 
 private val logger = KotlinLogging.logger {}
 
@@ -88,6 +95,8 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         provide<DataSource> { DatabaseConfig.dataSource }.cleanup { adminDataSource.close() }
         provide(RapportRepository::class)
         provide(RapportService::class)
+        provide(VarselRepository::class)
+        provide(VarselService::class)
 
         // For klasser som trenger en HttpClient (typisk for å snakke med én ekstern tjeneste), velger vi å lage en klient-instans per
         // tjeneste, slik at vi kan justere konfig for JSON-enkoding og -dekoding uavhengig av hva andre tjenester krever i sin
@@ -109,6 +118,29 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.altinnProperties.baseUrl)
             }
             provide<PdpService> { AltinnPdpService(config.securityProperties, resolve(), resolve()) }
+        }
+        val authClient: AuthClient by this
+
+        provide<DialogportenClient> {
+            val client =
+                HttpClient(Apache5) {
+                    configure(DialogportenClient.Companion)
+                    install(Auth) {
+                        bearer {
+                            val tokenGetter =
+                                authClient.dialogportenTokenGetter(config.securityProperties.altinnProperties.dialogportenScope)
+                            loadTokens {
+                                logger.info("Laster initielt dialogporten-token")
+                                BearerTokens(tokenGetter(), null)
+                            }
+                            refreshTokens {
+                                logger.info("Refresher dialogporten-token")
+                                BearerTokens(tokenGetter(), null)
+                            }
+                        }
+                    }
+                }
+            DialogportenClient(config.securityProperties.altinnProperties.baseUrl, client)
         }
 
         val consumerKeys =

@@ -4,7 +4,7 @@ import io.ktor.http.ContentType
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Attachment(val displayName: List<ContentValueItem>, val urls: List<Url>) {
+data class Attachment(val displayName: List<Content.Value.Item>, val urls: List<Url>) {
     @Serializable
     data class Url(val url: String, val mediaType: String, val consumerType: AttachmentUrlConsumerType) {
         @Serializable
@@ -22,7 +22,7 @@ fun createAttachment(
     consumerType: Attachment.Url.AttachmentUrlConsumerType,
 ): Attachment =
     Attachment(
-        displayName = listOf(ContentValueItem(displayName)),
+        displayName = listOf(Content.Value.Item(displayName)),
         urls = listOf(Attachment.Url(url = url, mediaType = mediaType, consumerType = consumerType)),
     )
 

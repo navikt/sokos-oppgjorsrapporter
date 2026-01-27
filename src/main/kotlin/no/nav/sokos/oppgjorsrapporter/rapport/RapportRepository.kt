@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Tags
 import java.time.Clock
 import java.time.Instant
+import java.util.UUID
 import kotlinx.io.bytestring.ByteString
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
@@ -84,9 +85,12 @@ class RapportRepository(private val clock: Clock) {
     fun lagreRapport(tx: TransactionalSession, rapport: UlagretRapport): Rapport =
         queryOf(
                 """
-                INSERT INTO rapport.rapport(bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer)
-                VALUES (:bestilling_id, :orgnr, :org_navn, CAST(:type AS rapport.rapport_type), :dato_valutert, :bankkonto, :antall_rader, :antall_underenheter, :antall_personer)
-                RETURNING *
+                INSERT INTO rapport.rapport(bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
+                                            antall_rader, antall_underenheter, antall_personer)
+                VALUES (:bestilling_id, :orgnr, :org_navn, CAST(:type AS rapport.rapport_type), :dato_valutert, :bankkonto,
+                        :antall_rader, :antall_underenheter, :antall_personer)
+                RETURNING id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
+                          antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
                 """
                     .trimIndent(),
                 mapOf(
@@ -108,7 +112,8 @@ class RapportRepository(private val clock: Clock) {
     fun finnRapport(tx: TransactionalSession, id: Rapport.Id): Rapport? =
         queryOf(
                 """
-                SELECT id, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert
+                SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
+                       antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
                 FROM rapport.rapport
                 WHERE id = :id
                 """
@@ -134,7 +139,8 @@ class RapportRepository(private val clock: Clock) {
                         }
                     queryOf(
                         """
-                            SELECT id, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert
+                            SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
+                                   antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
                             FROM rapport.rapport
                             WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                               AND (arkivert IS NULL OR :inkluderArkiverte)
@@ -156,7 +162,8 @@ class RapportRepository(private val clock: Clock) {
                 is EtterIdKriterier -> {
                     queryOf(
                         """
-                        SELECT id, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert
+                        SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
+                               antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
                         FROM rapport.rapport
                         WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                           AND (arkivert IS NULL OR :inkluderArkiverte)
@@ -175,6 +182,19 @@ class RapportRepository(private val clock: Clock) {
             }
             .map { row -> Rapport(row) }
             .asList
+            .let { tx.run(it) }
+
+    fun settDialogUuid(tx: TransactionalSession, rapportId: Rapport.Id, uuid: UUID): Int =
+        queryOf(
+                """
+                UPDATE rapport.rapport
+                SET dialogporten_uuid = CAST(:dialogUuid AS UUID)
+                WHERE id = :id
+                  AND dialogporten_uuid IS NULL"""
+                    .trimIndent(),
+                mapOf("id" to rapportId.raw, "dialogUuid" to uuid),
+            )
+            .asUpdate
             .let { tx.run(it) }
 
     fun markerRapportArkivert(tx: TransactionalSession, rapportId: Rapport.Id, skalArkiveres: Boolean) {
@@ -250,7 +270,7 @@ class RapportRepository(private val clock: Clock) {
     fun hentInnhold(tx: TransactionalSession, rapportId: Rapport.Id, format: VariantFormat): Pair<Variant, ByteString>? =
         queryOf(
                 """
-                SELECT *, octet_length(innhold) AS bytes
+                SELECT id, rapport_id, format, filnavn, octet_length(innhold) AS bytes, innhold
                 FROM rapport.rapport_variant
                 WHERE rapport_id = :rapportId
                   AND format = CAST(:format AS rapport.rapport_format)

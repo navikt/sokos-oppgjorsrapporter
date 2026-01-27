@@ -65,6 +65,7 @@ dependencies {
     // Ktor client
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-client-apache5-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-auth:${ktorVersion}")
     implementation("io.ktor:ktor-client-logging:${ktorVersion}")
 
     // Database
