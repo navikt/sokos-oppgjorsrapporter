@@ -106,6 +106,13 @@ class Metrics(val registry: PrometheusMeterRegistry) {
 
     fun oppdaterRapportData(rows: Iterable<MultiGauge.Row<Number>>) = rapporterGauge.register(rows, true)
 
+    private val uprosesserteVarslerGauge =
+        MultiGauge.builder("${NAMESPACE}_varsel_uprosessert_count")
+            .description("Antall uprosesserte varsler i databasen")
+            .register(registry)
+
+    fun oppdaterUprosesserteVarsler(rows: Iterable<MultiGauge.Row<Number>>) = uprosesserteVarslerGauge.register(rows, true)
+
     // Hjelpefunksjon for å kunne gjøre timing av suspend-funksjoner:
     suspend fun <T> coRecord(timer: (Result<T>) -> Timer, f: suspend () -> T): T =
         Timer.start(registry).let { sample -> runCatching { f() }.also { sample.stop(timer(it)) }.getOrThrow() }

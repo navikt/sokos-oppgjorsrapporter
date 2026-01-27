@@ -17,6 +17,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import org.threeten.extra.Interval
 import org.threeten.extra.LocalDateRange
 
@@ -39,6 +40,7 @@ abstract class DatabaseSupport(private val dataSource: DataSource) {
 class RapportService(
     dataSource: DataSource,
     private val repository: RapportRepository,
+    private val varselRepository: VarselRepository,
     private val clock: Clock,
     private val metrics: Metrics,
 ) : DatabaseSupport(dataSource) {
@@ -89,6 +91,11 @@ class RapportService(
                 .metrikkForRapporter(tx)
                 .map { (tags, verdi) -> MultiGauge.Row.of(tags, verdi) }
                 .let { rows -> metrics.oppdaterRapportData(rows) }
+
+            varselRepository
+                .metrikkForUprosesserteVarsler(tx)
+                .map { (tags, verdi) -> MultiGauge.Row.of(tags, verdi) }
+                .let { rows -> metrics.oppdaterUprosesserteVarsler(rows) }
         }
     }
 
