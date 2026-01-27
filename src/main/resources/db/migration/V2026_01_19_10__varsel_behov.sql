@@ -1,9 +1,12 @@
-SET lock_timeout = '5s';
-SET statement_timeout = '5s';
+SET lock_timeout = '30s';
+SET statement_timeout = '30s';
 
 SET SEARCH_PATH TO rapport;
 
 ALTER TABLE rapport
+    -- Siden applikasjonen kun er i test ved deploy av denne endringen, synes metoden Squawk anbefaler unødvendig knotete:
+    --   Add the column as nullable, backfill existing rows, and add a trigger to update the column on write instead.
+    -- squawk-ignore adding-field-with-default
     ADD COLUMN uuid              UUID NOT NULL DEFAULT uuidv4(),
     ADD COLUMN dialogporten_uuid UUID NULL;
 
@@ -17,6 +20,8 @@ CREATE TABLE varsel_behov
         DEFERRABLE INITIALLY DEFERRED,
     system        varsel_system NOT NULL,
     opprettet     TIMESTAMPTZ   NOT NULL,
+    -- 32 bits bør være rikelig for å telle antall forsøk vi har gjort på å prosessere et varsel
+    -- squawk-ignore prefer-bigint-over-int
     antall_forsok INTEGER       NOT NULL,
     neste_forsok  TIMESTAMPTZ   NOT NULL
 );
