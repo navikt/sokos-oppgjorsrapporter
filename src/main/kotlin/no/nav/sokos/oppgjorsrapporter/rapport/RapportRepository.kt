@@ -190,7 +190,8 @@ class RapportRepository(private val clock: Clock) {
                 UPDATE rapport.rapport
                 SET dialogporten_uuid = CAST(:dialogUuid AS UUID)
                 WHERE id = :id
-                  AND dialogporten_uuid IS NULL"""
+                  AND dialogporten_uuid IS NULL
+                """
                     .trimIndent(),
                 mapOf("id" to rapportId.raw, "dialogUuid" to uuid),
             )
