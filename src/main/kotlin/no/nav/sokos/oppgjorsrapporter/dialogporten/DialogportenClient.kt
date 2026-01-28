@@ -61,7 +61,7 @@ class DialogportenClient(baseUrl: URI, private val httpClient: HttpClient) {
                     setBody(patchOperations)
                 }
             }
-            .getOrElse { e -> logAndThrow("Feil ved oppdatering av dialog", e) }
+            .onFailure { e -> logAndThrow("Feil ved oppdatering av dialog", e) }
     }
 
     private fun logAndThrow(msg: String, e: Throwable): Nothing {
