@@ -3,16 +3,17 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
 import io.ktor.http.*
-import io.ktor.resources.*
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.di.*
 import io.ktor.server.request.*
-import io.ktor.server.resources.*
-import io.ktor.server.resources.put
 import io.ktor.server.response.*
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.application
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.put
+import io.ktor.server.util.getValue
 import io.micrometer.core.instrument.Tag
 import java.time.Clock
 import java.time.Instant
@@ -38,25 +39,6 @@ import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import org.threeten.extra.LocalDateRange
 
 private val logger = KotlinLogging.logger {}
-
-@Resource(path = "/api")
-class ApiPaths {
-    @Resource("rapport/v1")
-    class Rapporter(@Suppress("unused") val parent: ApiPaths = ApiPaths()) {
-        @Resource("{id}")
-        class Id(@Suppress("unused") val parent: Rapporter = Rapporter(), val id: Long) {
-            @Resource("innhold") class Innhold(val parent: Id)
-
-            @Resource("arkiver") class Arkiver(val parent: Id, val arkivert: Boolean = true)
-
-            // Midlertidig internt endepunkt for å teste utsending av varsler, uten at vi trenger å skru på utsending for *alle* nye
-            // rapporter ennå.
-            @Resource("varsel") class Varsel(val parent: Id)
-        }
-    }
-
-    @Resource("bestilling/v1") class Bestilling(@Suppress("unused") val parent: ApiPaths = ApiPaths(), val rapportType: RapportType)
-}
 
 object Api {
     @Serializable
@@ -152,7 +134,8 @@ fun Route.rapportApi() {
         return true
     }
 
-    post<ApiPaths.Rapporter, Api.RapportListeRequest> { _, reqBody ->
+    post("/api/rapport/v1") {
+        val reqBody = call.receive<Api.RapportListeRequest>()
         // TODO: Listen med tilgjengelige rapporter kan bli lang; trenger vi å lage noe slags paging?
         autentisertBruker().let { bruker ->
             val datoRange =
@@ -235,9 +218,11 @@ fun Route.rapportApi() {
         }
     }
 
-    get<ApiPaths.Rapporter.Id> { rapport ->
+    get("/api/rapport/v1/{id}") {
+        val id: Long by call.request.pathVariables
+        val rapportId = Rapport.Id(id)
         autentisertBruker().let { bruker ->
-            val rapport = rapportService.finnRapport(Rapport.Id(rapport.id)) ?: return@get call.respond(HttpStatusCode.NotFound)
+            val rapport = rapportService.finnRapport(rapportId) ?: return@get call.respond(HttpStatusCode.NotFound)
             if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
                 return@get call.respond(HttpStatusCode.NotFound)
             }
@@ -245,7 +230,9 @@ fun Route.rapportApi() {
         }
     }
 
-    get<ApiPaths.Rapporter.Id.Innhold> { innhold ->
+    get("/api/rapport/v1/{id}/innhold") {
+        val id: Long by call.request.pathVariables
+        val rapportId = Rapport.Id(id)
         autentisertBruker().let { bruker ->
             val acceptItems = call.request.acceptItems()
             val format =
@@ -254,7 +241,7 @@ fun Route.rapportApi() {
             val res =
                 rapportService.hentInnhold(
                     bruker = bruker,
-                    rapportId = Rapport.Id(innhold.parent.id),
+                    rapportId = rapportId,
                     format = format,
                     harTilgang = { harTilgangTilRessurs(bruker, it.type, it.orgnr) },
                     process = { variant, innhold ->
@@ -271,14 +258,17 @@ fun Route.rapportApi() {
         }
     }
 
-    put<ApiPaths.Rapporter.Id.Arkiver> { arkiver ->
+    put("/api/rapport/v1/{id}/arkiver") {
+        val id: Long by call.request.pathVariables
+        val rapportId = Rapport.Id(id)
+        val skalArkiveres: Boolean = call.request.queryParameters.get("arkivert")?.toBooleanStrictOrNull() ?: true
         autentisertBruker().let { bruker ->
             rapportService
                 .markerRapportArkivert(
                     bruker = bruker,
-                    id = Rapport.Id(arkiver.parent.id),
+                    id = rapportId,
                     harTilgang = { harTilgangTilRessurs(bruker, it.type, it.orgnr) },
-                    skalArkiveres = arkiver.arkivert,
+                    skalArkiveres = skalArkiveres,
                 )
                 ?.let { call.respond(HttpStatusCode.NoContent) } ?: call.respond(HttpStatusCode.NotFound)
         }
@@ -288,12 +278,14 @@ fun Route.rapportApi() {
         PropertiesConfig.Profile.DEV,
         PropertiesConfig.Profile.LOCAL ->
             authenticate(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name) {
-                post<ApiPaths.Bestilling, String> { bestilling, dokument ->
+                post("/api/bestilling/v1") {
+                    val rapportType: String by call.request.queryParameters
+                    val rType = RapportType.valueOf(rapportType)
                     when (val bruker = autentisertBruker()) {
                         is EntraId ->
                             runCatching {
                                     bestillingMottak.process(
-                                        Melding("REST auth=${bruker.navIdent}", bestilling.rapportType, dokument),
+                                        Melding("REST auth=${bruker.navIdent}", rType, call.receiveText()),
                                         ekstraSjekk = true,
                                     )
                                 }
@@ -315,9 +307,12 @@ fun Route.rapportApi() {
                     }
                 }
 
-                // Midlertidig endepunkt for å teste varsel-utsending
-                post<ApiPaths.Rapporter.Id.Varsel> { rapport ->
-                    varselService.registrerVarsel(Rapport.Id(rapport.parent.id))
+                // Midlertidig internt endepunkt for å teste utsending av varsler, uten at vi trenger å skru på utsending for
+                // *alle* nye rapporter ennå.
+                post("/api/rapport/v1/{id}/varsel") {
+                    val id: Long by call.request.pathVariables
+                    val rapportId = Rapport.Id(id)
+                    varselService.registrerVarsel(rapportId)
                     call.respond(HttpStatusCode.NoContent)
                 }
             }
