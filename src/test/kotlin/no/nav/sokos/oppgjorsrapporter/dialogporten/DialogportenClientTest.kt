@@ -22,7 +22,10 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlinx.coroutines.test.runTest
 import net.javacrumbs.jsonunit.assertj.assertThatJson
+import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.Action
+import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.Content
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.CreateDialogRequest
+import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.GuiAction
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import org.assertj.core.api.Assertions.assertThat
@@ -88,7 +91,19 @@ class DialogportenClientTest {
                           "progress": 100,
                           "serviceResource": "urn:altinn:resource:nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver",
                           "transmissions": [],
-                          "guiActions": [],
+                          "guiActions": [
+                            {
+                              "title": [
+                                {
+                                  "value": "Navigate",
+                                  "languageCode": "nb"
+                                }
+                              ],
+                              "url": "https://example.com/gui/",
+                              "priority": "Primary",
+                              "action": "access"
+                            }
+                          ],
                           "apiActions": []
                         }
                         """
@@ -108,7 +123,15 @@ class DialogportenClientTest {
                 idempotentKey = "idempotentKey",
                 isApiOnly = false,
                 transmissions = emptyList(),
-                guiActions = emptyList(),
+                guiActions =
+                    listOf(
+                        GuiAction(
+                            title = listOf(Content.Value.Item("Navigate")),
+                            url = "https://example.com/gui/",
+                            priority = GuiAction.Priority.Primary,
+                            action = Action.access,
+                        )
+                    ),
                 apiActions = emptyList(),
             )
 

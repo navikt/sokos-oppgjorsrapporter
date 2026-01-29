@@ -123,7 +123,7 @@ class VarselService(
                             title = listOf(Content.Value.Item("Gå til nav.no")),
                             url = config.applicationProperties.guiBaseUri.toString(), // TODO: Mer direkte link
                             priority = GuiAction.Priority.Primary,
-                            action = Action.READ.value,
+                            action = Action.access,
                         )
                     ),
                 apiActions =
@@ -140,7 +140,7 @@ class VarselService(
                                         )
                                     }
                                 ),
-                            action = Action.READ.value,
+                            action = Action.access,
                         )
                     ),
             )
