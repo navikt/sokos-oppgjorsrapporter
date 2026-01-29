@@ -48,12 +48,20 @@ object PropertiesConfig {
         )
     }
 
-    data class ApplicationProperties(val naisAppName: String, val profile: Profile, val disableBackgroundJobs: Boolean) {
+    data class ApplicationProperties(
+        val naisAppName: String,
+        val apiBaseUri: URI,
+        val guiBaseUri: URI,
+        val profile: Profile,
+        val disableBackgroundJobs: Boolean,
+    ) {
         constructor(
             source: ConfigSource
         ) : this(
-            naisAppName = source.get("APP_NAME"),
-            profile = Profile.valueOf(source.get("APPLICATION_PROFILE")),
+            naisAppName = source.get("application.name"),
+            apiBaseUri = URI.create(source.get("application.api_base_uri")),
+            guiBaseUri = URI.create(source.get("application.gui_base_uri")),
+            profile = Profile.valueOf(source.get("application.profile")),
             disableBackgroundJobs = source.get("application.disable_background_jobs").toBoolean(),
         )
     }
@@ -84,7 +92,7 @@ object PropertiesConfig {
             enabled = source.get("mq.enabled").toBoolean(),
             host = source.get("mq.host"),
             port = source.get("mq.port").toInt(),
-            managerName = source.get("mq.managerName"),
+            managerName = source.get("mq.manager_name"),
             channel = source.get("mq.channel"),
             queues = RapportType.entries.filter { it.configKey != null }.map { MqQueueProperties(source, it) },
             username = source.get("mq.username"),
@@ -93,7 +101,10 @@ object PropertiesConfig {
     }
 
     data class MqQueueProperties(val rapportType: RapportType, val queueName: String) {
-        constructor(source: ConfigSource, rapportType: RapportType) : this(rapportType, source.get("mq.${rapportType.configKey}.queueName"))
+        constructor(
+            source: ConfigSource,
+            rapportType: RapportType,
+        ) : this(rapportType, source.get("mq.${rapportType.configKey}.queue_name"))
 
         init {
             require(rapportType.configKey != null) { "RapportType ${rapportType.name} har null configKey" }
@@ -105,12 +116,13 @@ object PropertiesConfig {
     data class InnholdGeneratorProperties(val eregBaseUrl: URI, val pdfGenBaseUrl: URI) {
         constructor(
             source: ConfigSource
-        ) : this(eregBaseUrl = URI.create(source.get("ereg.baseUrl")), pdfGenBaseUrl = URI.create(source.get("pdfGen.baseUrl")))
+        ) : this(eregBaseUrl = URI.create(source.get("ereg.base_url")), pdfGenBaseUrl = URI.create(source.get("pdfgen.base_url")))
     }
 
     data class SecurityProperties(
         val azureAdProperties: AzureAdProperties,
         val maskinportenProperties: MaskinportenProperties,
+        val altinnProperties: AltinnProperties,
         val tokenEndpoint: String,
     ) {
         constructor(
@@ -118,31 +130,34 @@ object PropertiesConfig {
         ) : this(
             azureAdProperties = AzureAdProperties(source),
             maskinportenProperties = MaskinportenProperties(source),
-            source.get("authclient.tokenEndpoint"),
+            altinnProperties = AltinnProperties(source),
+            tokenEndpoint = source.get("auth.texas.token_endpoint"),
         )
     }
 
     class AzureAdProperties(val clientId: String, val wellKnownUrl: String) {
         constructor(
             source: ConfigSource
-        ) : this(clientId = source.get("AZURE_APP_CLIENT_ID"), wellKnownUrl = source.get("AZURE_APP_WELL_KNOWN_URL"))
+        ) : this(clientId = source.get("auth.entra_id.client_id"), wellKnownUrl = source.get("auth.entra_id.well_known_url"))
     }
 
-    class MaskinportenProperties(
-        val wellKnownUrl: String,
-        val eksponertScope: String,
-        val altinn3BaseUrl: URI,
-        val subscriptionKey: String,
-        val pdpScope: String,
-    ) {
+    class MaskinportenProperties(val wellKnownUrl: String, val eksponertScope: String) {
         constructor(
             source: ConfigSource
         ) : this(
-            wellKnownUrl = source.get("maskinporten.wellKnownUrl"),
-            eksponertScope = source.get("maskinporten.eksponert_scope"),
-            altinn3BaseUrl = URI.create(source.get("altinn.base_url")),
+            wellKnownUrl = source.get("auth.maskinporten.well_known_url"),
+            eksponertScope = source.get("auth.maskinporten.eksponert_scope"),
+        )
+    }
+
+    class AltinnProperties(val baseUrl: URI, val subscriptionKey: String, val pdpScope: String, val dialogportenScope: String) {
+        constructor(
+            source: ConfigSource
+        ) : this(
+            baseUrl = URI.create(source.get("altinn.base_url")),
             subscriptionKey = source.get("altinn.subscription_key"),
             pdpScope = source.get("altinn.pdp_scope"),
+            dialogportenScope = source.get("altinn.dialogporten_scope"),
         )
     }
 

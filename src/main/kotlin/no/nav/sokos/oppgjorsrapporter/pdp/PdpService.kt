@@ -18,11 +18,13 @@ class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, 
     PdpService {
     private val logger = KotlinLogging.logger {}
     val pdpClient =
-        PdpClient(
-            securityProperties.maskinportenProperties.altinn3BaseUrl.toURL().toString(),
-            securityProperties.maskinportenProperties.subscriptionKey,
-            authClient.pdpTokenGetter(securityProperties.maskinportenProperties.pdpScope),
-        )
+        with(securityProperties.altinnProperties) {
+            PdpClient(
+                baseUrl = baseUrl.toURL().toString(),
+                subscriptionKey = subscriptionKey,
+                getToken = authClient.pdpTokenGetter(pdpScope),
+            )
+        }
 
     override suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
         logger.info(TEAM_LOGS_MARKER) { "PDP orgnr: $orgnumre, systembruker: $systembruker, ressurs: $ressurs" }

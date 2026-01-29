@@ -155,45 +155,27 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
     fun genererBestilling(
         orgnr: Orgnr,
         valutert: LocalDate,
-        antallUnderenheter: Int,
-        antallPersoner: Int,
+        underenheter: Set<Orgnr>,
+        personer: Set<Person>,
+        ytelser: Set<YtelseType>,
         antallPosteringer: Int,
-        ytelser: List<YtelseType>,
     ): RefusjonsRapportBestilling {
         require(valutert <= LocalDate.now()) { "Valutert dato kan ikke være i fremtiden" }
 
-        require(antallUnderenheter <= antallPosteringer) {
-            "Kan ikke dekke $antallUnderenheter underenheter med bare $antallPosteringer posteringer"
+        require(underenheter.size <= antallPosteringer) {
+            "Kan ikke dekke ${underenheter.size} underenheter med bare $antallPosteringer posteringer"
         }
-        require(antallPersoner <= antallPosteringer) { "Kan ikke dekke $antallPersoner personer med bare $antallPosteringer posteringer" }
+        require(personer.size <= antallPosteringer) { "Kan ikke dekke ${personer.size} personer med bare $antallPosteringer posteringer" }
         require(ytelser.size <= antallPosteringer) { "Kan ikke dekke ${ytelser.size} ytelser med bare $antallPosteringer posteringer" }
 
         val bankkonto = List(11) { Random.nextInt(10) }.joinToString("")
 
-        fun <T> shuffledIterator(input: List<T>): Iterator<T> =
+        fun <T> shuffledIterator(input: Set<T>): Iterator<T> =
             (input.shuffled().asSequence() + generateSequence { input.random() }).iterator()
 
         val ytelseSeq = shuffledIterator(ytelser)
-        val underenhetSeq =
-            shuffledIterator(
-                buildSet {
-                        while (size < antallUnderenheter) {
-                            add(Orgnr.genererGyldig())
-                        }
-                    }
-                    .toList()
-            )
-        val personSeq =
-            shuffledIterator(
-                buildSet {
-                        while (size < antallPersoner) {
-                            val fnr = Fnr.genererGyldig(forTestPerson = TestPerson.NAV)
-                            val random = Random(fnr.verdi.toLong())
-                            add(Person(fnr, genererNavn(random)))
-                        }
-                    }
-                    .toList()
-            )
+        val underenhetSeq = shuffledIterator(underenheter)
+        val personSeq = shuffledIterator(personer)
 
         val belopSeq = generateSequence { Belop(Random.nextDouble(30000.toDouble()).toBigDecimal()).verdi }.iterator()
 
@@ -220,9 +202,38 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         return RefusjonsRapportBestilling(header, datarec)
     }
 
+    fun genererBestilling(
+        orgnr: Orgnr,
+        valutert: LocalDate,
+        antallUnderenheter: Int,
+        antallPersoner: Int,
+        antallPosteringer: Int,
+        ytelser: List<YtelseType>,
+    ): RefusjonsRapportBestilling =
+        genererBestilling(
+            orgnr,
+            valutert,
+            underenheter =
+                buildSet {
+                    while (size < antallUnderenheter) {
+                        add(Orgnr.genererGyldig())
+                    }
+                },
+            personer =
+                buildSet {
+                    while (size < antallPersoner) {
+                        val fnr = Fnr.genererGyldig(forTestPerson = TestPerson.NAV)
+                        val random = Random(fnr.verdi.toLong())
+                        add(Person(fnr, genererNavn(random)))
+                    }
+                },
+            ytelser = ytelser.toSet(),
+            antallPosteringer = antallPosteringer,
+        )
+
     fun genererNavn(random: Random): String {
-        val antallFornavn = listOf(1, 1, 1, 2, 2, 3).shuffled(random).first()
-        val antallEtternavn = listOf(1, 1, 2, 2, 3).shuffled(random).first()
+        val antallFornavn = listOf(1, 1, 1, 2, 2, 3).random(random)
+        val antallEtternavn = listOf(1, 1, 2, 2, 3).random(random)
         val fornavn = NavneData.vanligeFornavn.shuffled(random).take(antallFornavn)
         val etternavn = NavneData.vanligeEtternavn.shuffled(random).take(antallEtternavn)
         return (fornavn + etternavn).joinToString(" ")

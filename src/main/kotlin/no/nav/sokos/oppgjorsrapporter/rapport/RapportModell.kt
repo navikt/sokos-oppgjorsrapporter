@@ -5,6 +5,7 @@ package no.nav.sokos.oppgjorsrapporter.rapport
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 import kotlinx.io.bytestring.ByteString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -96,6 +97,8 @@ data class Rapport(
     override val antallPersoner: Int?,
     val opprettet: Instant,
     val arkivert: Instant? = null,
+    val uuid: UUID,
+    val dialogportenUuid: UUID? = null,
 ) : RapportFelter {
     fun filnavn(format: VariantFormat): String =
         "${orgnr.raw}_${type.name}_${DateTimeFormatter.ISO_LOCAL_DATE.format(datoValutert)}.${format.extension()}"
@@ -117,6 +120,8 @@ data class Rapport(
         antallPersoner = row.intOrNull("antall_personer"),
         opprettet = row.instant("opprettet"),
         arkivert = row.instantOrNull("arkivert"),
+        uuid = UUID.fromString(row.string("uuid")),
+        dialogportenUuid = row.stringOrNull("dialogporten_uuid")?.let { UUID.fromString(it) },
     )
 
     val erArkivert: Boolean = arkivert != null

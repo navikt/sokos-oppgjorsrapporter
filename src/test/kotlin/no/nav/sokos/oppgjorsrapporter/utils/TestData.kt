@@ -3,6 +3,7 @@ package no.nav.sokos.oppgjorsrapporter.utils
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 import no.nav.sokos.oppgjorsrapporter.mq.Data
 import no.nav.sokos.oppgjorsrapporter.mq.Header
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
@@ -27,6 +28,8 @@ object TestData {
             antallUnderenheter = 1,
             antallPersoner = 2,
             opprettet = Instant.parse("2024-11-01T12:15:02Z"),
+            arkivert = null,
+            uuid = UUID.fromString("8facc803-4212-4c2c-896d-faae65b467bd"),
         )
 
     val minimalPdf =
