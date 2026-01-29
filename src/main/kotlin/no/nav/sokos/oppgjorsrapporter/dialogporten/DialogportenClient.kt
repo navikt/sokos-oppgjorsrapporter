@@ -83,15 +83,15 @@ class DialogportenClient(baseUrl: URI, private val httpClient: HttpClient) {
             guiActions = createDialogRequest.guiActions,
             apiActions = createDialogRequest.apiActions,
         )
+}
 
-    companion object : HttpClientSetup {
-        @OptIn(ExperimentalSerializationApi::class)
-        override val jsonConfig: Json =
-            Json(commonJsonConfig) {
-                explicitNulls = false
-                classDiscriminatorMode = ClassDiscriminatorMode.NONE
-            }
-    }
+object DialogportenHttpClientSetup : HttpClientSetup {
+    @OptIn(ExperimentalSerializationApi::class)
+    override val jsonConfig: Json =
+        Json(commonJsonConfig) {
+            explicitNulls = false
+            classDiscriminatorMode = ClassDiscriminatorMode.NONE
+        }
 }
 
 class DialogportenException(message: String) : Exception(message)

@@ -41,10 +41,10 @@ class EregService(private val baseUrl: URI, private val client: HttpClient, priv
             }
         }
     }
+}
 
-    companion object : HttpClientSetup {
-        override val jsonConfig: Json = commonJsonConfig
-    }
+object EregHttpClientSetup : HttpClientSetup {
+    override val jsonConfig: Json = commonJsonConfig
 }
 
 data class OrganisasjonsNavnOgAdresse(val organisasjonsnummer: String, val navn: String, val adresse: String)

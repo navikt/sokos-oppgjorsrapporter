@@ -48,6 +48,8 @@ import no.nav.sokos.oppgjorsrapporter.config.migrateDatabase
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
 import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenClient
+import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenHttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.ereg.EregHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
@@ -58,6 +60,7 @@ import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.PdfgenHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
@@ -103,11 +106,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         // tjeneste, slik at vi kan justere konfig for JSON-enkoding og -dekoding uavhengig av hva andre tjenester krever i sin
         // input/output.
         provide<EregService> {
-            val client = HttpClient(Apache5) { configure(EregService.Companion) }
+            val client = HttpClient(Apache5) { configure("ereg", EregHttpClientSetup) }
             EregService(config.innholdGeneratorProperties.eregBaseUrl, client, resolve())
         }
         provide<RapportGenerator> {
-            val client = HttpClient(Apache5) { configure(RapportGenerator.Companion) }
+            val client = HttpClient(Apache5) { configure("pdfgen", PdfgenHttpClientSetup) }
             RapportGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, client, resolve(), resolve())
         }
 
@@ -125,7 +128,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         provide<DialogportenClient> {
             val client =
                 HttpClient(Apache5) {
-                    configure(DialogportenClient.Companion)
+                    configure("dialogporten", DialogportenHttpClientSetup)
                     install(Auth) {
                         bearer {
                             val tokenGetter =
@@ -214,13 +217,11 @@ fun Application.resolveConfig(appConfig: ApplicationConfig = environment.config)
         configFrom(appConfig).also { attributes.put(ConfigAttributeKey, it) }
     }
 
-private fun <T : HttpClientSetup> HttpClientConfig<Apache5EngineConfig>.configure(companionObject: T) {
+private fun HttpClientConfig<Apache5EngineConfig>.configure(loggerName: String, setupObject: HttpClientSetup) {
     expectSuccess = true
-    install(ContentNegotiation) { json(companionObject.jsonConfig) }
+    install(ContentNegotiation) { json(setupObject.jsonConfig) }
     install(Logging) {
-        // Dropp companion-object-navn-suffikset i logger-navnet
-        val clsName = companionObject.javaClass.simpleName.takeWhile { it != '$' }
-        val httpLogger = KotlinLogging.logger("http-client.$clsName")
+        val httpLogger = KotlinLogging.logger("http-client.$loggerName")
         logger =
             object : Logger {
                 override fun log(message: String) {

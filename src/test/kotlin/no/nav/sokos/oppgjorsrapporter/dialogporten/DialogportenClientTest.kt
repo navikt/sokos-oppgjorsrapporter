@@ -47,7 +47,7 @@ class DialogportenClientTest {
             }
             .let { engine ->
                 HttpClient(engine) {
-                    install(ContentNegotiation) { json(DialogportenClient.jsonConfig) }
+                    install(ContentNegotiation) { json(DialogportenHttpClientSetup.jsonConfig) }
                     install(Auth) { bearer { loadTokens { BearerTokens("dummy-token", null) } } }
                 }
             }

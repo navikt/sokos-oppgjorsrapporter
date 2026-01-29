@@ -82,10 +82,10 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
             }
         }
     }
+}
 
-    companion object : HttpClientSetup {
-        override val jsonConfig: Json = commonJsonConfig
-    }
+object PdfgenHttpClientSetup : HttpClientSetup {
+    override val jsonConfig: Json = commonJsonConfig
 }
 
 object CsvGenerering {
