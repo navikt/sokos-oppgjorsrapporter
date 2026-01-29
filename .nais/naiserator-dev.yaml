@@ -58,6 +58,7 @@ spec:
           name: oppgjorsrapporter
       consumes:
         - name: "altinn:authorization/authorize"
+        - name: "digdir:dialogporten.serviceprovider"
   tokenx:
     enabled: true
   gcp:
