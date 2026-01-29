@@ -10,7 +10,6 @@ import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.request.path
-import io.ktor.server.resources.Resources
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
@@ -73,8 +72,6 @@ fun Application.commonConfig() {
             )
         }
     }
-
-    install(Resources)
 }
 
 fun Routing.internalNaisRoutes(

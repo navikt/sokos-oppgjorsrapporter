@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.Timer
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.rapport.VariantFormat
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselSystem
 
 class Metrics(val registry: PrometheusMeterRegistry) {
     private val NAMESPACE = "sokos_oppgjorsrapporter"
@@ -105,6 +106,32 @@ class Metrics(val registry: PrometheusMeterRegistry) {
         MultiGauge.builder("${NAMESPACE}_rapport_count").description("Antall rapporter i databasen").register(registry)
 
     fun oppdaterRapportData(rows: Iterable<MultiGauge.Row<Number>>) = rapporterGauge.register(rows, true)
+
+    private val uprosesserteVarslerGauge =
+        MultiGauge.builder("${NAMESPACE}_varsel_uprosessert_count")
+            .description("Antall uprosesserte varsler i databasen")
+            .register(registry)
+
+    fun oppdaterUprosesserteVarsler(rows: Iterable<MultiGauge.Row<Number>>) = uprosesserteVarslerGauge.register(rows, true)
+
+    private val varselProsessertTeller =
+        Counter.builder("${NAMESPACE}_varsel_prosessert_count")
+            .description("Antall forsøkte prosesseringer av varsler")
+            .withRegistry(registry)
+
+    fun tellVarselProsessering(system: VarselSystem, rapportType: RapportType?, operasjon: String?, feilet: Boolean) =
+        varselProsessertTeller
+            .withTags(
+                "system",
+                system.name,
+                "rapporttype",
+                rapportType?.name.toString(),
+                "operasjon",
+                operasjon.toString(),
+                "feilet",
+                feilet.toString(),
+            )
+            .increment()
 
     // Hjelpefunksjon for å kunne gjøre timing av suspend-funksjoner:
     suspend fun <T> coRecord(timer: (Result<T>) -> Timer, f: suspend () -> T): T =

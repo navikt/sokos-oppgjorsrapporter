@@ -4,6 +4,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.engine.apache5.Apache5EngineConfig
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -27,22 +30,26 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.slf4j.MDCContext
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.DefaultAuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.NoOpAuthClient
+import no.nav.sokos.oppgjorsrapporter.auth.dialogportenTokenGetter
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.applicationLifecycleConfig
 import no.nav.sokos.oppgjorsrapporter.config.commonConfig
-import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.config.configFrom
 import no.nav.sokos.oppgjorsrapporter.config.createDataSource
 import no.nav.sokos.oppgjorsrapporter.config.migrateDatabase
 import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
+import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenClient
+import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenHttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.ereg.EregHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
@@ -53,7 +60,11 @@ import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.PdfgenHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 
 private val logger = KotlinLogging.logger {}
 
@@ -88,16 +99,18 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         provide<DataSource> { DatabaseConfig.dataSource }.cleanup { adminDataSource.close() }
         provide(RapportRepository::class)
         provide(RapportService::class)
+        provide(VarselRepository::class)
+        provide(VarselService::class)
 
         // For klasser som trenger en HttpClient (typisk for å snakke med én ekstern tjeneste), velger vi å lage en klient-instans per
         // tjeneste, slik at vi kan justere konfig for JSON-enkoding og -dekoding uavhengig av hva andre tjenester krever i sin
         // input/output.
         provide<EregService> {
-            val client = HttpClient(Apache5) { configure("ereg") }
+            val client = HttpClient(Apache5) { configure("ereg", EregHttpClientSetup) }
             EregService(config.innholdGeneratorProperties.eregBaseUrl, client, resolve())
         }
         provide<RapportGenerator> {
-            val client = HttpClient(Apache5) { configure("pdfgen") }
+            val client = HttpClient(Apache5) { configure("pdfgen", PdfgenHttpClientSetup) }
             RapportGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, client, resolve(), resolve())
         }
 
@@ -106,9 +119,32 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<PdpService> { LocalhostPdpService }
         } else {
             provide<AuthClient> {
-                DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.maskinportenProperties.altinn3BaseUrl)
+                DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.altinnProperties.baseUrl)
             }
             provide<PdpService> { AltinnPdpService(config.securityProperties, resolve(), resolve()) }
+        }
+        val authClient: AuthClient by this
+
+        provide<DialogportenClient> {
+            val client =
+                HttpClient(Apache5) {
+                    configure("dialogporten", DialogportenHttpClientSetup)
+                    install(Auth) {
+                        bearer {
+                            val tokenGetter =
+                                authClient.dialogportenTokenGetter(config.securityProperties.altinnProperties.dialogportenScope)
+                            loadTokens {
+                                logger.info("Laster initielt dialogporten-token")
+                                BearerTokens(tokenGetter(), null)
+                            }
+                            refreshTokens {
+                                logger.info("Refresher dialogporten-token")
+                                BearerTokens(tokenGetter(), null)
+                            }
+                        }
+                    }
+                }
+            DialogportenClient(config.securityProperties.altinnProperties.baseUrl, client)
         }
 
         val consumerKeys =
@@ -149,6 +185,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         val prosesserBestillingerJob =
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
         provide("job.${BestillingProsessor::class.simpleName}") { prosesserBestillingerJob }.cleanup { it.cancel() }
+
+        provide(VarselProsessor::class)
+        val prosesserVarslerJob =
+            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<VarselProsessor>().run() } }
+        provide("job.${VarselProsessor::class.simpleName}") { prosesserVarslerJob }.cleanup { it.cancel() }
     }
 
     // Flyttet ned hit, siden vi trenger en DataSource dersom install(MicrometerMetrics) skal inneholde PostgreSQLDatabaseMetrics
@@ -176,11 +217,11 @@ fun Application.resolveConfig(appConfig: ApplicationConfig = environment.config)
         configFrom(appConfig).also { attributes.put(ConfigAttributeKey, it) }
     }
 
-private fun HttpClientConfig<Apache5EngineConfig>.configure(system: String) {
+private fun HttpClientConfig<Apache5EngineConfig>.configure(loggerName: String, setupObject: HttpClientSetup) {
     expectSuccess = true
-    install(ContentNegotiation) { json(commonJsonConfig) }
+    install(ContentNegotiation) { json(setupObject.jsonConfig) }
     install(Logging) {
-        val httpLogger = KotlinLogging.logger("http-client.$system")
+        val httpLogger = KotlinLogging.logger("http-client.$loggerName")
         logger =
             object : Logger {
                 override fun log(message: String) {
@@ -190,4 +231,8 @@ private fun HttpClientConfig<Apache5EngineConfig>.configure(system: String) {
         level = LogLevel.ALL
         sanitizeHeader { false }
     }
+}
+
+interface HttpClientSetup {
+    val jsonConfig: Json
 }

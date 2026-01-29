@@ -2,10 +2,12 @@ package no.nav.sokos.oppgjorsrapporter.auth
 
 import kotlinx.coroutines.runBlocking
 
-private fun AuthClient.hentAltinnToken(scope: String): () -> String {
+private fun AuthClient.altinnTokenGetter(scope: String): suspend () -> String {
     val maskinportenTokenGetter = tokenGetter(AuthClientIdentityProvider.MASKINPORTEN, target = scope)
 
-    return { runBlocking { altinnExchange(maskinportenTokenGetter()) } }
+    return { altinnExchange(maskinportenTokenGetter()) }
 }
 
-fun AuthClient.pdpTokenGetter(scope: String) = hentAltinnToken(scope)
+fun AuthClient.pdpTokenGetter(scope: String): () -> String = { runBlocking { altinnTokenGetter(scope)() } }
+
+fun AuthClient.dialogportenTokenGetter(scope: String): suspend () -> String = altinnTokenGetter(scope)

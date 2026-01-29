@@ -6,7 +6,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 
 object TestContainer {
-    private val postgresImage = "postgres:17"
+    private val postgresImage = "postgres:18"
     val postgres: PostgreSQLContainer by lazy {
         PostgreSQLContainer(DockerImageName.parse(postgresImage)).apply {
             // Med 'reuse' påskrudd forblir containeren med databasen levende etter at testene har kjørt.
