@@ -6,9 +6,12 @@ SET SEARCH_PATH TO rapport;
 ALTER TABLE rapport
     -- Siden applikasjonen kun er i test ved deploy av denne endringen, synes metoden Squawk anbefaler unødvendig knotete:
     --   Add the column as nullable, backfill existing rows, and add a trigger to update the column on write instead.
-    -- squawk-ignore adding-field-with-default
-    ADD COLUMN uuid              UUID NOT NULL DEFAULT uuidv4(),
-    ADD COLUMN dialogporten_uuid UUID NULL;
+    -- Det bør heller ikke være noe problem at "rapport"-tabellen låses mens unique-indexen bygges, så å måtte ha separate deploys
+    -- for å først bygge index CONCURRENTLY, og deretter lage unique constraint av den blir også unødvendig knotete.
+    -- squawk-ignore adding-field-with-default, disallowed-unique-constraint
+    ADD COLUMN uuid              UUID NOT NULL UNIQUE DEFAULT uuidv4(),
+    -- squawk-ignore disallowed-unique-constraint
+    ADD COLUMN dialogporten_uuid UUID NULL UNIQUE;
 
 CREATE TYPE varsel_system AS ENUM ('dialogporten');
 
