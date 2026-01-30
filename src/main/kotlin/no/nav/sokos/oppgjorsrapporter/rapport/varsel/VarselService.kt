@@ -24,6 +24,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.DatabaseSupport
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.oppgjorsrapporter.util.tilNorskFormat
 
 enum class VarselSystem {
     dialogporten
@@ -111,17 +112,31 @@ class VarselService(
             CreateDialogRequest(
                 rapportType = rapport.type,
                 orgnr = rapport.orgnr,
-                title = "Oppgjørsrapport arbeidsgiver - refusjoner fra Nav",
-                summary = "Ny Oppgjørsrapport arbeidsgiver - refusjoner fra Nav er tilgjengelig",
+                title = "Oppgjørsrapport arbeidsgiver - refusjoner fra Nav (${rapport.datoValutert.tilNorskFormat()})",
+                // TODO: Rydde vekk denne advarselen når Altinn 2 Correspondence skrus av ved utgangen av mai 2026.
+                summary =
+                    """
+                    OBS! Denne rapporten kommer fra Navs nye system for oppgjørsrapporter.
+                    Ut mai 2026 vil også Navs gamle system sende ut tilsvarende rapporter (med det gamle navnet, ${rapport.type.gammelKode}).
+                    """
+                        .trimIndent(),
+                // TODO: Bytte ut URL med generell URL Oppgjørsrapporter (hvis det dukker opp en slik) eller rapport-type-spesifikke URLer
+                //       med de nye rapport-navnene
+                additionalInfo =
+                    """
+                    Les mer om ${rapport.type.fulltNavn} (tidligere kalt ${rapport.type.gammelKode}) på
+                    [https://www.nav.no/arbeidsgiver/k27](https://www.nav.no/arbeidsgiver/k27)
+                    """
+                        .trimIndent(),
                 externalReference = rapport.uuid.toString(),
                 idempotentKey = rapport.uuid.toString(),
                 isApiOnly = false,
-                transmissions = emptyList(),
                 guiActions =
                     listOf(
                         GuiAction(
                             title = listOf(Content.Value.Item("Gå til nav.no")),
-                            url = config.applicationProperties.guiBaseUri.toString(), // TODO: Mer direkte link
+                            // TODO: Korrigere link når URL-namespace for ekstern-frontenden vår lander
+                            url = config.applicationProperties.guiBaseUri.resolve("/rapport/${rapport.id.raw}").toString(),
                             priority = GuiAction.Priority.Primary,
                             action = Action.access,
                         )

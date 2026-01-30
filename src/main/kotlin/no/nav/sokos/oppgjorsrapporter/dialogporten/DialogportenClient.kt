@@ -3,12 +3,10 @@ package no.nav.sokos.oppgjorsrapporter.dialogporten
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
-import io.ktor.client.request.header
-import io.ktor.client.request.patch
+import io.ktor.client.request.delete
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import java.net.URI
 import java.util.UUID
@@ -23,8 +21,6 @@ import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.Content
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.CreateDialogRequest
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.Dialog
-import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.PatchOperation
-import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.SetSystemLabel
 
 class DialogportenClient(baseUrl: URI, private val httpClient: HttpClient) {
     private val dialogportenUrl = baseUrl.resolve("/dialogporten/api/v1/serviceowner/dialogs").toString()
@@ -47,21 +43,17 @@ class DialogportenClient(baseUrl: URI, private val httpClient: HttpClient) {
     }
 
     suspend fun arkiverDialog(dialogId: UUID, arkivert: Boolean = false) {
-        updateDialog(
-            dialogId,
-            listOf(SetSystemLabel(if (arkivert) SetSystemLabel.SystemLabel.Archive else SetSystemLabel.SystemLabel.Default)),
-        )
-    }
-
-    private suspend fun updateDialog(dialogId: UUID, patchOperations: List<PatchOperation>) {
         runCatching {
-                httpClient.patch("$dialogportenUrl/$dialogId") {
-                    header(HttpHeaders.ContentType, "application/json")
-                    //                    header(HttpHeaders.ContentType, "application/json-patch+json")
-                    setBody(patchOperations)
+                if (arkivert) {
+                    httpClient.delete("$dialogportenUrl/$dialogId") { accept(ContentType.Application.ProblemJson) }
+                } else {
+                    httpClient.post("$dialogportenUrl/$dialogId/actions/restore") { accept(ContentType.Application.ProblemJson) }
                 }
             }
-            .onFailure { e -> logAndThrow("Feil ved oppdatering av dialog", e) }
+            .onFailure { e ->
+                val handling = if (arkivert) "arkivering" else "dearkivering"
+                logAndThrow("Feil ved $handling av dialog", e)
+            }
     }
 
     private fun logAndThrow(msg: String, e: Throwable): Nothing {
@@ -78,8 +70,12 @@ class DialogportenClient(baseUrl: URI, private val httpClient: HttpClient) {
             progress = 100,
             externalReference = createDialogRequest.externalReference,
             isApiOnly = createDialogRequest.isApiOnly,
-            content = Content.create(title = createDialogRequest.title, summary = createDialogRequest.summary),
-            transmissions = createDialogRequest.transmissions,
+            content =
+                Content.create(
+                    title = createDialogRequest.title,
+                    summary = createDialogRequest.summary,
+                    additionalInfo = createDialogRequest.additionalInfo,
+                ),
             guiActions = createDialogRequest.guiActions,
             apiActions = createDialogRequest.apiActions,
         )
