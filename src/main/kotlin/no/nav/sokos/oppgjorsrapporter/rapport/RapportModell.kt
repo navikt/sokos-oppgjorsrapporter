@@ -18,10 +18,16 @@ import kotliquery.Row
 
 @Serializable @JvmInline value class OrgNavn(val raw: String)
 
-enum class RapportType(val altinnRessurs: String, val configKey: String?) {
-    @JsonNames("K27") `ref-arbg`("nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver", "refusjon"),
-    @JsonNames("T12") `trekk-hend`("Ikke definert ennå", null),
-    @JsonNames("T14") `trekk-kred`("Ikke definert ennå", null),
+enum class RapportType(val altinnRessurs: String, val configKey: String?, val fulltNavn: String, val gammelKode: String) {
+    @JsonNames("K27")
+    `ref-arbg`(
+        "nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver",
+        "refusjon",
+        "Oppgjørsrapport arbeidsgiver - refusjoner fra Nav",
+        "K27",
+    ),
+    @JsonNames("T12") `trekk-hend`("Ikke definert ennå", null, "Trekkoppgjør kreditorer - fra Nav", "T12"),
+    @JsonNames("T14") `trekk-kred`("Ikke definert ennå", null, "Trekkhendelser - tilbakemelding fra Nav", "T14"),
 }
 
 sealed interface RapportBestillingFelter {

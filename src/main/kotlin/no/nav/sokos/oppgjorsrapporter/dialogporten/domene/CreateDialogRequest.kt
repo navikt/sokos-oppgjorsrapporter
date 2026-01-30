@@ -8,10 +8,10 @@ data class CreateDialogRequest(
     val orgnr: OrgNr,
     val title: String,
     val summary: String,
+    val additionalInfo: String?,
     val externalReference: String,
     val idempotentKey: String,
     val isApiOnly: Boolean,
-    val transmissions: List<Transmission>,
     val guiActions: List<GuiAction>,
     val apiActions: List<ApiAction>,
 )

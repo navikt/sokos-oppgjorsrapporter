@@ -13,6 +13,7 @@ import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.HttpRequestData
+import io.ktor.client.utils.EmptyContent
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.serialization.kotlinx.json.json
@@ -82,6 +83,15 @@ class DialogportenClientTest {
                                   "value": "oppsummering"
                                 }
                               ]
+                            },
+                            "additionalInfo": {
+                              "value": [
+                                {
+                                  "value": "Ekstra info",
+                                  "languageCode": "nb"
+                                }
+                              ],
+                              "mediaType": "text/markdown"
                             }
                           },
                           "externalReference": "extRef",
@@ -90,7 +100,6 @@ class DialogportenClientTest {
                           "party": "urn:altinn:organization:identifier-no:123456789",
                           "progress": 100,
                           "serviceResource": "urn:altinn:resource:nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver",
-                          "transmissions": [],
                           "guiActions": [
                             {
                               "title": [
@@ -119,10 +128,10 @@ class DialogportenClientTest {
                 orgnr = OrgNr("123456789"),
                 title = "tittel",
                 summary = "oppsummering",
+                additionalInfo = "Ekstra info",
                 externalReference = "extRef",
                 idempotentKey = "idempotentKey",
                 isApiOnly = false,
-                transmissions = emptyList(),
                 guiActions =
                     listOf(
                         GuiAction(
@@ -139,23 +148,31 @@ class DialogportenClientTest {
     }
 
     @Test
-    fun `arkiverDialog skal sende en velformet request`() = runTest {
+    fun `arkiverDialog ved arkivering skal sende en velformet request`() = runTest {
         val dialogGuid = Uuid.generateV7()
         val httpClient =
-            mockHttpClient(HttpStatusCode.NoContent, "") { _, body ->
-                assertThatJson(body)
-                    .isEqualTo(
-                        """
-                        [
-                            { "op": "add", "path": "/systemLabel", "value": "Archive" }
-                        ]
-                        """
-                            .trimIndent()
-                    )
+            mockHttpClient(HttpStatusCode.NoContent, "") { req, body ->
+                assertThat(req.method).isEqualTo(HttpMethod.Delete)
+                assertThat(req.url.fullPath).isEqualTo("/dialogporten/api/v1/serviceowner/dialogs/${dialogGuid}")
+                assertThat(body).isEmpty()
             }
         val sut = DialogportenClient(baseUrl, httpClient)
 
         sut.arkiverDialog(dialogGuid.toJavaUuid(), arkivert = true)
+    }
+
+    @Test
+    fun `arkiverDialog ved de-arkivering skal sende en velformet request`() = runTest {
+        val dialogGuid = Uuid.generateV7()
+        val httpClient =
+            mockHttpClient(HttpStatusCode.NoContent, "") { req, body ->
+                assertThat(req.method).isEqualTo(HttpMethod.Post)
+                assertThat(req.url.fullPath).isEqualTo("/dialogporten/api/v1/serviceowner/dialogs/${dialogGuid}/actions/restore")
+                assertThat(body).isEmpty()
+            }
+        val sut = DialogportenClient(baseUrl, httpClient)
+
+        sut.arkiverDialog(dialogGuid.toJavaUuid(), arkivert = false)
     }
 }
 
@@ -163,8 +180,11 @@ fun OpenApiInteractionValidator.checkRequest(reqData: HttpRequestData, extraRequ
     withClue("${reqData.method} ${reqData.url}") {
         // Feil dersom vi ikke klarer å tolke body som en string
         val bodyAsText =
-            (reqData.body as? OutgoingContent.ByteArrayContent)?.let { body -> String(body.bytes()) }
-                ?: Assertions.fail("Vet ikke hvordan vi kan sjekke body av type ${reqData.body.javaClass.canonicalName}")
+            when (reqData.body) {
+                is OutgoingContent.ByteArrayContent -> String((reqData.body as OutgoingContent.ByteArrayContent).bytes())
+                is EmptyContent -> ""
+                else -> Assertions.fail("Vet ikke hvordan vi kan sjekke body av type ${reqData.body.javaClass.canonicalName}")
+            }
 
         val report =
             validateRequest(

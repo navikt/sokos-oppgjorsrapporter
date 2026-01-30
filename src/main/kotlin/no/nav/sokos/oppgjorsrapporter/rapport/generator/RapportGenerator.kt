@@ -37,9 +37,10 @@ import no.nav.sokos.oppgjorsrapporter.mq.Data
 import no.nav.sokos.oppgjorsrapporter.mq.Header
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.tilCSV
-import no.nav.sokos.oppgjorsrapporter.rapport.generator.LocalDateSomNorskDatoSerializer.norskDatoFormatter
 import no.nav.sokos.oppgjorsrapporter.serialization.AsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
+import no.nav.sokos.oppgjorsrapporter.util.fraNorskFormat
+import no.nav.sokos.oppgjorsrapporter.util.tilNorskFormat
 
 class RapportGenerator(private val baseUrl: URI, private val client: HttpClient, private val metrics: Metrics, private val clock: Clock) {
     private val logger = KotlinLogging.logger {}
@@ -239,15 +240,10 @@ data class RefusjonsRapportPdfPayload(
 }
 
 object LocalDateSomNorskDatoSerializer :
-    AsStringSerializer<LocalDate>(
-        serialName = "utbetaling.pengeflyt.kotlinx.LocalDateSomNorskDatoSerializer",
-        { input -> LocalDate.parse(input, norskDatoFormatter) },
-    ) {
+    AsStringSerializer<LocalDate>(serialName = "utbetaling.pengeflyt.kotlinx.LocalDateSomNorskDatoSerializer", { it.fraNorskFormat() }) {
     override fun serialize(encoder: Encoder, value: LocalDate) {
-        norskDatoFormatter.format(value).let(encoder::encodeString)
+        encoder.encodeString(value.tilNorskFormat())
     }
-
-    private val norskDatoFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 }
 
 @Serializable

@@ -12,7 +12,6 @@ data class Dialog(
     val isApiOnly: Boolean = true,
     val status: Status? = null,
     val content: Content,
-    val transmissions: List<Transmission>,
     val guiActions: List<GuiAction>? = null,
     val apiActions: List<ApiAction>? = null,
 ) {
@@ -30,31 +29,5 @@ data class Dialog(
         Completed,
         NotApplicable,
         Awaiting,
-    }
-}
-
-@Serializable
-sealed interface PatchOperation {
-    val op: Operation
-    val path: String
-}
-
-@Serializable
-enum class Operation {
-    add,
-    remove,
-    replace,
-    move,
-    copy,
-    test,
-}
-
-@Serializable
-data class SetSystemLabel(val value: SystemLabel, override val op: Operation = Operation.add, override val path: String = "/systemLabel") :
-    PatchOperation {
-    @Serializable
-    enum class SystemLabel {
-        Default,
-        Archive,
     }
 }
