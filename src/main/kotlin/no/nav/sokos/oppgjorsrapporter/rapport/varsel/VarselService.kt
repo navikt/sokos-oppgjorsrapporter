@@ -129,7 +129,7 @@ class VarselService(
                 // TODO: Skal URL her byttes ut med generell URL for en Oppgjørsrapporter-side (hvis det dukker opp en slik)?
                 additionalInfo =
                     """
-                    Les mer om ${rapport.type.fulltNavn} (tidligere kalt ${rapport.type.gammelKode}) på
+                    Les mer om *${rapport.type.fulltNavn}* (tidligere kalt ${rapport.type.gammelKode}) på
                     [Navs infoside om oppgjørsrapporter](https://www.nav.no/arbeidsgiver/rapporter).
                     """
                         .trimIndent(),
@@ -140,7 +140,7 @@ class VarselService(
                     listOf(
                         GuiAction(
                             // TODO: Ta bort "virker ikke ennå" når ekstern-frontenden vår er klar
-                            title = listOf(Content.Value.Item("Se rapport på nav.no (virker ikke ennå)")),
+                            title = listOf(Content.Value.Item("Se rapporten på nav.no (virker ikke ennå)")),
                             // TODO: Korrigere link når URL-namespace for ekstern-frontenden vår lander
                             url = config.applicationProperties.guiBaseUri.resolve("/rapport/${rapport.id.raw}").toString(),
                             priority = GuiAction.Priority.Primary,
