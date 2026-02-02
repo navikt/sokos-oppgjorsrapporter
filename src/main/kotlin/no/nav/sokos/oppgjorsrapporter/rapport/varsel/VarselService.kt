@@ -112,20 +112,25 @@ class VarselService(
             CreateDialogRequest(
                 rapportType = rapport.type,
                 orgnr = rapport.orgnr,
-                title = "Oppgjørsrapport arbeidsgiver - refusjoner fra Nav (${rapport.datoValutert.tilNorskFormat()})",
+                title =
+                    when (rapport.type) {
+                        RapportType.`ref-arbg` -> "${rapport.type.fulltNavn} (utbetalt ${rapport.datoValutert.tilNorskFormat()})"
+                        RapportType.`trekk-hend` -> rapport.type.fulltNavn
+                        RapportType.`trekk-kred` -> rapport.type.fulltNavn
+                    },
                 // TODO: Rydde vekk denne advarselen når Altinn 2 Correspondence skrus av ved utgangen av mai 2026.
                 summary =
                     """
-                    OBS! Denne rapporten kommer fra Navs nye system for oppgjørsrapporter.
-                    Ut mai 2026 vil også Navs gamle system sende ut tilsvarende rapporter (med det gamle navnet, ${rapport.type.gammelKode}).
+                    OBS, unngå doble nedlastinger!
+                    Rapporten kommer fra Navs nye system for oppgjørsrapporter.
+                    Til og med mai 2026 vil den gamle meldingen "${rapport.type.gammelTittel}" komme som duplikat.
                     """
                         .trimIndent(),
-                // TODO: Bytte ut URL med generell URL Oppgjørsrapporter (hvis det dukker opp en slik) eller rapport-type-spesifikke URLer
-                //       med de nye rapport-navnene
+                // TODO: Skal URL her byttes ut med generell URL for en Oppgjørsrapporter-side (hvis det dukker opp en slik)?
                 additionalInfo =
                     """
                     Les mer om ${rapport.type.fulltNavn} (tidligere kalt ${rapport.type.gammelKode}) på
-                    [https://www.nav.no/arbeidsgiver/k27](https://www.nav.no/arbeidsgiver/k27)
+                    [Navs infoside om oppgjørsrapporter](https://www.nav.no/arbeidsgiver/rapporter).
                     """
                         .trimIndent(),
                 externalReference = rapport.uuid.toString(),
@@ -134,7 +139,8 @@ class VarselService(
                 guiActions =
                     listOf(
                         GuiAction(
-                            title = listOf(Content.Value.Item("Gå til nav.no")),
+                            // TODO: Ta bort "virker ikke ennå" når ekstern-frontenden vår er klar
+                            title = listOf(Content.Value.Item("Se rapport på nav.no (virker ikke ennå)")),
                             // TODO: Korrigere link når URL-namespace for ekstern-frontenden vår lander
                             url = config.applicationProperties.guiBaseUri.resolve("/rapport/${rapport.id.raw}").toString(),
                             priority = GuiAction.Priority.Primary,
