@@ -39,6 +39,17 @@ class BestillingMottak(private val consumers: List<MqConsumer>, private val rapp
             when (melding.rapportType) {
                 RapportType.`ref-arbg` -> {
                     val bestilling = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(melding.data)
+                    with(bestilling) {
+                        // Summen av alle posterings-beløpene skal være likt sum-beløpet
+                        datarec
+                            .sumOf { it.belop }
+                            .takeIf { it compareTo header.sumBelop != 0 }
+                            ?.also { posteringsSum ->
+                                throw IllegalArgumentException(
+                                    "header.sumBelop (${header.sumBelop}) stemmer ikke med summen av posteringer: $posteringsSum"
+                                )
+                            }
+                    }
                     if (ekstraSjekk) {
                         bestilling.valider()
                     }
@@ -102,11 +113,6 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
                     .filterNot { Belop(it).verdi == it }
                     .takeIf { it.isNotEmpty() }
                     ?.let { "Ikke gyldig beløp: ${it.joinToString()}" },
-                // Summen av alle posterings-beløpene skal være likt sum-beløpet
-                datarec
-                    .sumOf { it.belop }
-                    .takeUnless { it == header.sumBelop }
-                    ?.let { "header.sumBelop (${header.sumBelop}) stemmer ikke med summen av posteringer: $it" },
             )
             .takeIf { it.isNotEmpty() }
             ?.let {
