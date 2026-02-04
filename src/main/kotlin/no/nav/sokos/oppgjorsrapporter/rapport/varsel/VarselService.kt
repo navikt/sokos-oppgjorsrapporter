@@ -140,7 +140,7 @@ class VarselService(
                     listOf(
                         GuiAction(
                             // TODO: Ta bort "virker ikke ennå" når ekstern-frontenden vår er klar
-                            title = listOf(Content.Value.Item("Se rapporten på nav.no (virker ikke ennå)")),
+                            title = listOf(Content.Value.Item("Gå til nedlastingsside på nav.no (virker ikke ennå)")),
                             // TODO: Korrigere link når URL-namespace for ekstern-frontenden vår lander
                             url = config.applicationProperties.guiBaseUri.resolve("/rapport/${rapport.id.raw}").toString(),
                             priority = GuiAction.Priority.Primary,
