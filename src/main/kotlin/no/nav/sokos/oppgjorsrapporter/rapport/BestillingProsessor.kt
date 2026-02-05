@@ -13,6 +13,7 @@ import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 
 class BestillingProsessor(
     private val applicationState: ApplicationState,
@@ -20,6 +21,7 @@ class BestillingProsessor(
     private val rapportGenerator: RapportGenerator,
     private val rapportService: RapportService,
     private val eregService: EregService,
+    private val varselService: VarselService,
 ) {
     private val logger: KLogger = KotlinLogging.logger {}
 
@@ -119,6 +121,7 @@ class BestillingProsessor(
                         }
                     }
                     .forEach { variant -> metrics.tellGenerertRapportVariant(rapport.type, variant.format, variant.bytes) }
+                varselService.registrerVarsel(tx, rapport)
             }
         }
 }
