@@ -24,6 +24,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.DatabaseSupport
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.oppgjorsrapporter.util.tilNorskFormat
 
 enum class VarselSystem {
     dialogporten
@@ -111,17 +112,37 @@ class VarselService(
             CreateDialogRequest(
                 rapportType = rapport.type,
                 orgnr = rapport.orgnr,
-                title = "Oppgjørsrapport arbeidsgiver - refusjoner fra Nav",
-                summary = "Ny Oppgjørsrapport arbeidsgiver - refusjoner fra Nav er tilgjengelig",
+                title =
+                    when (rapport.type) {
+                        RapportType.`ref-arbg` -> "${rapport.type.fulltNavn} (utbetalt ${rapport.datoValutert.tilNorskFormat()})"
+                        RapportType.`trekk-hend` -> rapport.type.fulltNavn
+                        RapportType.`trekk-kred` -> rapport.type.fulltNavn
+                    },
+                // TODO: Rydde vekk denne advarselen når Altinn 2 Correspondence skrus av ved utgangen av mai 2026.
+                summary =
+                    """
+                    OBS, unngå doble nedlastinger!
+                    Rapporten kommer fra Navs nye system for oppgjørsrapporter.
+                    Til og med mai 2026 vil den gamle meldingen "${rapport.type.gammelTittel}" komme som duplikat.
+                    """
+                        .trimIndent(),
+                // TODO: Skal URL her byttes ut med generell URL for en Oppgjørsrapporter-side (hvis det dukker opp en slik)?
+                additionalInfo =
+                    """
+                    Les mer om *${rapport.type.fulltNavn}* (tidligere kalt ${rapport.type.gammelKode}) på
+                    [Navs infoside om oppgjørsrapporter](https://www.nav.no/arbeidsgiver/rapporter).
+                    """
+                        .trimIndent(),
                 externalReference = rapport.uuid.toString(),
                 idempotentKey = rapport.uuid.toString(),
                 isApiOnly = false,
-                transmissions = emptyList(),
                 guiActions =
                     listOf(
                         GuiAction(
-                            title = listOf(Content.Value.Item("Gå til nav.no")),
-                            url = config.applicationProperties.guiBaseUri.toString(), // TODO: Mer direkte link
+                            // TODO: Ta bort "virker ikke ennå" når ekstern-frontenden vår er klar
+                            title = listOf(Content.Value.Item("Gå til nedlastingsside på nav.no (virker ikke ennå)")),
+                            // TODO: Korrigere link når URL-namespace for ekstern-frontenden vår lander
+                            url = config.applicationProperties.guiBaseUri.resolve("/rapport/${rapport.id.raw}").toString(),
                             priority = GuiAction.Priority.Primary,
                             action = Action.access,
                         )

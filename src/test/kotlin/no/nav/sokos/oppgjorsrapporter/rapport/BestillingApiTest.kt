@@ -85,10 +85,10 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
             genererBestilling(
                 orgnr = Orgnr.genererGyldig(),
                 valutert = LocalDate.now(),
-                antallUnderenheter = 1,
-                antallPersoner = 10,
+                underenheter = genSet(1) { Orgnr.genererGyldig() },
+                personer = genSet(10) { randomPerson() },
                 antallPosteringer = 15,
-                ytelser = YtelseType.kjente.shuffled().take(7),
+                ytelser = YtelseType.kjente.shuffled().take(7).toSet(),
             )
         val dokument = RefusjonsRapportBestilling.json.encodeToString(bestilling)
         // Kommenter inn linja under og kjør denne test-metoden for å få et eksempel på et gyldig JSON-dokument
@@ -202,34 +202,17 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         return RefusjonsRapportBestilling(header, datarec)
     }
 
-    fun genererBestilling(
-        orgnr: Orgnr,
-        valutert: LocalDate,
-        antallUnderenheter: Int,
-        antallPersoner: Int,
-        antallPosteringer: Int,
-        ytelser: List<YtelseType>,
-    ): RefusjonsRapportBestilling =
-        genererBestilling(
-            orgnr,
-            valutert,
-            underenheter =
-                buildSet {
-                    while (size < antallUnderenheter) {
-                        add(Orgnr.genererGyldig())
-                    }
-                },
-            personer =
-                buildSet {
-                    while (size < antallPersoner) {
-                        val fnr = Fnr.genererGyldig(forTestPerson = TestPerson.NAV)
-                        val random = Random(fnr.verdi.toLong())
-                        add(Person(fnr, genererNavn(random)))
-                    }
-                },
-            ytelser = ytelser.toSet(),
-            antallPosteringer = antallPosteringer,
-        )
+    fun <T> genSet(antall: Int, elem: () -> T): Set<T> = buildSet {
+        while (size < antall) {
+            add(elem())
+        }
+    }
+
+    fun randomPerson(): Person {
+        val fnr = Fnr.genererGyldig(forTestPerson = TestPerson.NAV)
+        val random = Random(fnr.verdi.toLong())
+        return Person(fnr, genererNavn(random))
+    }
 
     fun genererNavn(random: Random): String {
         val antallFornavn = listOf(1, 1, 1, 2, 2, 3).random(random)

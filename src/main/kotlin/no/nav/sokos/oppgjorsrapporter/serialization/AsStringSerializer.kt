@@ -20,7 +20,7 @@ abstract class AsStringSerializer<T : Any>(serialName: String, private val parse
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: T) {
-        value.toString().let(encoder::encodeString)
+        encoder.encodeString(value.toString())
     }
 
     override fun deserialize(decoder: Decoder): T = decoder.decodeString().runCatching(parse).getOrElse { throw SerializationException(it) }
