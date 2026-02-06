@@ -1,6 +1,5 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
-import io.kotest.extensions.testcontainers.toDataSource
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -19,6 +18,7 @@ import no.nav.sokos.oppgjorsrapporter.mq.Data
 import no.nav.sokos.oppgjorsrapporter.mq.Header
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.Belop
+import no.nav.sokos.oppgjorsrapporter.toDataSource
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.threeten.extra.MutableClock

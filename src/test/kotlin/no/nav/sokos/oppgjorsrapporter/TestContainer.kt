@@ -1,6 +1,9 @@
 package no.nav.sokos.oppgjorsrapporter
 
 import com.ibm.mq.testcontainers.MQContainer
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+import org.testcontainers.containers.JdbcDatabaseContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
@@ -40,4 +43,17 @@ object TestContainer {
             //            .withWebServer()
             .apply { start() }
     }
+}
+
+// Denne extension-metoden er stjålet fra kotest sin testcontainers-extension, hvor den var markert deprecated.
+// Det ser ut til at årsaken til deprecation-markeringen var at kotest-extensionen selv vil ha kontroll på livsløpet til
+// testcontaineren - men vi ønsker at testcontaineren med database forblir kjørende etter at testene har gjort seg ferdige.
+fun JdbcDatabaseContainer<*>.toDataSource(configure: HikariConfig.() -> Unit = {}): HikariDataSource {
+    val config = HikariConfig()
+    config.jdbcUrl = jdbcUrl
+    config.username = username
+    config.password = password
+    config.minimumIdle = 0
+    config.configure()
+    return HikariDataSource(config)
 }

@@ -6,7 +6,7 @@ val ibmMqVersion = "9.4.4.1"
 val janinoVersion = "3.1.12"
 val jsonUnitVersion = "5.1.0"
 val konfigVersion = "1.6.10.0"
-val kotestVersion = "6.1.1"
+val kotestVersion = "6.1.3"
 val kotlinLoggingVersion = "3.0.5"
 val kotlinxSerializationVersion = "1.10.0"
 val kotliqueryVersion = "1.9.1"
@@ -103,7 +103,6 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host-jvm:$ktorVersion")
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
-    testImplementation("io.kotest:kotest-extensions-testcontainers:$kotestVersion")
     testImplementation("io.ktor:ktor-client-mock:${ktorVersion}")
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
@@ -111,7 +110,19 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-postgresql:$testcontainersVersion")
     testImplementation("com.ibm.mq:mq-java-testcontainer:2.0.3")
     testImplementation("net.javacrumbs.json-unit:json-unit:${jsonUnitVersion}")
-    testImplementation("net.javacrumbs.json-unit:json-unit-assertj:${jsonUnitVersion}")
+    testImplementation("net.javacrumbs.json-unit:json-unit-assertj:${jsonUnitVersion}") {
+        constraints {
+            testImplementation("org.assertj:assertj-core:3.27.7") {
+                because(
+                    """
+                    CVE-2026-24400 fikses av assertj-core >= 3.27.7
+                    Det finnes p.t. ikke noen release av json-unit-assertj som drar inn nyere enn 3.27.6
+                    """
+                        .trimIndent()
+                )
+            }
+        }
+    }
 }
 
 kotlin {
