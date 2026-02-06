@@ -1,7 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
 import com.atlassian.oai.validator.restassured.OpenApiValidationFilter
-import io.kotest.extensions.testcontainers.toDataSource
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -28,6 +27,7 @@ import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigSystembrukerAuthToken
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
 import no.nav.sokos.oppgjorsrapporter.module
+import no.nav.sokos.oppgjorsrapporter.toDataSource
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll

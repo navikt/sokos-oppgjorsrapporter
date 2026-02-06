@@ -1,7 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.rapport.varsel
 
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.extensions.testcontainers.toDataSource
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
@@ -24,6 +23,7 @@ import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenClient
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import no.nav.sokos.oppgjorsrapporter.toDataSource
 
 class VarselServiceTest :
     FunSpec({

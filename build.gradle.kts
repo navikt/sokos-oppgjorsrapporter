@@ -1,25 +1,25 @@
 group = "no.nav.sokos"
 
-val flywayVersion = "11.18.0"
+val flywayVersion = "11.20.2"
 val hikariVersion = "7.0.2"
-val ibmMqVersion = "9.4.4.0"
+val ibmMqVersion = "9.4.4.1"
 val janinoVersion = "3.1.12"
 val jsonUnitVersion = "5.1.0"
 val konfigVersion = "1.6.10.0"
-val kotestVersion = "6.0.7"
+val kotestVersion = "6.1.3"
 val kotlinLoggingVersion = "3.0.5"
-val kotlinxSerializationVersion = "1.9.0"
+val kotlinxSerializationVersion = "1.10.0"
 val kotliqueryVersion = "1.9.1"
-val ktorVersion = "3.3.3"
-val logbackVersion = "1.5.21"
+val ktorVersion = "3.4.0"
+val logbackVersion = "1.5.26"
 val logstashVersion = "9.0"
-val micrometerVersion = "1.16.0"
+val micrometerVersion = "1.16.2"
 val mockOAuth2ServerVersion = "3.0.1"
 val mockkVersion = "1.14.7"
 val pdpClientVersion = "1.1.0"
-val postgresVersion = "42.7.8"
+val postgresVersion = "42.7.9"
 val swaggerRequestValidatorVersion = "2.46.0"
-val testcontainersVersion = "2.0.2"
+val testcontainersVersion = "2.0.3"
 val threetenExtraVersion = "1.8.0"
 val tokenSupportVersion = "6.0.0"
 val utilsVersion = "0.10.1"
@@ -31,7 +31,7 @@ plugins {
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
     id("com.diffplug.spotless") version "8.1.0"
-    id("org.jetbrains.kotlinx.kover") version "0.9.3"
+    id("org.jetbrains.kotlinx.kover") version "0.9.4"
 }
 
 application {
@@ -103,15 +103,26 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host-jvm:$ktorVersion")
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
-    testImplementation("io.kotest:kotest-extensions-testcontainers:$kotestVersion")
     testImplementation("io.ktor:ktor-client-mock:${ktorVersion}")
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("com.atlassian.oai:swagger-request-validator-restassured:${swaggerRequestValidatorVersion}")
     testImplementation("org.testcontainers:testcontainers-postgresql:$testcontainersVersion")
-    testImplementation("com.ibm.mq:mq-java-testcontainer:2.0.1")
+    testImplementation("com.ibm.mq:mq-java-testcontainer:2.0.3")
     testImplementation("net.javacrumbs.json-unit:json-unit:${jsonUnitVersion}")
-    testImplementation("net.javacrumbs.json-unit:json-unit-assertj:${jsonUnitVersion}")
+    testImplementation("net.javacrumbs.json-unit:json-unit-assertj:${jsonUnitVersion}") {
+        constraints {
+            testImplementation("org.assertj:assertj-core:3.27.7") {
+                because(
+                    """
+                    CVE-2026-24400 fikses av assertj-core >= 3.27.7
+                    Det finnes p.t. ikke noen release av json-unit-assertj som drar inn nyere enn 3.27.6
+                    """
+                        .trimIndent()
+                )
+            }
+        }
+    }
 }
 
 kotlin {
