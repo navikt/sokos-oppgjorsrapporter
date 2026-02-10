@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.engine.apache5.Apache5EngineConfig
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
@@ -110,7 +111,14 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             EregService(config.innholdGeneratorProperties.eregBaseUrl, client, resolve())
         }
         provide<RapportGenerator> {
-            val client = HttpClient(Apache5) { configure("pdfgen", PdfgenHttpClientSetup) }
+            val client =
+                HttpClient(Apache5) {
+                    configure("pdfgen", PdfgenHttpClientSetup)
+                    install(HttpTimeout) {
+                        socketTimeoutMillis = 60_000
+                        requestTimeoutMillis = 60_000
+                    }
+                }
             RapportGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, client, resolve(), resolve())
         }
 

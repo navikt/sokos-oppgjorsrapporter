@@ -30,6 +30,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
@@ -62,10 +63,13 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
                 )
             val pdfGenUrl = baseUrl.resolve("/api/v1/genpdf/oppgjorsrapporter/refusjon-arbg-sortert-etter-ytelse").toURL()
             val response =
-                client.post(pdfGenUrl) {
-                    contentType(ContentType.Application.Json)
-                    setBody(payload)
-                }
+                runCatching {
+                        client.post(pdfGenUrl) {
+                            contentType(ContentType.Application.Json)
+                            setBody(payload)
+                        }
+                    }
+                    .getOrElse { logAndThrow(it) }
             metrics.tellEksternEndepunktRequest(response, pdfGenUrl.path)
 
             when {
@@ -82,6 +86,11 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
                 }
             }
         }
+    }
+
+    fun logAndThrow(e: Throwable): Nothing {
+        logger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall mot PDF-generator" }
+        throw e
     }
 }
 
