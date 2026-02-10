@@ -43,7 +43,7 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
                 .statusCode(HttpStatusCode.BadRequest.value)
                 .extract()
                 .response()!!
-        assertThat(response.body().asString()).isEqualTo("")
+        assertThat(response.body().asString()).isEqualTo("Request parameter rapportType is missing")
     }
 
     @Test

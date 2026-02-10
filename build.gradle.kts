@@ -4,6 +4,7 @@ val flywayVersion = "12.0.0"
 val hikariVersion = "7.0.2"
 val ibmMqVersion = "9.4.4.1"
 val janinoVersion = "3.1.12"
+val junitVersion = "6.0.2"
 val jsonUnitVersion = "5.1.0"
 val konfigVersion = "1.6.10.0"
 val kotestVersion = "6.1.3"
@@ -105,6 +106,7 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.ktor:ktor-client-mock:${ktorVersion}")
     testImplementation("io.mockk:mockk:$mockkVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("com.atlassian.oai:swagger-request-validator-restassured:${swaggerRequestValidatorVersion}")
     testImplementation("org.testcontainers:testcontainers-postgresql:$testcontainersVersion")
