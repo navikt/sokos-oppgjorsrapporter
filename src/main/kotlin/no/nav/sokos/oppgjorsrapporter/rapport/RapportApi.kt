@@ -130,6 +130,14 @@ fun Route.rapportApi() {
                 // Enn så lenge har vi bare en gruppe definert i `azure:`-delen av nais-specen, så ytterligere autorisasjons-sjekker
                 // er ikke nødvendig
             }
+            is TokenX -> {
+                if (!pdpService.harTilgang(bruker, setOf(orgnr), rapportType.altinnRessurs)) {
+                    logger.info(TEAM_LOGS_MARKER) {
+                        "Personbruker $bruker har forsøkt å aksessere rapport $rapportType for $orgnr, men PDP gir ikke tilgang"
+                    }
+                    return false
+                }
+            }
         }
         return true
     }
@@ -209,6 +217,7 @@ fun Route.rapportApi() {
                                 is EntraId ->
                                     (tokenValidationContext().claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name")
                                         as? String) ?: "unknown"
+                                is TokenX -> tokenValidationContext().getPidFromTokenX()
                             },
                         ),
                     )

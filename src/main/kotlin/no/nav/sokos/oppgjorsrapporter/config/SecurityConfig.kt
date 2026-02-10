@@ -38,6 +38,20 @@ fun Application.securityConfig() {
             )
         }
 
+        AuthenticationType.EKSTERNE_BRUKERE_TOKENX.name.let { tokenX ->
+            tokenValidationSupport(
+                name = tokenX,
+                config =
+                    TokenSupportConfig(
+                        IssuerConfig(
+                            name = tokenX,
+                            discoveryUrl = config.securityProperties.tokenXProperties.wellKnownUrl,
+                            acceptedAudience = listOf(config.securityProperties.tokenXProperties.clientId),
+                        )
+                    ),
+            )
+        }
+
         AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER.name.let { systembruker ->
             tokenValidationSupport(
                 name = systembruker,
