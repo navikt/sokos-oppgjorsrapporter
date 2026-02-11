@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.engine.apache5.Apache5EngineConfig
+import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
@@ -12,6 +13,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.plugin
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.config.ApplicationConfig
@@ -107,13 +109,12 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         // tjeneste, slik at vi kan justere konfig for JSON-enkoding og -dekoding uavhengig av hva andre tjenester krever i sin
         // input/output.
         provide<EregService> {
-            val client = HttpClient(Apache5) { configure("ereg", EregHttpClientSetup) }
+            val client = httpClient("ereg", EregHttpClientSetup)
             EregService(config.innholdGeneratorProperties.eregBaseUrl, client, resolve())
         }
         provide<RapportGenerator> {
             val client =
-                HttpClient(Apache5) {
-                    configure("pdfgen", PdfgenHttpClientSetup)
+                httpClient("pdfgen", PdfgenHttpClientSetup) {
                     install(HttpTimeout) {
                         socketTimeoutMillis = 60_000
                         requestTimeoutMillis = 60_000
@@ -135,8 +136,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
 
         provide<DialogportenClient> {
             val client =
-                HttpClient(Apache5) {
-                    configure("dialogporten", DialogportenHttpClientSetup)
+                httpClient("dialogporten", DialogportenHttpClientSetup) {
                     install(Auth) {
                         bearer {
                             val tokenGetter =
@@ -225,20 +225,40 @@ fun Application.resolveConfig(appConfig: ApplicationConfig = environment.config)
         configFrom(appConfig).also { attributes.put(ConfigAttributeKey, it) }
     }
 
-private fun HttpClientConfig<Apache5EngineConfig>.configure(loggerName: String, setupObject: HttpClientSetup) {
-    expectSuccess = true
-    install(ContentNegotiation) { json(setupObject.jsonConfig) }
-    install(Logging) {
-        val httpLogger = KotlinLogging.logger("http-client.$loggerName")
-        logger =
-            object : Logger {
-                override fun log(message: String) {
-                    httpLogger.debug(TEAM_LOGS_MARKER, message)
-                }
+private fun httpClient(
+    loggerName: String,
+    setupObject: HttpClientSetup,
+    block: HttpClientConfig<Apache5EngineConfig>.() -> Unit = {},
+): HttpClient {
+    val httpLogger = KotlinLogging.logger("http-client.$loggerName")
+    val client =
+        HttpClient(Apache5) {
+            expectSuccess = true
+            install(ContentNegotiation) { json(setupObject.jsonConfig) }
+            install(Logging) {
+                logger =
+                    object : Logger {
+                        override fun log(message: String) {
+                            httpLogger.debug(TEAM_LOGS_MARKER, message)
+                        }
+                    }
+                level = LogLevel.ALL
+                sanitizeHeader { false }
             }
-        level = LogLevel.ALL
-        sanitizeHeader { false }
+
+            block()
+        }
+
+    client.plugin(HttpSend).intercept { request ->
+        try {
+            execute(request)
+        } catch (e: Exception) {
+            httpLogger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall mot $loggerName" }
+            throw e
+        }
     }
+
+    return client
 }
 
 interface HttpClientSetup {
