@@ -14,7 +14,6 @@ import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 suspend fun RoutingContext.tokenValidationContext(): TokenValidationContext {
     val principal = call.principal<TokenValidationContextPrincipal>()
     val tokenValidationContext = principal?.context
-    // Betyr det at dersom tokenValidationContext ikke er tilstedet at valideringen ikke gikk fint?
     if (tokenValidationContext == null) {
         call.respond(HttpStatusCode.Unauthorized, "Uautorisert tilgang")
         throw IllegalStateException("Teknisk feil - mangler tokenValidationContext")
