@@ -77,9 +77,6 @@ spec:
           namespace: nais
           cluster: dev-gcp
         - application: sokos-up-oppgjorsrapporter
-          namespace: okonomi
-          cluster: dev-gcp
-        - application: sokos-up-oppgjorsrapporter
           namespace: oppgjorsrapporter
           cluster: dev-gcp
     outbound:
