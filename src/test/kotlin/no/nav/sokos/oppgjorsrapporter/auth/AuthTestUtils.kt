@@ -8,12 +8,12 @@ import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 fun MockOAuth2Server.tokenFromDefaultProvider(claims: Map<String, Any> = emptyMap()): String =
     issueToken(issuerId = "default", clientId = "default", tokenCallback = DefaultOAuth2TokenCallback(claims = claims)).serialize()
 
-fun MockOAuth2Server.hentToken(issuerId: String, audience: String, claims: Map<String, Any>): String =
-    this.issueToken(issuerId, audience = audience, claims = claims).serialize()
+fun MockOAuth2Server.hentToken(issuer: AuthClientIdentityProvider, audience: String, claims: Map<String, Any>): String =
+    this.issueToken(issuerId = issuer.verdi, audience = audience, claims = claims).serialize()
 
 fun MockOAuth2Server.ugyldigTokenManglerSystembruker() =
     hentToken(
-        issuerId = "maskinporten",
+        issuer = AuthClientIdentityProvider.MASKINPORTEN,
         audience = "nav:utbetaling/oppgjorsrapporter",
         claims =
             mapOf(
@@ -24,7 +24,7 @@ fun MockOAuth2Server.ugyldigTokenManglerSystembruker() =
 
 fun MockOAuth2Server.gyldigSystembrukerAuthToken(orgnr: OrgNr): String =
     hentToken(
-        issuerId = AuthClientIdentityProvider.MASKINPORTEN.name,
+        issuer = AuthClientIdentityProvider.MASKINPORTEN,
         audience = "nav:utbetaling/oppgjorsrapporter",
         claims =
             mapOf(
@@ -44,7 +44,7 @@ fun MockOAuth2Server.gyldigSystembrukerAuthToken(orgnr: OrgNr): String =
 
 fun MockOAuth2Server.gyldigTokenXAuthToken(pid: Fnr, acr: String): String =
     hentToken(
-        issuerId = AuthClientIdentityProvider.TOKEN_X.name,
+        issuer = AuthClientIdentityProvider.TOKEN_X,
         audience = "dev-gcp:okonomi:sokos-oppgjorsrapporter",
         claims =
             mapOf(
