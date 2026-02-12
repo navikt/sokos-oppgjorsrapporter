@@ -93,6 +93,7 @@ spec:
           namespace: arbeidsforhold
           cluster: dev-fss
         - application: pengeflyt-pdfgen
+          namespace: oppgjorsrapporter
   envFrom:
     - secret: altinn-authorization-subscription
     - secret: sokos-oppgjorsrapporter-secrets
@@ -112,4 +113,4 @@ spec:
     - name: EREG_URL
       value: https://ereg-services-q1.dev-fss-pub.nais.io/
     - name: PDF_GENERATOR_URL
-      value: http://pengeflyt-pdfgen
+      value: http://pengeflyt-pdfgen.oppgjorsrapporter
