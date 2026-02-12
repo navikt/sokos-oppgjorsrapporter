@@ -3,6 +3,7 @@ package no.nav.sokos.oppgjorsrapporter.rapport.varsel
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import javax.sql.DataSource
 import kotlin.math.pow
@@ -107,6 +108,8 @@ class VarselService(
         }
     }
 
+    private fun etterAltinn2(): Boolean = LocalDate.now(clock).isAfter(LocalDate.parse("2026-05-31"))
+
     private suspend fun opprettDialog(rapport: Rapport): UUID =
         dialogportenClient.opprettDialog(
             CreateDialogRequest(
@@ -118,14 +121,15 @@ class VarselService(
                         RapportType.`trekk-hend` -> rapport.type.fulltNavn
                         RapportType.`trekk-kred` -> rapport.type.fulltNavn
                     },
-                // TODO: Rydde vekk denne advarselen når Altinn 2 Correspondence skrus av ved utgangen av mai 2026.
                 summary =
-                    """
-                    OBS, unngå doble nedlastinger!
-                    Rapporten kommer fra Navs nye system for oppgjørsrapporter.
-                    Til og med mai 2026 vil den gamle meldingen "${rapport.type.gammelTittel}" komme som duplikat.
-                    """
-                        .trimIndent(),
+                    if (etterAltinn2()) "Ny rapport for utbetaling er tilgjengelig for nedlasting."
+                    else
+                        """
+                        OBS, unngå doble nedlastinger!
+                        Rapporten kommer fra Navs nye system for oppgjørsrapporter.
+                        Til og med mai 2026 vil den gamle meldingen "${rapport.type.gammelTittel}" komme som duplikat.
+                        """
+                            .trimIndent(),
                 // TODO: Skal URL her byttes ut med generell URL for en Oppgjørsrapporter-side (hvis det dukker opp en slik)?
                 additionalInfo =
                     """
