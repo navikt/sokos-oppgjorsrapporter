@@ -68,24 +68,6 @@ fun TokenValidationContext.getTokenX(): Result<TokenX> = runCatching {
     val claims = this.claimsFor(AuthenticationType.EKSTERNE_BRUKERE_TOKENX)
     val pid = (claims.get("pid") as? String) ?: throw BrukerIkkeFunnet()
     val acr = (claims.get("acr") as? String) ?: throw BrukerIkkeFunnet()
-    val issuer = claims.get("iss") as? String ?: throw BrukerIkkeFunnet()
-    // hvordan får jeg tak i TOKEN_X_ISSUER fra config?
-
-    // audience validation
-    val audience = claims.get("aud")
-
-    // Signature validation
-    /*
-        Signature validation
-    Validate that the token is signed with a public key published at the JWKS endpoint. This endpoint URI can be found in one of two ways:
-
-    the TOKEN_X_JWKS_URI environment variable, or
-    the jwks_uri property from the metadata discovery document. The document is found at the endpoint pointed to by the TOKEN_X_WELL_KNOWN_URL environment variable.
-        * */
-
-    // claims validation
-    if (acr !in setOf("Level3", "Level4")) throw BrukerIkkeFunnet()
-
     TokenX(pid, acr)
 }
 

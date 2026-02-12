@@ -186,7 +186,7 @@ fun Route.rapportApi() {
                         inkluderArkiverte = reqBody.inkluderArkiverte,
                     )
                 } else {
-                    // Må være EntraId-bruker uten reqBody.orgnr
+                    // Må være EntraId-bruker eller TokenX-bruker uten reqBody.orgnr
                     EkskluderOrgKriterier(
                         ekskluderte = emptySet(),
                         bankkonto = reqBody.bankkonto,

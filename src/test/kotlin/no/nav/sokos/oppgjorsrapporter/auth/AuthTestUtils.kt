@@ -46,21 +46,5 @@ fun MockOAuth2Server.gyldigTokenXAuthToken(pid: Fnr, acr: String): String =
     hentToken(
         issuer = AuthClientIdentityProvider.TOKEN_X,
         audience = "dev-gcp:okonomi:sokos-oppgjorsrapporter",
-        claims =
-            mapOf(
-                "sub" to pid.verdi,
-                "iss" to "https://tokenx.dev-gcp.nav.cloud.nais.io",
-                "client_amr" to "private_key_jwt",
-                "pid" to pid,
-                "client_id" to "dev-gcp:nais:tokenx-token-generator",
-                "aud" to "dev-gcp:helsearbeidsgiver:sykepenger-im-lps-api",
-                "acr" to acr,
-                "nbf" to 1770869948,
-                "idp" to "https://test.idporten.no",
-                "scope" to "openid",
-                "exp" to 1770873548,
-                "iat" to 1770869948,
-                "jti" to "a54bc023-9c2f-43ba-af0b-a6e9c30d4a4b",
-                "consumer" to mapOf("authority" to "iso6523-actorid-upis", "ID" to "0192:889640782"),
-            ),
+        claims = mapOf("pid" to pid.verdi, "acr" to acr),
     )
