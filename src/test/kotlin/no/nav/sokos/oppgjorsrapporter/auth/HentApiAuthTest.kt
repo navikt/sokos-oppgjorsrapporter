@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.io.bytestring.encodeToByteString
 import no.nav.helsearbeidsgiver.utils.json.fromJson
 import no.nav.helsearbeidsgiver.utils.test.wrapper.genererGyldig
+import no.nav.helsearbeidsgiver.utils.wrapper.Fnr
 import no.nav.helsearbeidsgiver.utils.wrapper.Orgnr
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
@@ -47,6 +48,9 @@ abstract class ApiTest {
     val orgnrUtenPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
     val hovedenhetOrgnrMedPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
     val underenhetOrgnrMedPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
+
+    val pidUtenPdpTilgang = Fnr(Fnr.genererGyldig().verdi)
+    val pidMedPdpTilgang = Fnr(Fnr.genererGyldig().verdi)
 
     val mockedRapportRepository = mockk<RapportRepository>()
     val mockedPdpService = mockk<PdpService>()
@@ -220,5 +224,22 @@ class HentApiAuthTest : ApiTest() {
                     }
                 respons.status shouldBe HttpStatusCode.NotFound
             }
+    }
+
+    // gir 200 OK ved henting av metainfo om en spesifikk rapport som tokenX har tilgang til
+    @Test
+    fun `gir 200 OK ved henting av metainfo om en spesifikk rapport som ekstern bruker autentisert med tokenX har tilgang til`() = runTest {
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+
+        mockHentingAvEnkelRapport(rapport)
+
+        // Jeg vet ikke hvorda jeg kobler sammen pdp her. Hvordan skal jeg vite at den pid i gyldig tokenx har tilgang til rapporten?
+        val respons =
+            client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
+                bearerAuth(mockOAuth2Server.gyldigTokenXAuthToken(pid = pidMedPdpTilgang, acr = "Level3"))
+            }
+
+        respons.status shouldBe HttpStatusCode.OK
+        respons.bodyAsText().fromJson(Api.RapportDTO.serializer()) shouldBe Api.RapportDTO(rapport)
     }
 }

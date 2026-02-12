@@ -190,12 +190,7 @@ class RapportService(
             ?.let { rapport ->
                 repository.hentInnhold(tx, rapportId, format)?.let { (variant, innhold) ->
                     when (bruker) {
-                        is Systembruker ->
-                            if (!repository.tidligereLastetNedAvEksternBruker(tx, rapportId)) {
-                                metrics.rapportAlderVedForsteNedlasting
-                                    .withTags("rapporttype", rapport.type.name, "format", variant.format.contentType)
-                                    .record(Duration.between(rapport.opprettet, Instant.now(clock)).toSeconds().toDouble())
-                            }
+                        is Systembruker,
                         is TokenX ->
                             if (!repository.tidligereLastetNedAvEksternBruker(tx, rapportId)) {
                                 metrics.rapportAlderVedForsteNedlasting

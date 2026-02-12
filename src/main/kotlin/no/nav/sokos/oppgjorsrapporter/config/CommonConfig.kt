@@ -26,7 +26,6 @@ import no.nav.sokos.oppgjorsrapporter.auth.TokenX
 import no.nav.sokos.oppgjorsrapporter.auth.claimsFor
 import no.nav.sokos.oppgjorsrapporter.auth.getBruker
 import no.nav.sokos.oppgjorsrapporter.auth.getConsumerOrgnr
-import no.nav.sokos.oppgjorsrapporter.auth.getPidFromTokenX
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import org.slf4j.Marker
@@ -69,7 +68,7 @@ fun Application.commonConfig() {
                     is Systembruker -> validationCtx.getConsumerOrgnr()
                     is EntraId ->
                         (validationCtx.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name") as? String) ?: "unknown"
-                    is TokenX -> validationCtx.getPidFromTokenX()
+                    is TokenX -> "person"
                     null -> "unknown"
                 },
             )

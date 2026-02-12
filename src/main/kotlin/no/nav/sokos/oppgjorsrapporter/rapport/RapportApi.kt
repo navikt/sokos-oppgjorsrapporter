@@ -217,7 +217,7 @@ fun Route.rapportApi() {
                                 is EntraId ->
                                     (tokenValidationContext().claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name")
                                         as? String) ?: "unknown"
-                                is TokenX -> tokenValidationContext().getPidFromTokenX()
+                                is TokenX -> "person"
                             },
                         ),
                     )

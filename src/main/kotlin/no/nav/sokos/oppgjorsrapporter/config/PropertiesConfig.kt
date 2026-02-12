@@ -143,10 +143,15 @@ object PropertiesConfig {
         ) : this(clientId = source.get("auth.entra_id.client_id"), wellKnownUrl = source.get("auth.entra_id.well_known_url"))
     }
 
-    class TokenXProperties(val clientId: String, val wellKnownUrl: String) {
+    class TokenXProperties(val clientId: String, val wellKnownUrl: String, val issuer: String, val jwksUri: String) {
         constructor(
             source: ConfigSource
-        ) : this(clientId = source.get("auth.token_x.client_id"), wellKnownUrl = source.get("auth.token_x.well_known_url"))
+        ) : this(
+            clientId = source.get("auth.token_x.client_id"),
+            wellKnownUrl = source.get("auth.token_x.well_known_url"),
+            issuer = source.get("auth.token_x.issuer"),
+            jwksUri = source.get("auth.token_x.jwks_uri"),
+        )
     }
 
     class MaskinportenProperties(val wellKnownUrl: String, val eksponertScope: String) {
