@@ -235,7 +235,37 @@ class HentApiAuthTest : ApiTest() {
             }
     }
 
-    // gir 200 OK ved henting av metainfo om en spesifikk rapport som tokenX har tilgang til
+    @Test
+    fun `gir 200 OK ved henting av innhold i en spesifikk rapport som tokenX bruker har tilgang til`() = runTest {
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+
+        mockHentingAvEnkelRapport(rapport)
+
+        val respons =
+            client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
+                bearerAuth(mockOAuth2Server.gyldigTokenXAuthToken(pid = pidMedPdpTilgang, acr = "Level3"))
+                accept(ContentType.Application.Pdf)
+            }
+
+        respons.status shouldBe HttpStatusCode.OK
+        respons.bodyAsText() shouldStartWith "%PDF-"
+    }
+
+    @Test
+    fun `gir 404 OK ved henting av innhold i en spesifikk rapport som tokenX bruker har tilgang til`() = runTest {
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+
+        mockHentingAvEnkelRapport(rapport)
+
+        val respons =
+            client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
+                bearerAuth(mockOAuth2Server.gyldigTokenXAuthToken(pid = pidUtenPdpTilgang, acr = "Level3"))
+                accept(ContentType.Application.Pdf)
+            }
+
+        respons.status shouldBe HttpStatusCode.NotFound
+    }
+
     @Test
     fun `gir 200 OK ved henting av metainfo om en spesifikk rapport som tokenX bruker har tilgang til`() = runTest {
         val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
