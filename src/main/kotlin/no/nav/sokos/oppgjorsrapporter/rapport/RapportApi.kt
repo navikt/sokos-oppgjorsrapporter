@@ -153,7 +153,7 @@ fun Route.rapportApi() {
                     return@post call.respond(HttpStatusCode.BadRequest, e.message ?: "Ukjent feil")
                 }
             if (reqBody.bankkonto != null) {
-                if (bruker is Systembruker) {
+                if (bruker !is EntraId) {
                     return@post call.respond(HttpStatusCode.BadRequest, "søk på bankkonto tillates ikke for systembrukere")
                 }
                 if (reqBody.orgnr != null) {
