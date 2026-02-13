@@ -30,8 +30,8 @@ spec:
       cpu: 100m
       memory: 512Mi
   ingresses:
-    - https://tmp-sokos-oppgjorsrapporter.intern.dev.nav.no
-    - https://tmp-sokos-oppgjorsrapporter.ekstern.dev.nav.no
+    - https://sokos-oppgjorsrapporter.intern.dev.nav.no
+    - https://sokos-oppgjorsrapporter.ekstern.dev.nav.no
   prometheus:
     enabled: true
     path: /internal/metrics
