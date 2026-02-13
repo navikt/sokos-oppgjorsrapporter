@@ -2,9 +2,9 @@ apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
   name: sokos-oppgjorsrapporter
-  namespace: okonomi
+  namespace: oppgjorsrapporter
   labels:
-    team: okonomi
+    team: oppgjorsrapporter
 spec:
   image: "{{{ image }}}"
   port: 8080

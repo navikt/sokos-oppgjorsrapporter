@@ -7,7 +7,7 @@ Backend-applikasjon for å
 3. varsle når nye rapporter ligger tilgjengelig, og
 4. tilgjengeliggjøre dem for nedlasting (via API)
 
-APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening](https://github.com/navikt/sokos-oppgjorsrapporter-selvbetjening).
+APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening-frontend](https://github.com/navikt/sokos-oppgjorsrapporter-selvbetjening-frontend).
 
 ## Workflows
 
@@ -175,16 +175,16 @@ For dev-gcp:
 
 ```shell script
 kubectl config use-context dev-gcp
-kubectl get pods -n okonomi | grep sokos-oppgjorsrapporter
-kubectl logs -f sokos-oppgjorsrapporter-<POD-ID> --namespace okonomi -c sokos-oppgjorsrapporter
+kubectl get pods -n oppgjorsrapporter | grep sokos-oppgjorsrapporter
+kubectl logs -f sokos-oppgjorsrapporter-<POD-ID> --namespace oppgjorsrapporter -c sokos-oppgjorsrapporter
 ```
 
 For prod-gcp:
 
 ```shell script
 kubectl config use-context prod-gcp
-kubectl get pods -n okonomi | grep sokos-oppgjorsrapporter
-kubectl logs -f sokos-oppgjorsrapporter-<POD-ID> --namespace okonomi -c sokos-oppgjorsrapporter
+kubectl get pods -n oppgjorsrapporter | grep sokos-oppgjorsrapporter
+kubectl logs -f sokos-oppgjorsrapporter-<POD-ID> --namespace oppgjorsrapporter -c sokos-oppgjorsrapporter
 ```
 
 ### Alarmer

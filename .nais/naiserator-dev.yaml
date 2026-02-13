@@ -2,9 +2,9 @@ apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
   name: sokos-oppgjorsrapporter
-  namespace: okonomi
+  namespace: oppgjorsrapporter
   labels:
-    team: okonomi
+    team: oppgjorsrapporter
 spec:
   image: "{{{ image }}}"
   port: 8080
@@ -30,8 +30,8 @@ spec:
       cpu: 100m
       memory: 512Mi
   ingresses:
-    - https://sokos-oppgjorsrapporter.intern.dev.nav.no
-    - https://sokos-oppgjorsrapporter.ekstern.dev.nav.no
+    - https://tmp-sokos-oppgjorsrapporter.intern.dev.nav.no
+    - https://tmp-sokos-oppgjorsrapporter.ekstern.dev.nav.no
   prometheus:
     enabled: true
     path: /internal/metrics
@@ -77,8 +77,6 @@ spec:
           namespace: nais
           cluster: dev-gcp
         - application: sokos-up-oppgjorsrapporter
-          namespace: oppgjorsrapporter
-          cluster: dev-gcp
     outbound:
       external:
         - host: platform.tt02.altinn.no
@@ -93,7 +91,6 @@ spec:
           namespace: arbeidsforhold
           cluster: dev-fss
         - application: pengeflyt-pdfgen
-          namespace: oppgjorsrapporter
   envFrom:
     - secret: altinn-authorization-subscription
     - secret: sokos-oppgjorsrapporter-secrets
@@ -113,4 +110,4 @@ spec:
     - name: EREG_URL
       value: https://ereg-services-q1.dev-fss-pub.nais.io/
     - name: PDF_GENERATOR_URL
-      value: http://pengeflyt-pdfgen.oppgjorsrapporter
+      value: http://pengeflyt-pdfgen
