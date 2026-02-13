@@ -323,7 +323,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        For Nav-intern bruk: Bruk [Entra ID](https://docs.nais.io/auth/entra-id/) til autentisering.  Token må ha `audience` satt til `[cluster]:okonomi:sokos-oppgjorsrapporter`.
+        For Nav-intern bruk: Bruk [Entra ID](https://docs.nais.io/auth/entra-id/) til autentisering.  Token må ha `audience` satt til `[cluster]:oppgjorsrapporter:sokos-oppgjorsrapporter`.
         
         For å teste APIet kan du lage et gyldig OBO-token ved å bruke wonderwall:
-        - [dev-gcp](https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp:okonomi:sokos-oppgjorsrapporter)
+        - [dev-gcp](https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp:oppgjorsrapporter:sokos-oppgjorsrapporter)

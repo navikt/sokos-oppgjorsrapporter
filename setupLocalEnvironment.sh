@@ -6,7 +6,7 @@ if [ $? -gt 0 ]; then
     gcloud auth login
 fi
 kubectl config use-context dev-gcp
-kubectl config set-context --current --namespace=okonomi
+kubectl config set-context --current --namespace=oppgjorsrapporter
 
 # Get AZURE system variables
 envValue=$(kubectl exec -it $(kubectl get pods | grep sokos-oppgjorsrapporter | cut -f1 -d' ') -c sokos-oppgjorsrapporter -- env | egrep "^AZURE"| sort)

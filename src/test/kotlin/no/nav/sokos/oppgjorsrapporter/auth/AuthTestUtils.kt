@@ -45,6 +45,6 @@ fun MockOAuth2Server.gyldigSystembrukerAuthToken(orgnr: OrgNr): String =
 fun MockOAuth2Server.gyldigTokenXAuthToken(pid: Fnr, acr: String): String =
     hentToken(
         issuer = AuthClientIdentityProvider.TOKEN_X,
-        audience = "dev-gcp:okonomi:sokos-oppgjorsrapporter",
+        audience = "dev-gcp:oppgjorsrapporter:sokos-oppgjorsrapporter",
         claims = mapOf("pid" to pid.verdi, "acr" to acr),
     )
