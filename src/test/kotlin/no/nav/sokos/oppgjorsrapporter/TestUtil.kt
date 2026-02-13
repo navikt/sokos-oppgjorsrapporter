@@ -181,6 +181,7 @@ fun MockOAuth2Server.authConfigOverrides() =
         put("auth.entra_id.client_id", "default")
         put("auth.entra_id.well_known_url", wellKnownUrl("default").toString())
         put("auth.maskinporten.well_known_url", wellKnownUrl("maskinporten").toString())
+        put("auth.token_x.well_known_url", wellKnownUrl("tokenx").toString())
     }
 
 fun MockOAuth2Server.withTestApplication(

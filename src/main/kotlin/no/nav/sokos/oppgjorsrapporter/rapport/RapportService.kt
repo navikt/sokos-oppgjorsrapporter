@@ -15,6 +15,7 @@ import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.AutentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
+import no.nav.sokos.oppgjorsrapporter.auth.TokenX
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
@@ -189,8 +190,8 @@ class RapportService(
             ?.let { rapport ->
                 repository.hentInnhold(tx, rapportId, format)?.let { (variant, innhold) ->
                     when (bruker) {
-                        // TODO: ID-porten-brukere skal, når vi får støtte for sånne, også regnes som eksterne her
-                        is Systembruker ->
+                        is Systembruker,
+                        is TokenX ->
                             if (!repository.tidligereLastetNedAvEksternBruker(tx, rapportId)) {
                                 metrics.rapportAlderVedForsteNedlasting
                                     .withTags("rapporttype", rapport.type.name, "format", variant.format.contentType)
@@ -222,6 +223,7 @@ class RapportService(
                 bruker.authType,
                 when (bruker) {
                     is EntraId -> "NAVident=${bruker.navIdent}"
+                    is TokenX -> "pid=${bruker.pid}"
                     is Systembruker -> "system=${bruker.systemId} userOrg=${bruker.userOrg.raw} id=${bruker.userId}"
                 },
             )

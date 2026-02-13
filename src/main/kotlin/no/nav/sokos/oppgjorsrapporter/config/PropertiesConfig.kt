@@ -121,6 +121,7 @@ object PropertiesConfig {
 
     data class SecurityProperties(
         val azureAdProperties: AzureAdProperties,
+        val tokenXProperties: TokenXProperties,
         val maskinportenProperties: MaskinportenProperties,
         val altinnProperties: AltinnProperties,
         val tokenEndpoint: String,
@@ -129,6 +130,7 @@ object PropertiesConfig {
             source: ConfigSource
         ) : this(
             azureAdProperties = AzureAdProperties(source),
+            tokenXProperties = TokenXProperties(source),
             maskinportenProperties = MaskinportenProperties(source),
             altinnProperties = AltinnProperties(source),
             tokenEndpoint = source.get("auth.texas.token_endpoint"),
@@ -139,6 +141,12 @@ object PropertiesConfig {
         constructor(
             source: ConfigSource
         ) : this(clientId = source.get("auth.entra_id.client_id"), wellKnownUrl = source.get("auth.entra_id.well_known_url"))
+    }
+
+    class TokenXProperties(val clientId: String, val wellKnownUrl: String) {
+        constructor(
+            source: ConfigSource
+        ) : this(clientId = source.get("auth.token_x.client_id"), wellKnownUrl = source.get("auth.token_x.well_known_url"))
     }
 
     class MaskinportenProperties(val wellKnownUrl: String, val eksponertScope: String) {

@@ -11,7 +11,7 @@ info:
     * Oppgjørsrapport arbeidsgiver - refusjoner fra Nav (tidl. K27),
     * Trekkoppgjør kreditor (tidl. T14), og
     * Trekkhendelser (tidl. T12)
-  version: 1.1.1
+  version: 1.1.2
 
 servers:
   - url: https://sokos-oppgjorsrapporter.ekstern.dev.nav.no/
@@ -22,6 +22,7 @@ servers:
 security:
   - Systembruker: []
   - EntraId: []
+  - TokenX: []
 
 paths:
   /api/rapport/v1:
@@ -187,7 +188,7 @@ components:
           description: |
             Returner kun rapporter knyttet til den angitte bankkontoen.
 
-            Dette parameteret er kun for Nav-intern bruk; det tillates ikke brukt ved systembruker-autentisering.
+            Dette parameteret er kun for Nav-intern bruk; det tillates ikke brukt ved Systembruker- eller TokenX-autentisering.
             Dette parameteret kan ikke kombineres med `orgnr`.
           type: string
           example: "12345678901"
@@ -309,6 +310,14 @@ components:
       description: |
         Kan bruke [Altinn systembruker](https://docs.altinn.studio/nb/authorization/guides/system-vendor/system-user/);
         se [dokumentasjon](https://github.com/navikt/sokos-oppgjorsrapporter/wiki/Autentisering-og-autorisasjon) for hvordan dette kan settes opp.
+    TokenX:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        For bruk fra Navs eksterne frontend; frontenden vil bruke [TokenX](https://doc.nais.io/auth/tokenx/how-to/consume/) til
+        å veksle et token fra [ID-porten](https://docs.digdir.no/docs/idporten/) inn i et OBO-token, som så brukes for å
+        autentisere frontend mot dette APIet.
     EntraId:
       type: http
       scheme: bearer
