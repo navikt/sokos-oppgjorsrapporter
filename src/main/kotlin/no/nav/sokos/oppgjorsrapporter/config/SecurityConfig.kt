@@ -11,6 +11,7 @@ import no.nav.security.token.support.v3.IssuerConfig
 import no.nav.security.token.support.v3.RequiredClaims
 import no.nav.security.token.support.v3.TokenSupportConfig
 import no.nav.security.token.support.v3.tokenValidationSupport
+import no.nav.sokos.oppgjorsrapporter.auth.claimsFor
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigScope
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigSystembrukerOgConsumer
 
@@ -35,6 +36,24 @@ fun Application.securityConfig() {
                         )
                     ),
                 requiredClaims = RequiredClaims(issuer = azureAd, claimMap = arrayOf("NAVident", "groups")),
+            )
+        }
+
+        AuthenticationType.EKSTERNE_BRUKERE_TOKENX.name.let { tokenX ->
+            tokenValidationSupport(
+                name = tokenX,
+                config =
+                    TokenSupportConfig(
+                        IssuerConfig(
+                            name = tokenX,
+                            discoveryUrl = config.securityProperties.tokenXProperties.wellKnownUrl,
+                            acceptedAudience = listOf(config.securityProperties.tokenXProperties.clientId),
+                        )
+                    ),
+                requiredClaims = RequiredClaims(issuer = tokenX, claimMap = arrayOf("pid", "acr")),
+                additionalValidation = {
+                    it.claimsFor(AuthenticationType.EKSTERNE_BRUKERE_TOKENX).get("acr") in arrayOf("Level3", "Level4")
+                },
             )
         }
 

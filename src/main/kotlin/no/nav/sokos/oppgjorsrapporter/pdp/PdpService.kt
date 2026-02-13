@@ -4,6 +4,7 @@ import mu.KotlinLogging
 import no.nav.helsearbeidsgiver.altinn.pdp.PdpClient
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
+import no.nav.sokos.oppgjorsrapporter.auth.TokenX
 import no.nav.sokos.oppgjorsrapporter.auth.pdpTokenGetter
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
@@ -12,6 +13,8 @@ import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 
 interface PdpService {
     suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean
+
+    suspend fun harTilgang(tokenX: TokenX, orgnumre: Set<OrgNr>, ressurs: String): Boolean
 }
 
 class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, authClient: AuthClient, private val metrics: Metrics) :
@@ -45,12 +48,33 @@ class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, 
             }
             .getOrDefault(false) // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
     }
+
+    override suspend fun harTilgang(tokenX: TokenX, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
+        logger.info(TEAM_LOGS_MARKER) { "PDP orgnr: $orgnumre, tokenX: $tokenX, ressurs: $ressurs" }
+        val orgnummerSet = orgnumre.map { it.raw }.toSet()
+        val decisionCount = orgnummerSet.size
+        metrics.tellPdpKall(decisionCount)
+        return runCatching {
+                metrics.coRecord({ result ->
+                    val countTag = decisionCount.let { if (it >= 10) "10+" else it.toString() }
+                    metrics.pdpKallTimer.withTags("decisioncount", countTag, "feilet", result.isFailure.toString())
+                }) {
+                    pdpClient.personHarRettighetForOrganisasjoner(fnr = tokenX.pid, orgnumre = orgnummerSet, ressurs = ressurs)
+                }
+            }
+            .getOrDefault(false) // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
+    }
 }
 
 object LocalhostPdpService : PdpService {
     private val logger = KotlinLogging.logger {}
 
     override suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
+        logger.info(TEAM_LOGS_MARKER) { "Ingen PDP, har tilgang" }
+        return true
+    }
+
+    override suspend fun harTilgang(tokenX: TokenX, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
         logger.info(TEAM_LOGS_MARKER) { "Ingen PDP, har tilgang" }
         return true
     }
@@ -63,5 +87,10 @@ object IngenTilgangPdpService : PdpService {
     override suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
         logger.info(TEAM_LOGS_MARKER) { "Ingen PDP, ingen tilgang" }
         return false
+    }
+
+    override suspend fun harTilgang(tokenX: TokenX, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
+        logger.info(TEAM_LOGS_MARKER) { "Ingen PDP, har tilgang" }
+        return true
     }
 }

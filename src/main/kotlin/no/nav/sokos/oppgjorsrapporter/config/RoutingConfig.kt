@@ -14,7 +14,11 @@ fun Application.routingConfig() {
     routing {
         internalNaisRoutes(applicationState)
         swaggerUI(path = SWAGGER_DOC_PATH, swaggerFile = "openapi/rapport-v1.yaml")
-        authenticate(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name, AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER.name) {
+        authenticate(
+            AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name,
+            AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER.name,
+            AuthenticationType.EKSTERNE_BRUKERE_TOKENX.name,
+        ) {
             rapportApi()
         }
     }

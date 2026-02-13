@@ -79,6 +79,9 @@ spec:
         - application: sokos-up-oppgjorsrapporter
           namespace: oppgjorsrapporter
           cluster: dev-gcp
+        - application: sokos-oppgjorsrapporter-selvbetjening-frontend
+          namespace: oppgjorsrapporter
+          cluster: dev-gcp
     outbound:
       external:
         - host: platform.tt02.altinn.no

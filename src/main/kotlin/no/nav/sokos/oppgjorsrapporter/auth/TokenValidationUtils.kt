@@ -63,7 +63,15 @@ fun TokenValidationContext.getEntraId(): Result<EntraId> = runCatching {
     EntraId(navIdent, groups)
 }
 
-fun TokenValidationContext.getBruker(): Result<AutentisertBruker> = getSystembruker().recoverCatching { getEntraId().getOrThrow() }
+fun TokenValidationContext.getTokenX(): Result<TokenX> = runCatching {
+    val claims = this.claimsFor(AuthenticationType.EKSTERNE_BRUKERE_TOKENX)
+    val pid = (claims.get("pid") as? String) ?: throw BrukerIkkeFunnet()
+    val acr = (claims.get("acr") as? String) ?: throw BrukerIkkeFunnet()
+    TokenX(pid, acr)
+}
+
+fun TokenValidationContext.getBruker(): Result<AutentisertBruker> =
+    getSystembruker().recoverCatching { getEntraId().getOrThrow() }.recoverCatching { getTokenX().getOrThrow() }
 
 // Exception-klasse som ikke fyller inn stacktrace, da Failure-caset for e.g. getBruker ikke trenger full stacktrace.
 internal class BrukerIkkeFunnet : RuntimeException() {
@@ -92,5 +100,11 @@ data class Systembruker(val userId: String, val userOrg: OrgNr, val systemId: St
 data class EntraId(val navIdent: String, val groups: List<String>) : AutentisertBruker, HasAuthType by Companion {
     companion object : HasAuthType {
         override val authType = "entraid"
+    }
+}
+
+data class TokenX(val pid: String, val acr: String) : AutentisertBruker, HasAuthType by Companion {
+    companion object : HasAuthType {
+        override val authType = "tokenx"
     }
 }

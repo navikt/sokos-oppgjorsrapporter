@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.io.bytestring.encodeToByteString
 import no.nav.helsearbeidsgiver.utils.json.fromJson
 import no.nav.helsearbeidsgiver.utils.test.wrapper.genererGyldig
+import no.nav.helsearbeidsgiver.utils.wrapper.Fnr
 import no.nav.helsearbeidsgiver.utils.wrapper.Orgnr
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
@@ -48,6 +49,9 @@ abstract class ApiTest {
     val hovedenhetOrgnrMedPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
     val underenhetOrgnrMedPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
 
+    val pidUtenPdpTilgang = Fnr.genererGyldig()
+    val pidMedPdpTilgang = Fnr.genererGyldig()
+
     val mockedRapportRepository = mockk<RapportRepository>()
     val mockedPdpService = mockk<PdpService>()
 
@@ -72,6 +76,7 @@ abstract class ApiTest {
 
     fun mockPdpTilganger() {
         coEvery { mockedPdpService.harTilgang(systembruker = any(), orgnumre = any(), ressurs = any()) } returns false
+        coEvery { mockedPdpService.harTilgang(tokenX = any(), orgnumre = any(), ressurs = any()) } returns false
 
         coEvery {
             mockedPdpService.harTilgang(
@@ -85,6 +90,14 @@ abstract class ApiTest {
             mockedPdpService.harTilgang(
                 systembruker = match { it.userOrg == underenhetOrgnrMedPdpTilgang },
                 orgnumre = match { it.contains(underenhetOrgnrMedPdpTilgang) },
+                ressurs = any(),
+            )
+        } returns true
+
+        coEvery {
+            mockedPdpService.harTilgang(
+                tokenX = match { it.pid == pidMedPdpTilgang.verdi },
+                orgnumre = match { it.contains(hovedenhetOrgnrMedPdpTilgang) || it.contains(underenhetOrgnrMedPdpTilgang) },
                 ressurs = any(),
             )
         } returns true
@@ -220,5 +233,65 @@ class HentApiAuthTest : ApiTest() {
                     }
                 respons.status shouldBe HttpStatusCode.NotFound
             }
+    }
+
+    @Test
+    fun `gir 200 OK ved henting av innhold i en spesifikk rapport som tokenX bruker har tilgang til`() = runTest {
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+
+        mockHentingAvEnkelRapport(rapport)
+
+        val respons =
+            client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
+                bearerAuth(mockOAuth2Server.gyldigTokenXAuthToken(pid = pidMedPdpTilgang, acr = "Level3"))
+                accept(ContentType.Application.Pdf)
+            }
+
+        respons.status shouldBe HttpStatusCode.OK
+        respons.bodyAsText() shouldStartWith "%PDF-"
+    }
+
+    @Test
+    fun `gir 404 OK ved henting av innhold i en spesifikk rapport som tokenX bruker har tilgang til`() = runTest {
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+
+        mockHentingAvEnkelRapport(rapport)
+
+        val respons =
+            client.get(urlString = "/api/rapport/v1/${rapport.id.raw}/innhold") {
+                bearerAuth(mockOAuth2Server.gyldigTokenXAuthToken(pid = pidUtenPdpTilgang, acr = "Level3"))
+                accept(ContentType.Application.Pdf)
+            }
+
+        respons.status shouldBe HttpStatusCode.NotFound
+    }
+
+    @Test
+    fun `gir 200 OK ved henting av metainfo om en spesifikk rapport som tokenX bruker har tilgang til`() = runTest {
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+
+        mockHentingAvEnkelRapport(rapport)
+
+        val respons =
+            client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
+                bearerAuth(mockOAuth2Server.gyldigTokenXAuthToken(pid = pidMedPdpTilgang, acr = "Level3"))
+            }
+
+        respons.status shouldBe HttpStatusCode.OK
+        respons.bodyAsText().fromJson(Api.RapportDTO.serializer()) shouldBe Api.RapportDTO(rapport)
+    }
+
+    @Test
+    fun `gir 404 Not Found ved henting av metainfo om en spesifikk rapport som tokenX bruker ikke har tilgang til`() = runTest {
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+
+        mockHentingAvEnkelRapport(rapport)
+
+        val respons =
+            client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
+                bearerAuth(mockOAuth2Server.gyldigTokenXAuthToken(pid = pidUtenPdpTilgang, acr = "Level3"))
+            }
+
+        respons.status shouldBe HttpStatusCode.NotFound
     }
 }
