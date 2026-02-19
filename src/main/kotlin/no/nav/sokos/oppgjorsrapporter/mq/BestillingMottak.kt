@@ -5,8 +5,9 @@ package no.nav.sokos.oppgjorsrapporter.mq
 
 import java.math.BigDecimal
 import java.time.LocalDate
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -14,6 +15,8 @@ import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.helsearbeidsgiver.utils.wrapper.Fnr
 import no.nav.helsearbeidsgiver.utils.wrapper.Orgnr
+import no.nav.sokos.oppgjorsrapporter.BakgrunnsJobb
+import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
@@ -23,14 +26,25 @@ import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 
-class BestillingMottak(private val consumers: List<MqConsumer>, private val rapportService: RapportService, private val metrics: Metrics) {
+class BestillingMottak(
+    private val consumers: List<MqConsumer>,
+    private val rapportService: RapportService,
+    private val metrics: Metrics,
+    applicationState: ApplicationState,
+) : BakgrunnsJobb(applicationState) {
     private val logger = KotlinLogging.logger {}
 
-    suspend fun run() {
-        while (true) {
-            currentCoroutineContext().ensureActive()
-            // TODO: Lære denne klassen å kunne se etter meldinger fra flere MqConsumer-instanser
-            hentBestilling(consumers.single()) { process(it) }
+    override suspend fun run() {
+        coroutineScope {
+            consumers
+                .map { consumer ->
+                    launch {
+                        while (true) {
+                            whenEnabled { hentBestilling(consumer) { process(it) } }
+                        }
+                    }
+                }
+                .joinAll()
         }
     }
 

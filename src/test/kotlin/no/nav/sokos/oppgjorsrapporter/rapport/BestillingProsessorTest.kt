@@ -24,6 +24,7 @@ import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.toDataSource
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
+import no.nav.sokos.oppgjorsrapporter.withEnabledBakgrunnsJobb
 import org.threeten.extra.LocalDateRange
 
 class BestillingProsessorTest :
@@ -153,10 +154,7 @@ class BestillingProsessorTest :
                         )
 
                     val applicationState: ApplicationState = application.dependencies.resolve()
-                    val preDisabled = applicationState.disableBackgroundJobs
-                    try {
-                        applicationState.disableBackgroundJobs = false
-
+                    applicationState.withEnabledBakgrunnsJobb<BestillingProsessor> {
                         eventually {
                             val after = rapportService.listRapporter(kriterier)
                             (after.size - before.size) shouldBeGreaterThanOrEqual 2
@@ -176,8 +174,6 @@ class BestillingProsessorTest :
                             nye.forExactly(1) { it.orgnr.raw shouldBe bestilling1.header.orgnr }
                             nye.forExactly(1) { it.orgnr.raw shouldBe bestilling2.header.orgnr }
                         }
-                    } finally {
-                        applicationState.disableBackgroundJobs = preDisabled
                     }
                 }
             }
@@ -236,10 +232,7 @@ class BestillingProsessorTest :
                         )
 
                     val applicationState: ApplicationState = application.dependencies.resolve()
-                    val preDisabled = applicationState.disableBackgroundJobs
-                    try {
-                        applicationState.disableBackgroundJobs = false
-
+                    applicationState.withEnabledBakgrunnsJobb<BestillingProsessor> {
                         eventually {
                             val after = rapportService.listRapporter(kriterier)
                             (after.size - before.size) shouldBeGreaterThanOrEqual 2
@@ -254,8 +247,6 @@ class BestillingProsessorTest :
                             varianterMap.values.flatten().map { it.filnavn }.toSet().size shouldBeGreaterThanOrEqual nye.size
                             nye.map { it.orgnr.raw }.toSet() shouldContainExactly setOf(bestilling1.header.orgnr, bestilling2.header.orgnr)
                         }
-                    } finally {
-                        applicationState.disableBackgroundJobs = preDisabled
                     }
                 }
             }

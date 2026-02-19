@@ -27,13 +27,18 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import java.time.Clock
 import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.slf4j.MDCContext
 import kotlinx.serialization.json.Json
+import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.DefaultAuthClient
@@ -88,7 +93,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         provide { this@module.resolveConfig(appConfig) }
         val config: PropertiesConfig.Configuration by this
 
-        provide { ApplicationState(disableBackgroundJobs = config.applicationProperties.disableBackgroundJobs) }
+        provide { ApplicationState(disabledBackgroundJobs = emptyList()) }
         val applicationState: ApplicationState by this
 
         // Vi vil helst ikke registrere denne dataSourcen i DI-registeret, siden den ikke skal brukes til noe annet enn Flyway.  Samtidig er
@@ -166,9 +171,12 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 emptyList()
             }
 
+        if (config.applicationProperties.disableBackgroundJobs) {
+            applicationState.disabledBackgroundJobs += BestillingMottak::class
+        }
         provide {
             val consumers: List<MqConsumer> = consumerKeys.map { resolve<MqConsumer>(it) }
-            BestillingMottak(consumers, resolve(), resolve())
+            BestillingMottak(consumers, resolve(), resolve(), resolve())
         }
 
         if (consumerKeys.isNotEmpty()) {
@@ -189,11 +197,17 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide("job.${BestillingMottak::class.simpleName}") { job }.cleanup { it.cancel() }
         }
 
+        if (config.applicationProperties.disableBackgroundJobs) {
+            applicationState.disabledBackgroundJobs += BestillingProsessor::class
+        }
         provide(BestillingProsessor::class)
         val prosesserBestillingerJob =
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
         provide("job.${BestillingProsessor::class.simpleName}") { prosesserBestillingerJob }.cleanup { it.cancel() }
 
+        if (config.applicationProperties.disableBackgroundJobs) {
+            applicationState.disabledBackgroundJobs += VarselProsessor::class
+        }
         provide(VarselProsessor::class)
         val prosesserVarslerJob =
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<VarselProsessor>().run() } }
@@ -263,4 +277,20 @@ private fun httpClient(
 
 interface HttpClientSetup {
     val jsonConfig: Json
+}
+
+abstract class BakgrunnsJobb(private val applicationState: ApplicationState) {
+    private val logger: KLogger = KotlinLogging.logger(javaClass.canonicalName)
+
+    abstract suspend fun run()
+
+    suspend fun whenEnabled(block: suspend () -> Unit) {
+        currentCoroutineContext().ensureActive()
+        if (applicationState.disabledBackgroundJobs.contains(this::class)) {
+            logger.trace { "${javaClass.simpleName}.run() disablet" }
+            delay(1.seconds)
+        } else {
+            block()
+        }
+    }
 }
