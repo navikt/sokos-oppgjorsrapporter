@@ -12,9 +12,11 @@ import kotlin.time.Duration.Companion.seconds
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.config
+import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.oppgjorsrapporter.withEnabledBakgrunnsJobb
 
 class BestillingMottakTest :
     FunSpec({
@@ -40,15 +42,18 @@ class BestillingMottakTest :
                     val config = application.config()
                     val dokument = javaClass.getResource("/mq/refusjon_bestilling.json")?.readText()!!
 
-                    sendMelding(
-                        config.mqConfiguration.queues.find { it.rapportType == RapportType.`ref-arbg` }?.queueName!!,
-                        dokument,
-                        config.mqConfiguration,
-                    )
+                    val applicationState: ApplicationState = application.dependencies.resolve()
+                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                        sendMelding(
+                            config.mqConfiguration.queues.find { it.rapportType == RapportType.`ref-arbg` }?.queueName!!,
+                            dokument,
+                            config.mqConfiguration,
+                        )
 
-                    eventually(5.seconds) {
-                        verify(exactly = 1) {
-                            val _ = service.lagreBestilling(any(), any(), any())
+                        eventually(5.seconds) {
+                            verify(exactly = 1) {
+                                val _ = service.lagreBestilling(any(), any(), any())
+                            }
                         }
                     }
                 }

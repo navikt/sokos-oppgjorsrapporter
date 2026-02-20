@@ -14,6 +14,7 @@ import mu.KotlinLogging
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationConfig
+import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.CompositeApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
 import org.testcontainers.postgresql.PostgreSQLContainer
@@ -209,4 +210,14 @@ fun TestApplicationBuilder.configureTestApplicationEnvironment(
     server: MockOAuth2Server,
 ) {
     environment { config = testApplicationConfig(dbContainer, mqContainer, server) }
+}
+
+inline suspend fun <reified T : BakgrunnsJobb> ApplicationState.withEnabledBakgrunnsJobb(block: suspend () -> Unit) {
+    val preEnable = disabledBackgroundJobs
+    try {
+        disabledBackgroundJobs -= T::class
+        block()
+    } finally {
+        disabledBackgroundJobs = preEnable
+    }
 }

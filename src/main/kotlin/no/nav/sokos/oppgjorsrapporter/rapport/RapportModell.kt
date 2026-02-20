@@ -27,15 +27,30 @@ enum class RapportType(
 ) {
     @JsonNames("K27")
     `ref-arbg`(
-        "nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver",
-        "refusjon",
-        "Oppgjørsrapport arbeidsgiver - refusjoner fra Nav",
-        "K27",
-        "NAV - oppgjørsrapport - refusjon av syke- og fødselspenger (rapport K27)",
+        altinnRessurs = "nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver",
+        configKey = "refusjon",
+        fulltNavn = "Oppgjørsrapport arbeidsgiver - refusjoner fra Nav",
+        gammelKode = "K27",
+        gammelTittel = "NAV - oppgjørsrapport - refusjon av syke- og fødselspenger (rapport K27)",
     ),
-    @JsonNames("T12") `trekk-hend`("Ikke definert ennå", null, "Trekkoppgjør kreditorer - fra Nav", "T12", "TODO: Gammel tittel for T12"),
+    @JsonNames("T12")
+    `trekk-hend`(
+        altinnRessurs = "nav_utbetaling_oppgjorsrapport-trekkhendelser",
+        configKey = "trekkhendelser",
+        fulltNavn = "Trekkhendelser - tilbakemelding fra Nav",
+        gammelKode = "T12",
+        gammelTittel = "NAV - Trekkhendelser til kreditor og namsmann (T12)", // Gjetning
+    ),
     @JsonNames("T14")
-    `trekk-kred`("Ikke definert ennå", null, "Trekkhendelser - tilbakemelding fra Nav", "T14", "TODO: Gammel tittel for T14"),
+    `trekk-kred`(
+        altinnRessurs = "nav_utbetaling_oppgjorsrapport-trekkoppgjor",
+        configKey = "trekkoppgjor",
+        fulltNavn = "Trekkoppgjør fra Nav",
+        gammelKode = "T14",
+        // Ut fra koden i altut-t09t14 ser det ut til at meldings-titlene også får en "periode" på slutten; den ignorerer vi i denne
+        // sammenhengen
+        gammelTittel = "NAV - Trekkoppgjørsrapport (T14)",
+    ),
 }
 
 sealed interface RapportBestillingFelter {

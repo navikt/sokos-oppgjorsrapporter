@@ -4,6 +4,8 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStarted
 import io.ktor.server.application.ApplicationStopPreparing
 import io.ktor.server.plugins.di.dependencies
+import kotlin.reflect.KClass
+import no.nav.sokos.oppgjorsrapporter.BakgrunnsJobb
 
 fun Application.applicationLifecycleConfig() {
     val applicationState: ApplicationState by dependencies
@@ -14,11 +16,12 @@ fun Application.applicationLifecycleConfig() {
 class ApplicationState(
     var started: Boolean = false,
     var alive: Boolean = true,
-    // Skal være false ved oppstart i produksjon (i.e. der skal bakgrunns-jobber faktisk gjøre jobben sin).
-    // Ved oppstart som del av automatiserte tester vil denne typisk være true, slik at bakgrunnsjobber ikke forkludrer state for det
-    // testene forsøker å teste.  Tester som trenger å skru på bakgrunnsjobber kan flippe denne til 'false' igjen, men bør da huske å flippe
-    // den tilbake til 'true' når de er ferdige.
-    var disableBackgroundJobs: Boolean,
+    // Skal være tom ved oppstart i produksjon (i.e. der skal bakgrunns-jobber faktisk gjøre jobben sin).
+    // Ved oppstart som del av automatiserte tester vil denne typisk inneholde alle subklassene av BakgrunnsJobb, slik at
+    // bakgrunnsjobber ikke forkludrer state for det testene forsøker å teste.
+    // Tester som trenger å skru på bakgrunnsjobber kan ta bort jobb-klasser fra denne, men må da huske å sette den tilbake til
+    // opprinnelig verdi når de er ferdige; se withEnabledBakgrunnsJobb().
+    var disabledBackgroundJobs: List<KClass<out BakgrunnsJobb>>,
 ) {
     private val systems: MutableMap<String, () -> List<String>> = mutableMapOf()
 

@@ -146,6 +146,7 @@ class RapportRepository(private val clock: Clock) {
                               AND (arkivert IS NULL OR :inkluderArkiverte)
                               AND $orgnrWhere
                               AND dato_valutert BETWEEN :fraDato AND :tilDato
+                            ORDER BY id ASC
                             """
                             .trimIndent(),
                         mapOf(
@@ -169,6 +170,7 @@ class RapportRepository(private val clock: Clock) {
                           AND (arkivert IS NULL OR :inkluderArkiverte)
                           AND orgnr = :orgnummer
                           AND id > :etter_id
+                        ORDER BY id ASC
                         """
                             .trimIndent(),
                         mapOf(
