@@ -23,6 +23,7 @@ jobs:
     uses: navikt/pengeflyt-gha-workflows/.github/workflows/gradle-build-push-image.yaml@main
     secrets: inherit
     with:
+      team: oppgjorsrapporter
       image-tag: snapshot
       gradle-task: './gradlew installDist'
 
