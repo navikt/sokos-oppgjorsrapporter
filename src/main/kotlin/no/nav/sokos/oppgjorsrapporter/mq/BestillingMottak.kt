@@ -26,6 +26,7 @@ import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
+import tools.jackson.module.kotlin.readValue
 
 class BestillingMottak(
     private val consumers: List<MqConsumer>,
@@ -61,6 +62,14 @@ class BestillingMottak(
                     }
                     sjekkAktivOrg(bestilling.header.orgnr)
                     bestilling to bestilling.datarec.size
+                }
+                RapportType.`trekk-kred` -> {
+                    val bestilling = xmlMapper.readValue<TrekkKredRapportBestilling>(melding.data)
+
+                    bestilling to
+                        bestilling.brukerData.brevinfo.variableFelter.ur.arkivRef.sumOf {
+                            it.enhet.sumOf { it.trekkLinje.size }
+                        } // TODO Hva skal vi telle?
                 }
                 else -> error("Vet ikke hvordan mottatte bestillinger for rapportType ${melding.rapportType} skal håndteres")
             }

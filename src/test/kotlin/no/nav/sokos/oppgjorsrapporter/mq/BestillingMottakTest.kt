@@ -103,5 +103,28 @@ class BestillingMottakTest :
                     }
                 }
             }
+
+            test("BestillingMottak klarer å hente trekk kred meldinger fra MQ") {
+                val service: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
+                    val config = application.config()
+                    val dokument = javaClass.getResource("/mq/trekk_kred_bestilling.xml")?.readText()!!
+
+                    val applicationState: ApplicationState = application.dependencies.resolve()
+                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                        sendMelding(
+                            config.mqConfiguration.queues.find { it.rapportType == RapportType.`trekk-kred` }?.queueName!!,
+                            dokument,
+                            config.mqConfiguration,
+                        )
+
+                        eventually(5.seconds) {
+                            verify(exactly = 1) {
+                                val _ = service.lagreBestilling(any(), any(), any())
+                            }
+                        }
+                    }
+                }
+            }
         }
     })

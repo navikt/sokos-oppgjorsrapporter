@@ -8,6 +8,7 @@ import java.time.LocalDate
 import tools.jackson.core.JsonParser
 import tools.jackson.databind.DeserializationContext
 import tools.jackson.databind.annotation.JsonDeserialize
+import tools.jackson.databind.module.SimpleModule
 import tools.jackson.dataformat.xml.XmlMapper
 import tools.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import tools.jackson.dataformat.xml.annotation.JacksonXmlProperty
@@ -80,20 +81,20 @@ data class TrekkLinje(
     val dettssid: String,
 )
 
-var kotlinModule =
-    KotlinModule.Builder()
-        .enable(KotlinFeature.StrictNullChecks) // Example: throw exception on null for non-nullable Kotlin types
-        .build()
+var kotlinModule = KotlinModule.Builder().enable(KotlinFeature.StrictNullChecks).build()
 
-val xmlMapper = XmlMapper.builder().addModule(kotlinModule).build()
+val xmlMapper =
+    XmlMapper.builder()
+        .addModule(SimpleModule().apply { addDeserializer(String::class.java, TrimmingDeserializer()) })
+        .addModule(kotlinModule)
+        .build()
 
 class BelopDeserializer : tools.jackson.databind.ValueDeserializer<BigDecimal>() {
     override fun deserialize(p: JsonParser?, ctxt: DeserializationContext?): BigDecimal? {
-        val value = p?.string
-        return if (value.isNullOrBlank()) {
-            null
-        } else {
-            BigDecimal(value).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)
-        }
+        return p?.string.takeUnless { it.isNullOrBlank() }?.let { BigDecimal(p?.string).divide(BigDecimal(100), 2, RoundingMode.HALF_UP) }
     }
+}
+
+class TrimmingDeserializer : tools.jackson.databind.ValueDeserializer<String>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = p.string?.trimEnd()
 }
