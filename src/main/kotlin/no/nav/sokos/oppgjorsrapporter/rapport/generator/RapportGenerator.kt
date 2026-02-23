@@ -41,6 +41,9 @@ import no.nav.sokos.oppgjorsrapporter.serialization.AsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.util.fraNorskFormat
 import no.nav.sokos.oppgjorsrapporter.util.tilNorskFormat
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
 
 class RapportGenerator(private val baseUrl: URI, private val client: HttpClient, private val metrics: Metrics, private val clock: Clock) {
     private val logger = KotlinLogging.logger {}
@@ -124,12 +127,12 @@ object CsvGenerering {
 
             return listOf(
                     data.navenhet,
-                    header.orgnr,
-                    data.bedriftsnummer,
+                    header.orgnr.raw,
+                    data.bedriftsnummer.raw,
                     data.kode,
-                    data.fnr,
+                    data.fnr.raw,
                     data.fraDato.formatterDatoForCsv(),
-                    header.bankkonto,
+                    header.bankkonto.raw,
                     data.navn.formatterAnsattNavnForCsv(),
                     data.tilDato.formatterDatoForCsv(),
                     data.belop.formatterBeløpForCsv(),
@@ -250,10 +253,10 @@ object LocalDateSomNorskDatoSerializer :
 @ConsistentCopyVisibility
 data class OrgNummer private constructor(val verdi: String, val formattert: String) {
     constructor(
-        orgnr: String
-    ) : this(verdi = orgnr, formattert = orgnr.windowedSequence(size = 3, step = 3, partialWindows = true).joinToString(" ")) {
-        require(orgnr.length == 9)
-        require(orgnr.all { it.isDigit() })
+        orgnr: OrgNr
+    ) : this(verdi = orgnr.raw, formattert = orgnr.raw.windowedSequence(size = 3, step = 3, partialWindows = true).joinToString(" ")) {
+        require(orgnr.raw.length == 9)
+        require(orgnr.raw.all { it.isDigit() })
     }
 }
 
@@ -261,10 +264,10 @@ data class OrgNummer private constructor(val verdi: String, val formattert: Stri
 @ConsistentCopyVisibility
 data class Kontonummer private constructor(val verdi: String, val formattert: String) {
     constructor(
-        kontonr: String
-    ) : this(verdi = kontonr, formattert = with(kontonr) { listOf(take(4), drop(4).take(2), drop(4 + 2)) }.joinToString(" ")) {
-        require(kontonr.length == 11)
-        require(kontonr.all { it.isDigit() })
+        kontonr: Bankkonto
+    ) : this(verdi = kontonr.raw, formattert = with(kontonr.raw) { listOf(take(4), drop(4).take(2), drop(4 + 2)) }.joinToString(" ")) {
+        require(kontonr.raw.length == 11)
+        require(kontonr.raw.all { it.isDigit() })
     }
 }
 
@@ -288,8 +291,8 @@ data class Belop private constructor(val verdi: BigDecimal, val formattert: Stri
 @Serializable
 @ConsistentCopyVisibility
 data class Fodselsnummer private constructor(val verdi: String, val formattert: String) {
-    constructor(fnr: String) : this(fnr, with(fnr) { listOf(take(6), drop(6)) }.joinToString(" ")) {
-        require(fnr.length == 11)
-        require(fnr.all { it.isDigit() })
+    constructor(fnr: Fnr) : this(fnr.raw, with(fnr.raw) { listOf(take(6), drop(6)) }.joinToString(" ")) {
+        require(fnr.raw.length == 11)
+        require(fnr.raw.all { it.isDigit() })
     }
 }

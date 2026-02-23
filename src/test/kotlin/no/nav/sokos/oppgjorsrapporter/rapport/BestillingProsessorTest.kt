@@ -14,6 +14,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.Period
 import java.time.ZoneOffset
+import kotlin.random.Random
 import kotlinx.io.bytestring.ByteString
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
@@ -25,6 +26,9 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.toDataSource
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import no.nav.sokos.oppgjorsrapporter.withEnabledBakgrunnsJobb
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.genererGyldig
 import org.threeten.extra.LocalDateRange
 
 class BestillingProsessorTest :
@@ -58,12 +62,14 @@ class BestillingProsessorTest :
                     dependencyOverrides = {
                         dependencies.provide<EregService> {
                             mockk<EregService>(relaxed = true) {
-                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
-                                    OrganisasjonsNavnOgAdresse(
-                                        navn = "Test Organisasjon",
-                                        adresse = "Testveien 1, 0123 Oslo",
-                                        organisasjonsnummer = "123456789",
-                                    )
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } answers
+                                    {
+                                        OrganisasjonsNavnOgAdresse(
+                                            navn = "Test Organisasjon",
+                                            adresse = "Testveien 1, 0123 Oslo",
+                                            organisasjonsnummer = firstArg(),
+                                        )
+                                    }
                             }
                         }
                         dependencies.provide<RapportGenerator> {
@@ -78,7 +84,11 @@ class BestillingProsessorTest :
                     val bestilling =
                         TestData.createRefusjonsRapportBestilling(
                             datarec =
-                                (1..10).map { i -> TestData.createDataRec(bedriftsnummer = "12345678${i % 3}", fnr = "123456${i % 5}8901") }
+                                (1..10).map { i ->
+                                    val r3 = Random(i % 3)
+                                    val r5 = Random(i % 5)
+                                    TestData.createDataRec(bedriftsnummer = OrgNr.genererGyldig(r3), fnr = Fnr.genererGyldig(random = r5))
+                                }
                         )
                     val _ =
                         rapportService.lagreBestilling(
@@ -107,12 +117,14 @@ class BestillingProsessorTest :
                         dependencies.provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) }
                         dependencies.provide<EregService> {
                             mockk<EregService>(relaxed = true) {
-                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
-                                    OrganisasjonsNavnOgAdresse(
-                                        navn = "Test Organisasjon",
-                                        adresse = "Testveien 1, 0123 Oslo",
-                                        organisasjonsnummer = "123456789",
-                                    )
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } answers
+                                    {
+                                        OrganisasjonsNavnOgAdresse(
+                                            navn = "Test Organisasjon",
+                                            adresse = "Testveien 1, 0123 Oslo",
+                                            organisasjonsnummer = firstArg(),
+                                        )
+                                    }
                             }
                         }
                         dependencies.provide<RapportGenerator> {
@@ -136,16 +148,14 @@ class BestillingProsessorTest :
                         )
                     val before = rapportService.listRapporter(kriterier)
 
-                    val bestilling1 =
-                        TestData.createRefusjonsRapportBestilling(headerOrgnr = "123456789", headerValutert = LocalDate.now(clock))
+                    val bestilling1 = TestData.createRefusjonsRapportBestilling(headerValutert = LocalDate.now(clock))
                     val _ =
                         rapportService.lagreBestilling(
                             "test",
                             RapportType.`ref-arbg`,
                             RefusjonsRapportBestilling.json.encodeToString((bestilling1)),
                         )
-                    val bestilling2 =
-                        TestData.createRefusjonsRapportBestilling(headerOrgnr = "987654321", headerValutert = LocalDate.now(clock))
+                    val bestilling2 = TestData.createRefusjonsRapportBestilling(headerValutert = LocalDate.now(clock))
                     val _ =
                         rapportService.lagreBestilling(
                             "test",
@@ -171,8 +181,8 @@ class BestillingProsessorTest :
                                     it.filnavn shouldBe "${rapport.orgnr.raw}_ref-arbg_1970-01-01_${rapport.id.raw}.pdf"
                                 }
                             }
-                            nye.forExactly(1) { it.orgnr.raw shouldBe bestilling1.header.orgnr }
-                            nye.forExactly(1) { it.orgnr.raw shouldBe bestilling2.header.orgnr }
+                            nye.forExactly(1) { it.orgnr shouldBe bestilling1.header.orgnr }
+                            nye.forExactly(1) { it.orgnr shouldBe bestilling2.header.orgnr }
                         }
                     }
                 }
@@ -185,12 +195,14 @@ class BestillingProsessorTest :
                         dependencies.provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) }
                         dependencies.provide<EregService> {
                             mockk<EregService>(relaxed = true) {
-                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
-                                    OrganisasjonsNavnOgAdresse(
-                                        navn = "Test Organisasjon",
-                                        adresse = "Testveien 1, 0123 Oslo",
-                                        organisasjonsnummer = "123456789",
-                                    )
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } answers
+                                    {
+                                        OrganisasjonsNavnOgAdresse(
+                                            navn = "Test Organisasjon",
+                                            adresse = "Testveien 1, 0123 Oslo",
+                                            organisasjonsnummer = firstArg(),
+                                        )
+                                    }
                             }
                         }
                         dependencies.provide<RapportGenerator> {
@@ -212,7 +224,7 @@ class BestillingProsessorTest :
                         )
                     val before = rapportService.listRapporter(kriterier)
 
-                    val bestilling1 = TestData.createRefusjonsRapportBestilling(headerOrgnr = "123456789", headerValutert = LocalDate.now())
+                    val bestilling1 = TestData.createRefusjonsRapportBestilling(headerValutert = LocalDate.now())
                     val _ =
                         rapportService.lagreBestilling(
                             "test",
@@ -245,7 +257,7 @@ class BestillingProsessorTest :
                                     rapport.id to varianter
                                 }
                             varianterMap.values.flatten().map { it.filnavn }.toSet().size shouldBeGreaterThanOrEqual nye.size
-                            nye.map { it.orgnr.raw }.toSet() shouldContainExactly setOf(bestilling1.header.orgnr, bestilling2.header.orgnr)
+                            nye.map { it.orgnr }.toSet() shouldContainExactly setOf(bestilling1.header.orgnr, bestilling2.header.orgnr)
                         }
                     }
                 }

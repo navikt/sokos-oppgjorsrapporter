@@ -21,16 +21,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.bytestring.encodeToByteString
 import no.nav.helsearbeidsgiver.utils.json.fromJson
-import no.nav.helsearbeidsgiver.utils.test.wrapper.genererGyldig
-import no.nav.helsearbeidsgiver.utils.wrapper.Fnr
-import no.nav.helsearbeidsgiver.utils.wrapper.Orgnr
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.configureTestApplicationEnvironment
 import no.nav.sokos.oppgjorsrapporter.module
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.Api
-import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.Variant
@@ -38,6 +34,9 @@ import no.nav.sokos.oppgjorsrapporter.rapport.VariantFormat
 import no.nav.sokos.oppgjorsrapporter.rapport.medId
 import no.nav.sokos.oppgjorsrapporter.rapport.medOrgNr
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.genererGyldig
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -45,12 +44,12 @@ import org.junit.jupiter.api.TestInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class ApiTest {
-    val orgnrUtenPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
-    val hovedenhetOrgnrMedPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
-    val underenhetOrgnrMedPdpTilgang = OrgNr(Orgnr.genererGyldig().verdi)
+    val orgnrUtenPdpTilgang = OrgNr.genererGyldig().somUvalidert()
+    val hovedenhetOrgnrMedPdpTilgang = OrgNr.genererGyldig().somUvalidert()
+    val underenhetOrgnrMedPdpTilgang = OrgNr.genererGyldig().somUvalidert()
 
-    val pidUtenPdpTilgang = Fnr.genererGyldig()
-    val pidMedPdpTilgang = Fnr.genererGyldig()
+    val pidUtenPdpTilgang = Fnr.genererGyldig().somUvalidert()
+    val pidMedPdpTilgang = Fnr.genererGyldig().somUvalidert()
 
     val mockedRapportRepository = mockk<RapportRepository>()
     val mockedPdpService = mockk<PdpService>()
@@ -96,7 +95,7 @@ abstract class ApiTest {
 
         coEvery {
             mockedPdpService.harTilgang(
-                tokenX = match { it.pid == pidMedPdpTilgang.verdi },
+                tokenX = match { it.pid == pidMedPdpTilgang.raw },
                 orgnumre = match { it.contains(hovedenhetOrgnrMedPdpTilgang) || it.contains(underenhetOrgnrMedPdpTilgang) },
                 ressurs = any(),
             )

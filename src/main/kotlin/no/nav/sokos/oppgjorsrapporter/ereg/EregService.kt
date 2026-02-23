@@ -16,14 +16,15 @@ import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.ApiError
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.eregErrorMessage
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
+import no.nav.sokos.utils.OrgNr
 import org.slf4j.MDC
 
 class EregService(private val baseUrl: URI, private val client: HttpClient, private val metrics: Metrics) {
     private val logger = KotlinLogging.logger {}
 
-    suspend fun hentNoekkelInfo(orgnr: String): Organisasjon {
+    suspend fun hentNoekkelInfo(orgnr: OrgNr): Organisasjon {
         logger.info { "Henter nøkkelinfo for $orgnr fra Ereg." }
-        val eregUrl = baseUrl.resolve("/v2/organisasjon/${orgnr}/noekkelinfo").toURL()
+        val eregUrl = baseUrl.resolve("/v2/organisasjon/${orgnr.raw}/noekkelinfo").toURL()
         val response = client.get(eregUrl) { header("Nav-Call-Id", MDC.get("x-correlation-id")) }
         metrics.tellEksternEndepunktRequest(response, "/v2/organisasjon/{orgnr}/noekkelinfo")
 
@@ -39,7 +40,7 @@ class EregService(private val baseUrl: URI, private val client: HttpClient, priv
         }
     }
 
-    suspend fun hentOrganisasjonsNavnOgAdresse(orgnr: String): OrganisasjonsNavnOgAdresse =
+    suspend fun hentOrganisasjonsNavnOgAdresse(orgnr: OrgNr): OrganisasjonsNavnOgAdresse =
         hentNoekkelInfo(orgnr).tilOrganisasjonsNavnOgAdresse().also { logger.info { "Fant organisasjonsnavn fra Ereg: $it" } }
 }
 
