@@ -99,7 +99,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         // Vi vil helst ikke registrere denne dataSourcen i DI-registeret, siden den ikke skal brukes til noe annet enn Flyway.  Samtidig er
         // det fint om testene husker å lukke denne dataSourcen også når en testApplication avsluttes; se .cleanup() på
         // DataSource-registreringen under.
-        val adminDataSource = createDataSource(config.postgresProperties.adminJdbcUrl)
+        val adminDataSource = createDataSource(config.postgres.adminJdbcUrl)
         migrateDatabase(adminDataSource, applicationState)
         DatabaseConfig.init(config)
 
@@ -115,7 +115,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         // input/output.
         provide<EregService> {
             val client = httpClient("ereg", EregHttpClientSetup)
-            EregService(config.innholdGeneratorProperties.eregBaseUrl, client, resolve())
+            EregService(config.restEndpoint.eregBaseUrl, client, resolve())
         }
         provide<RapportGenerator> {
             val client =
@@ -125,17 +125,15 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                         requestTimeoutMillis = 60_000
                     }
                 }
-            RapportGenerator(config.innholdGeneratorProperties.pdfGenBaseUrl, client, resolve(), resolve())
+            RapportGenerator(config.restEndpoint.pdfGenBaseUrl, client, resolve(), resolve())
         }
 
-        if (config.applicationProperties.profile == PropertiesConfig.Profile.LOCAL) {
+        if (config.application.profile == PropertiesConfig.Profile.LOCAL) {
             provide<AuthClient> { NoOpAuthClient() }
             provide<PdpService> { LocalhostPdpService }
         } else {
-            provide<AuthClient> {
-                DefaultAuthClient(config.securityProperties.tokenEndpoint, config.securityProperties.altinnProperties.baseUrl)
-            }
-            provide<PdpService> { AltinnPdpService(config.securityProperties, resolve(), resolve()) }
+            provide<AuthClient> { DefaultAuthClient(config.security.tokenEndpoint, config.security.altinn.baseUrl) }
+            provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
         }
         val authClient: AuthClient by this
 
@@ -144,8 +142,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 httpClient("dialogporten", DialogportenHttpClientSetup) {
                     install(Auth) {
                         bearer {
-                            val tokenGetter =
-                                authClient.dialogportenTokenGetter(config.securityProperties.altinnProperties.dialogportenScope)
+                            val tokenGetter = authClient.dialogportenTokenGetter(config.security.altinn.dialogportenScope)
                             loadTokens {
                                 logger.info("Laster initielt dialogporten-token")
                                 BearerTokens(tokenGetter(), null)
@@ -157,21 +154,21 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                         }
                     }
                 }
-            DialogportenClient(config.securityProperties.altinnProperties.baseUrl, client)
+            DialogportenClient(config.security.altinn.baseUrl, client)
         }
 
         val consumerKeys =
-            if (config.mqConfiguration.enabled) {
-                config.mqConfiguration.queues.map { inQueue ->
+            if (config.mq.enabled) {
+                config.mq.queues.map { inQueue ->
                     val consumerKey = "mq.consumer.${inQueue.key}"
-                    provide(consumerKey) { MqConsumer(config.mqConfiguration, inQueue.rapportType, inQueue.queueName) }
+                    provide(consumerKey) { MqConsumer(config.mq, inQueue.rapportType, inQueue.queueName) }
                     consumerKey
                 }
             } else {
                 emptyList()
             }
 
-        if (config.applicationProperties.disableBackgroundJobs) {
+        if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += BestillingMottak::class
         }
         provide {
@@ -197,7 +194,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide("job.${BestillingMottak::class.simpleName}") { job }.cleanup { it.cancel() }
         }
 
-        if (config.applicationProperties.disableBackgroundJobs) {
+        if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += BestillingProsessor::class
         }
         provide(BestillingProsessor::class)
@@ -205,7 +202,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
         provide("job.${BestillingProsessor::class.simpleName}") { prosesserBestillingerJob }.cleanup { it.cancel() }
 
-        if (config.applicationProperties.disableBackgroundJobs) {
+        if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += VarselProsessor::class
         }
         provide(VarselProsessor::class)

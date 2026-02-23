@@ -44,11 +44,7 @@ class BestillingMottakTest :
 
                     val applicationState: ApplicationState = application.dependencies.resolve()
                     applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
-                        sendMelding(
-                            config.mqConfiguration.queues.find { it.rapportType == RapportType.`ref-arbg` }?.queueName!!,
-                            dokument,
-                            config.mqConfiguration,
-                        )
+                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`ref-arbg` }?.queueName!!, dokument, config.mq)
 
                         eventually(5.seconds) {
                             verify(exactly = 1) {

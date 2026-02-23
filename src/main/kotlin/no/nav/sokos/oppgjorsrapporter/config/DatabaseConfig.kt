@@ -11,7 +11,7 @@ object DatabaseConfig {
     var migrationInitSql: String? = null
 
     fun init(config: PropertiesConfig.Configuration) {
-        dataSourcePriv = createDataSource(config.postgresProperties.queryJdbcUrl)
+        dataSourcePriv = createDataSource(config.postgres.queryJdbcUrl)
     }
 }
 

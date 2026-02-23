@@ -21,7 +21,7 @@ class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, 
     PdpService {
     private val logger = KotlinLogging.logger {}
     val pdpClient =
-        with(securityProperties.altinnProperties) {
+        with(securityProperties.altinn) {
             PdpClient(
                 baseUrl = baseUrl.toURL().toString(),
                 subscriptionKey = subscriptionKey,
