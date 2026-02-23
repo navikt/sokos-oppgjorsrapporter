@@ -11,9 +11,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.BakgrunnsJobb
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
@@ -22,7 +20,6 @@ import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
-import no.nav.sokos.oppgjorsrapporter.rapport.generator.Belop
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
