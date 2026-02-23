@@ -1,5 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter.rapport.varsel
 
+import io.ktor.http.URLBuilder
+import io.ktor.http.path
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -157,10 +159,15 @@ class VarselService(
                 guiActions =
                     listOf(
                         GuiAction(
-                            // TODO: Ta bort "virker ikke ennå" når ekstern-frontenden vår er klar
-                            title = listOf(Content.Value.Item("Gå til nedlastingsside på nav.no (virker ikke ennå)")),
-                            // TODO: Korrigere link når URL-namespace for ekstern-frontenden vår lander
-                            url = config.application.guiBaseUri.resolve("/rapport/${rapport.id.raw}").toString(),
+                            title = listOf(Content.Value.Item("Gå til nedlastingsside på nav.no")),
+                            url =
+                                URLBuilder(config.application.guiBaseUri.toString())
+                                    .apply {
+                                        path("oppgjorsrapporter")
+                                        parameters.append("id", "${rapport.id.raw}")
+                                    }
+                                    .build()
+                                    .toString(),
                             priority = GuiAction.Priority.Primary,
                             action = Action.access,
                         )
