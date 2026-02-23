@@ -5,9 +5,4 @@ import no.nav.sokos.oppgjorsrapporter.TestUtil
 import tools.jackson.module.kotlin.readValue
 
 class TrekkKredRapportBestillingTest :
-    FunSpec({
-        test("lese inn xml") {
-            val hei = xmlMapper.readValue<TrekkKredRapportBestilling>(TestUtil.readFile("mq/T14_fra_mq.xml"))
-            println(hei)
-        }
-    })
+    FunSpec({ test("lese inn xml") { xmlMapper.readValue<TrekkKredRapportBestilling>(TestUtil.readFile("mq/trekk_kred_bestilling.xml")) } })
