@@ -1,5 +1,9 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.okJson
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.junit5.WireMockTest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -23,6 +27,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.threeten.extra.MutableClock
 
+@WireMockTest(httpPort = 8090) // Må matche "localhost:8090" i application.conf sin "ereg.base_url"-verdi
 class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T12:00:00Z"), ZoneOffset.UTC)) {
     protected override val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf("group"))
 
@@ -63,7 +68,7 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
 
     @Test
     fun `POST _api_bestilling_v1 (med rapportType=ref-arbg body som bruker ikke-gyldige orgnr+fnr) gir feilmelding`() {
-        val dokument = javaClass.getResource("/mq/refusjon_bestilling.json")?.readText()!!
+        val dokument = javaClass.getResource("/mq/refusjon_bestilling_ugyldig.json")?.readText()!!
         val response =
             client()
                 .queryParam("rapportType", "ref-arbg")
@@ -74,7 +79,51 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
                 .statusCode(HttpStatusCode.BadRequest.value)
                 .extract()
                 .response()!!
-        assertThat(response.body().asString()).startsWith("Bestillingen validerer ikke; fant følgende problemer:")
+        assertThat(response.body().asString()).contains("Ikke gyldig orgnr:")
+    }
+
+    @Test
+    fun `POST _api_bestilling_v1 (med rapportType=ref-arbg og riktig body, men for orgnr som er opphørt) gir feilmelding`() {
+        val bestilling =
+            genererBestilling(
+                orgnr = Orgnr.genererGyldig(),
+                valutert = LocalDate.now(),
+                underenheter = genSet(1) { Orgnr.genererGyldig() },
+                personer = genSet(10) { randomPerson() },
+                antallPosteringer = 15,
+                ytelser = YtelseType.kjente.shuffled().take(7).toSet(),
+            )
+        val dokument = RefusjonsRapportBestilling.json.encodeToString(bestilling)
+
+        stubFor(
+            get("/v2/organisasjon/${bestilling.header.orgnr}/noekkelinfo")
+                .willReturn(
+                    okJson(
+                        """
+                        {
+                            "organisasjonsnummer": "${bestilling.header.orgnr}",
+                            "navn": {
+                                "sammensattnavn": "Et Navn"
+                            },
+                            "opphoersdato": "2020-01-01"
+                        }
+                        """
+                            .trimIndent()
+                    )
+                )
+        )
+
+        val response =
+            client()
+                .queryParam("rapportType", "ref-arbg")
+                .body(dokument)
+                .post("/api/bestilling/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.BadRequest.value)
+                .extract()
+                .response()!!
+        assertThat(response.body().asString()).contains("Organisasjon er opphørt")
     }
 
     @Test
@@ -94,6 +143,22 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         // Kommenter inn linja under og kjør denne test-metoden for å få et eksempel på et gyldig JSON-dokument
         // println(dokument)
 
+        stubFor(
+            get("/v2/organisasjon/${bestilling.header.orgnr}/noekkelinfo")
+                .willReturn(
+                    okJson(
+                        """
+                        {
+                            "organisasjonsnummer": "${bestilling.header.orgnr}",
+                            "navn": {
+                                "sammensattnavn": "Organisasjonens Navn"
+                            }
+                        }
+                        """
+                            .trimIndent()
+                    )
+                )
+        )
         val response =
             client()
                 .queryParam("rapportType", "ref-arbg")

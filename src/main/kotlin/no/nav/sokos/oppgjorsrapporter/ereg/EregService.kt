@@ -6,6 +6,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.http.isSuccess
 import java.net.URI
+import java.time.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
@@ -14,33 +15,32 @@ import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.ApiError
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.eregErrorMessage
+import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import org.slf4j.MDC
 
 class EregService(private val baseUrl: URI, private val client: HttpClient, private val metrics: Metrics) {
     private val logger = KotlinLogging.logger {}
 
-    suspend fun hentOrganisasjonsNavnOgAdresse(orgnr: String): OrganisasjonsNavnOgAdresse {
-        return run {
-            logger.info { "Henter organisasjonsnavn og adresse for $orgnr fra Ereg." }
-            val eregUrl = baseUrl.resolve("/v2/organisasjon/$orgnr/noekkelinfo").toURL()
-            val response = client.get(eregUrl) { header("Nav-Call-Id", MDC.get("x-correlation-id")) }
-            metrics.tellEksternEndepunktRequest(response, "/v2/organisasjon/{orgnr}/noekkelinfo")
+    suspend fun hentNoekkelInfo(orgnr: String): Organisasjon {
+        logger.info { "Henter nøkkelinfo for $orgnr fra Ereg." }
+        val eregUrl = baseUrl.resolve("/v2/organisasjon/${orgnr}/noekkelinfo").toURL()
+        val response = client.get(eregUrl) { header("Nav-Call-Id", MDC.get("x-correlation-id")) }
+        metrics.tellEksternEndepunktRequest(response, "/v2/organisasjon/{orgnr}/noekkelinfo")
 
-            when {
-                response.status.isSuccess() -> {
-                    val organisasjonInfo = response.body<Organisasjon>().tilOrganisasjonsNavnOgAdresse()
-                    logger.info { "Fant organisasjonsnavn fra Ereg: $organisasjonInfo" }
-                    organisasjonInfo
-                }
-
-                else -> {
-                    val apiError = ApiError(response, response.eregErrorMessage() ?: "Noe gikk galt ved oppslag mot Ereg-tjenesten")
-                    logger.warn { "Feil ved oppslag mot Ereg: $apiError" }
-                    throw RuntimeException("Feil ved oppslag mot Ereg: $apiError")
-                }
+        return when {
+            response.status.isSuccess() -> {
+                response.body<Organisasjon>().also { logger.info { "Fant nøkkelinfo fra Ereg: $it" } }
+            }
+            else -> {
+                val apiError = ApiError(response, response.eregErrorMessage() ?: "Noe gikk galt ved oppslag mot Ereg-tjenesten")
+                logger.warn { "Feil ved oppslag mot Ereg: $apiError" }
+                throw RuntimeException("Feil ved oppslag mot Ereg: $apiError")
             }
         }
     }
+
+    suspend fun hentOrganisasjonsNavnOgAdresse(orgnr: String): OrganisasjonsNavnOgAdresse =
+        hentNoekkelInfo(orgnr).tilOrganisasjonsNavnOgAdresse().also { logger.info { "Fant organisasjonsnavn fra Ereg: $it" } }
 }
 
 object EregHttpClientSetup : HttpClientSetup {
@@ -50,7 +50,12 @@ object EregHttpClientSetup : HttpClientSetup {
 data class OrganisasjonsNavnOgAdresse(val organisasjonsnummer: String, val navn: String, val adresse: String)
 
 @Serializable
-data class Organisasjon(val organisasjonsnummer: String, val navn: Navn, val adresse: Adresse? = null) {
+data class Organisasjon(
+    val organisasjonsnummer: String,
+    val navn: Navn,
+    val adresse: Adresse? = null,
+    @Serializable(with = LocalDateAsStringSerializer::class) val opphoersdato: LocalDate? = null,
+) {
     private fun formatterAdresse(): String =
         adresse?.let { adr ->
             with(adr) {

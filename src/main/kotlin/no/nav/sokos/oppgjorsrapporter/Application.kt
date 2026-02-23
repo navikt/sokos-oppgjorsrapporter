@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.engine.apache5.Apache5EngineConfig
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
@@ -20,6 +21,7 @@ import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.addShutdownHook
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.di.DependencyRegistry
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.util.AttributeKey
 import io.micrometer.prometheusmetrics.PrometheusConfig
@@ -31,11 +33,14 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.slf4j.MDCContext
 import kotlinx.serialization.json.Json
 import mu.KLogger
@@ -114,7 +119,19 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         // tjeneste, slik at vi kan justere konfig for JSON-enkoding og -dekoding uavhengig av hva andre tjenester krever i sin
         // input/output.
         provide<EregService> {
-            val client = httpClient("ereg", EregHttpClientSetup)
+            val client =
+                httpClient("ereg", EregHttpClientSetup) {
+                    install(HttpRequestRetry) {
+                        retryOnServerErrors(
+                            maxRetries =
+                                when (config.application.profile) {
+                                    PropertiesConfig.Profile.LOCAL -> 2
+                                    else -> 5
+                                }
+                        )
+                        exponentialDelay()
+                    }
+                }
             EregService(config.restEndpoint.eregBaseUrl, client, resolve())
         }
         provide<RapportGenerator> {
@@ -173,7 +190,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         }
         provide {
             val consumers: List<MqConsumer> = consumerKeys.map { resolve<MqConsumer>(it) }
-            BestillingMottak(consumers, resolve(), resolve(), resolve())
+            BestillingMottak(consumers, resolve(), resolve(), resolve(), resolve(), resolve())
         }
 
         if (consumerKeys.isNotEmpty()) {
@@ -187,28 +204,28 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 applicationState.alive = false
             }
 
-            val job =
+            provideJob<BestillingMottak>(
                 with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
                     launch { resolve<BestillingMottak>().run() }
                 }
-            provide("job.${BestillingMottak::class.simpleName}") { job }.cleanup { it.cancel() }
+            )
         }
 
         if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += BestillingProsessor::class
         }
         provide(BestillingProsessor::class)
-        val prosesserBestillingerJob =
+        provideJob<BestillingProsessor>(
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
-        provide("job.${BestillingProsessor::class.simpleName}") { prosesserBestillingerJob }.cleanup { it.cancel() }
+        )
 
         if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += VarselProsessor::class
         }
         provide(VarselProsessor::class)
-        val prosesserVarslerJob =
+        provideJob<VarselProsessor>(
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<VarselProsessor>().run() } }
-        provide("job.${VarselProsessor::class.simpleName}") { prosesserVarslerJob }.cleanup { it.cancel() }
+        )
     }
 
     // Flyttet ned hit, siden vi trenger en DataSource dersom install(MicrometerMetrics) skal inneholde PostgreSQLDatabaseMetrics
@@ -290,4 +307,19 @@ abstract class BakgrunnsJobb(private val applicationState: ApplicationState) {
             block()
         }
     }
+}
+
+private inline fun <reified T : BakgrunnsJobb> DependencyRegistry.provideJob(job: Job) {
+    val jobName = "job.${T::class.simpleName}"
+    key<Job>(jobName) {
+        provide { job }
+        cleanup {
+            // Merk at .cancel() ikke er nok her, da det bare vil sende et signal om at jobben skal kanselleres.
+            // Vi vil at cleanup-prosessen skal vente til jobben (og dermed alle barne-jobber den evt. har spawnet) er ferdig
+            // kansellert.
+            runBlocking { it.cancelAndJoin() }
+        }
+    }
+    // Sikre at jobName-dependencyen faktisk har blitt resolvet minst en gang, slik at cleanup ikke vil bli skippet
+    runBlocking { resolve<Job>(jobName) }
 }
