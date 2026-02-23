@@ -4,6 +4,7 @@ val flywayVersion = "12.0.0"
 val hikariVersion = "7.0.2"
 val ibmMqVersion = "9.4.5.0"
 val janinoVersion = "3.1.12"
+val jacksonVersion ="3.0.4"
 val junitVersion = "6.0.2"
 val jsonUnitVersion = "5.1.0"
 val konfigVersion = "1.6.10.0"
@@ -84,6 +85,8 @@ dependencies {
     // Serialization
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktorVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:$kotlinxSerializationVersion")
+    implementation("tools.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
+    implementation("tools.jackson.module:jackson-module-kotlin:$jacksonVersion")
 
     // Monitorering
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:$ktorVersion")
