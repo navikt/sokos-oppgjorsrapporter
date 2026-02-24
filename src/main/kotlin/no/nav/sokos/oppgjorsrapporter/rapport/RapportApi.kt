@@ -283,7 +283,7 @@ fun Route.rapportApi() {
         }
     }
 
-    when (config.applicationProperties.profile) {
+    when (config.application.profile) {
         PropertiesConfig.Profile.DEV,
         PropertiesConfig.Profile.LOCAL ->
             authenticate(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name) {

@@ -31,8 +31,8 @@ fun Application.securityConfig() {
                     TokenSupportConfig(
                         IssuerConfig(
                             name = azureAd,
-                            discoveryUrl = config.securityProperties.azureAdProperties.wellKnownUrl,
-                            acceptedAudience = listOf(config.securityProperties.azureAdProperties.clientId),
+                            discoveryUrl = config.security.azureAd.wellKnownUrl,
+                            acceptedAudience = listOf(config.security.azureAd.clientId),
                         )
                     ),
                 requiredClaims = RequiredClaims(issuer = azureAd, claimMap = arrayOf("NAVident", "groups")),
@@ -46,8 +46,8 @@ fun Application.securityConfig() {
                     TokenSupportConfig(
                         IssuerConfig(
                             name = tokenX,
-                            discoveryUrl = config.securityProperties.tokenXProperties.wellKnownUrl,
-                            acceptedAudience = listOf(config.securityProperties.tokenXProperties.clientId),
+                            discoveryUrl = config.security.tokenX.wellKnownUrl,
+                            acceptedAudience = listOf(config.security.tokenX.clientId),
                         )
                     ),
                 requiredClaims = RequiredClaims(issuer = tokenX, claimMap = arrayOf("pid", "acr")),
@@ -64,15 +64,13 @@ fun Application.securityConfig() {
                     TokenSupportConfig(
                         IssuerConfig(
                             name = systembruker,
-                            discoveryUrl = config.securityProperties.maskinportenProperties.wellKnownUrl,
-                            acceptedAudience = listOf(config.securityProperties.maskinportenProperties.eksponertScope),
+                            discoveryUrl = config.security.maskinporten.wellKnownUrl,
+                            acceptedAudience = listOf(config.security.maskinporten.eksponertScope),
                             optionalClaims = listOf("aud", "sub"),
                         )
                     ),
                 requiredClaims = RequiredClaims(issuer = systembruker, claimMap = arrayOf("authorization_details", "consumer", "scope")),
-                additionalValidation = {
-                    it.gyldigScope(config.securityProperties.maskinportenProperties.eksponertScope) && it.gyldigSystembrukerOgConsumer()
-                },
+                additionalValidation = { it.gyldigScope(config.security.maskinporten.eksponertScope) && it.gyldigSystembrukerOgConsumer() },
                 resourceRetriever =
                     DefaultResourceRetriever(DEFAULT_HTTP_CONNECT_TIMEOUT, DEFAULT_HTTP_READ_TIMEOUT, DEFAULT_HTTP_SIZE_LIMIT),
             )

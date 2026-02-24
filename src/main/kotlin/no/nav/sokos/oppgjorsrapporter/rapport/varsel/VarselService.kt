@@ -146,7 +146,7 @@ class VarselService(
                             // TODO: Ta bort "virker ikke ennå" når ekstern-frontenden vår er klar
                             title = listOf(Content.Value.Item("Gå til nedlastingsside på nav.no (virker ikke ennå)")),
                             // TODO: Korrigere link når URL-namespace for ekstern-frontenden vår lander
-                            url = config.applicationProperties.guiBaseUri.resolve("/rapport/${rapport.id.raw}").toString(),
+                            url = config.application.guiBaseUri.resolve("/rapport/${rapport.id.raw}").toString(),
                             priority = GuiAction.Priority.Primary,
                             action = Action.access,
                         )
@@ -157,7 +157,7 @@ class VarselService(
                             name = "last ned",
                             endpoints =
                                 listOf(
-                                    config.applicationProperties.apiBaseUri.let { baseUri ->
+                                    config.application.apiBaseUri.let { baseUri ->
                                         ApiAction.Endpoint(
                                             url = baseUri.resolve("/api/rapport/v1/${rapport.id.raw}/innhold").toString(),
                                             httpMethod = ApiAction.HttpMethod.GET,

@@ -56,7 +56,7 @@ fun Application.commonConfig() {
     install(MicrometerMetrics) {
         registry = metrics.registry
         distributionStatisticConfig = DistributionStatisticConfig.Builder().percentilesHistogram(true).build()
-        meterBinders += listOf(PostgreSQLDatabaseMetrics(dataSource, applicationConfig.postgresProperties.databaseName))
+        meterBinders += listOf(PostgreSQLDatabaseMetrics(dataSource, applicationConfig.postgres.databaseName))
 
         timers { call, _ ->
             val validationCtx = call.principal<TokenValidationContextPrincipal>()?.context

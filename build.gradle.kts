@@ -109,22 +109,12 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("com.atlassian.oai:swagger-request-validator-restassured:${swaggerRequestValidatorVersion}")
+    testImplementation("org.wiremock:wiremock:3.13.2")
+    testImplementation("org.assertj:assertj-core:3.27.7")
     testImplementation("org.testcontainers:testcontainers-postgresql:$testcontainersVersion")
     testImplementation("com.ibm.mq:mq-java-testcontainer:2.0.3")
     testImplementation("net.javacrumbs.json-unit:json-unit:${jsonUnitVersion}")
-    testImplementation("net.javacrumbs.json-unit:json-unit-assertj:${jsonUnitVersion}") {
-        constraints {
-            testImplementation("org.assertj:assertj-core:3.27.7") {
-                because(
-                    """
-                    CVE-2026-24400 fikses av assertj-core >= 3.27.7
-                    Det finnes p.t. ikke noen release av json-unit-assertj som drar inn nyere enn 3.27.6
-                    """
-                        .trimIndent()
-                )
-            }
-        }
-    }
+    testImplementation("net.javacrumbs.json-unit:json-unit-assertj:${jsonUnitVersion}")
 }
 
 kotlin {

@@ -31,20 +31,20 @@ class CompositeApplicationConfig(private val primary: ApplicationConfig, private
 
 object PropertiesConfig {
     data class Configuration(
-        val applicationProperties: ApplicationProperties,
-        val securityProperties: SecurityProperties,
-        val postgresProperties: PostgresProperties,
-        val mqConfiguration: MqProperties,
-        val innholdGeneratorProperties: InnholdGeneratorProperties,
+        val application: ApplicationProperties,
+        val restEndpoint: RestEndpointProperties,
+        val security: SecurityProperties,
+        val postgres: PostgresProperties,
+        val mq: MqProperties,
     ) {
         constructor(
             source: ConfigSource
         ) : this(
-            applicationProperties = ApplicationProperties(source),
-            securityProperties = SecurityProperties(source),
-            postgresProperties = PostgresProperties(source),
-            mqConfiguration = MqProperties(source),
-            innholdGeneratorProperties = InnholdGeneratorProperties(source),
+            application = ApplicationProperties(source),
+            restEndpoint = RestEndpointProperties(source),
+            security = SecurityProperties(source),
+            postgres = PostgresProperties(source),
+            mq = MqProperties(source),
         )
     }
 
@@ -64,6 +64,12 @@ object PropertiesConfig {
             profile = Profile.valueOf(source.get("application.profile")),
             disableBackgroundJobs = source.get("application.disable_background_jobs").toBoolean(),
         )
+    }
+
+    data class RestEndpointProperties(val eregBaseUrl: URI, val pdfGenBaseUrl: URI) {
+        constructor(
+            source: ConfigSource
+        ) : this(eregBaseUrl = URI.create(source.get("ereg.base_url")), pdfGenBaseUrl = URI.create(source.get("pdfgen.base_url")))
     }
 
     data class PostgresProperties(val adminJdbcUrl: String, val queryJdbcUrl: String, val databaseName: String) {
@@ -113,26 +119,20 @@ object PropertiesConfig {
         val key: String = rapportType.configKey!!
     }
 
-    data class InnholdGeneratorProperties(val eregBaseUrl: URI, val pdfGenBaseUrl: URI) {
-        constructor(
-            source: ConfigSource
-        ) : this(eregBaseUrl = URI.create(source.get("ereg.base_url")), pdfGenBaseUrl = URI.create(source.get("pdfgen.base_url")))
-    }
-
     data class SecurityProperties(
-        val azureAdProperties: AzureAdProperties,
-        val tokenXProperties: TokenXProperties,
-        val maskinportenProperties: MaskinportenProperties,
-        val altinnProperties: AltinnProperties,
+        val azureAd: AzureAdProperties,
+        val tokenX: TokenXProperties,
+        val maskinporten: MaskinportenProperties,
+        val altinn: AltinnProperties,
         val tokenEndpoint: String,
     ) {
         constructor(
             source: ConfigSource
         ) : this(
-            azureAdProperties = AzureAdProperties(source),
-            tokenXProperties = TokenXProperties(source),
-            maskinportenProperties = MaskinportenProperties(source),
-            altinnProperties = AltinnProperties(source),
+            azureAd = AzureAdProperties(source),
+            tokenX = TokenXProperties(source),
+            maskinporten = MaskinportenProperties(source),
+            altinn = AltinnProperties(source),
             tokenEndpoint = source.get("auth.texas.token_endpoint"),
         )
     }
