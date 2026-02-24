@@ -43,7 +43,7 @@ class BestillingMottakTest :
                 }
 
             test("BestillingMottak nekter å motta meldinger til opphørt orgnr") {
-                val service: RapportService = mockk(relaxed = true)
+                val rapportService: RapportService = mockk(relaxed = true)
                 val eregService: EregService = mockk()
                 coEvery { eregService.hentNoekkelInfo(any()) } answers
                     {
@@ -53,7 +53,7 @@ class BestillingMottakTest :
                     dbContainer = dbContainer,
                     mqContainer = mqContainer,
                     dependencyOverrides = {
-                        dependencies.provide { service }
+                        dependencies.provide { rapportService }
                         dependencies.provide { eregService }
                     },
                 ) {
@@ -70,20 +70,20 @@ class BestillingMottakTest :
                                 val _ = eregService.hentNoekkelInfo(any())
                             }
                         }
-                        verify(timeout = 500) { service wasNot Called }
+                        verify(timeout = 500) { rapportService wasNot Called }
                     }
                 }
             }
 
             test("BestillingMottak klarer å hente meldinger fra MQ") {
-                val service: RapportService = mockk(relaxed = true)
+                val rapportService: RapportService = mockk(relaxed = true)
                 val eregService: EregService = mockk()
                 coEvery { eregService.hentNoekkelInfo(any()) } answers { Organisasjon(firstArg(), Navn("Et navn")) }
                 TestUtil.withFullApplication(
                     dbContainer = dbContainer,
                     mqContainer = mqContainer,
                     dependencyOverrides = {
-                        dependencies.provide { service }
+                        dependencies.provide { rapportService }
                         dependencies.provide { eregService }
                     },
                 ) {
@@ -97,7 +97,7 @@ class BestillingMottakTest :
 
                         eventually(5.seconds) {
                             verify(exactly = 1) {
-                                val _ = service.lagreBestilling(any(), any(), any())
+                                val _ = rapportService.lagreBestilling(any(), any(), any())
                             }
                         }
                     }
