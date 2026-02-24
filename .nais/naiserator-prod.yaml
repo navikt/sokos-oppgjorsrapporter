@@ -9,7 +9,7 @@ spec:
   image: "{{{ image }}}"
   port: 8080
   replicas:
-    min: 2
+    min: 1
     max: 2
     cpuThresholdPercentage: 75
   liveness:
@@ -41,10 +41,66 @@ spec:
   azure:
     application:
       enabled: true
+      allowAllUsers: false
+      claims:
+        groups:
+          - id: "2abbcfe4-98c8-4b30-8bac-5ea1e0c6d0e1" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER
+  maskinporten:
+    enabled: true
+    scopes:
+      exposes:
+        - accessibleForAll: true
+          enabled: true
+          product: utbetaling
+          separator: "/"
+          name: oppgjorsrapporter
+      consumes:
+        - name: "altinn:authorization/authorize"
+        - name: "digdir:dialogporten.serviceprovider"
+  tokenx:
+    enabled: true
+  gcp:
+    sqlInstances:
+      - type: POSTGRES_18
+        tier: db-custom-1-3840
+        diskAutoresize: true
+        databases:
+          - name: sokos-oppgjorsrapporter-db
+            users:
+              - name: appbruker
   accessPolicy:
+    inbound:
+      rules:
+        - application: sokos-up-oppgjorsrapporter
+        - application: sokos-oppgjorsrapporter-selvbetjening-frontend
     outbound:
+      external:
+        - host: platform.altinn.no
+        - host: mpls01.adeo.no
+          ports:
+            - port: 1414
+        - host: ereg-services.prod-fss-pub.nais.io
       rules:
         - application: logging
           namespace: nais-system
-
+        - application: pengeflyt-pdfgen
+  envFrom:
+    - secret: altinn-authorization-subscription
+    - secret: sokos-oppgjorsrapporter-secrets
   env:
+    - name: APPLICATION_PROFILE
+      value: PROD
+    - name: MQ_HOST
+      value: mpls01.adeo.no
+    - name: MQ_PORT
+      value: "1414"
+    - name: MQ_MANAGER_NAME
+      value: MPLS01
+    - name: MQ_CHANNEL
+      value: P_OPPGJORSRAPPORTER
+    - name: MQ_REFUSJON_QUEUE
+      value: QA.P_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG
+    - name: EREG_URL
+      value: https://ereg-services.prod-fss-pub.nais.io/
+    - name: PDF_GENERATOR_URL
+      value: http://pengeflyt-pdfgen
