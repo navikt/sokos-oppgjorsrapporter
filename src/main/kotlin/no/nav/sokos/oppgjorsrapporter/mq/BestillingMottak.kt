@@ -67,9 +67,9 @@ class BestillingMottak(
                     val bestilling = xmlMapper.readValue<TrekkKredRapportBestilling>(melding.data)
 
                     bestilling to
-                        bestilling.brukerData.brevinfo.variableFelter.ur.arkivRef.sumOf {
-                            it.enhet.sumOf { it.trekkLinje.size }
-                        } // TODO Hva skal vi telle?
+                        bestilling.brukerData.brevinfo.variableFelter.ur.arkivRefList.sumOf {
+                            it.enhetList.sumOf { it.trekkLinjeList.size }
+                        }
                 }
                 else -> error("Vet ikke hvordan mottatte bestillinger for rapportType ${melding.rapportType} skal håndteres")
             }

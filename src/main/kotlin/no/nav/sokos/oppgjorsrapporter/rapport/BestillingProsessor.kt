@@ -11,12 +11,17 @@ import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
-import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
+import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.xmlMapper
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.RefusjonsRapportGenerator
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.TrekkKredRapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import tools.jackson.module.kotlin.readValue
 
 class BestillingProsessor(
     private val metrics: Metrics,
-    private val rapportGenerator: RapportGenerator,
+    private val refusjonsRapportGenerator: RefusjonsRapportGenerator,
+    private val trekkKredRapportGenerator: TrekkKredRapportGenerator,
     private val rapportService: RapportService,
     private val eregService: EregService,
     private val varselService: VarselService,
@@ -78,13 +83,42 @@ class BestillingProsessor(
                             suspend { variant: VariantFormat ->
                                 when (variant) {
                                     VariantFormat.Pdf ->
-                                        rapportGenerator.genererPdfInnhold(refusjonsRapportBestilling, organisasjonsNavnOgAdresse)
-                                    VariantFormat.Csv -> rapportGenerator.genererCsvInnhold(refusjonsRapportBestilling)
+                                        refusjonsRapportGenerator.genererPdfInnhold(refusjonsRapportBestilling, organisasjonsNavnOgAdresse)
+                                    VariantFormat.Csv -> refusjonsRapportGenerator.genererCsvInnhold(refusjonsRapportBestilling)
                                 }
                             },
                         )
                     }
-
+                    RapportType.`trekk-kred` -> {
+                        val trekkKredBestilling = xmlMapper.readValue<TrekkKredRapportBestilling>(bestilling.dokument)
+                        val mottaker = trekkKredBestilling.brukerData.mottaker
+                        val urData = trekkKredBestilling.brukerData.brevinfo.variableFelter.ur
+                        val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(urData.orgnummer)
+                        Pair(
+                            UlagretRapport(
+                                bestillingId = bestilling.id,
+                                orgnr = OrgNr(urData.orgnummer),
+                                orgNavn = OrgNavn(mottaker.navn.fulltNavn),
+                                type = bestilling.genererSom,
+                                datoValutert = trekkKredBestilling.dato,
+                                antallRader = urData.arkivRefList.sumOf { it.enhetList.sumOf { it.trekkLinjeList.size } },
+                                bankkonto = Bankkonto(urData.kontonummer),
+                                antallUnderenheter = null,
+                                antallPersoner =
+                                    urData.arkivRefList
+                                        .flatMap { it.enhetList.flatMap { it.trekkLinjeList.map { it.fnr } } }
+                                        .distinct()
+                                        .size,
+                            ),
+                            suspend { variant: VariantFormat ->
+                                when (variant) {
+                                    VariantFormat.Pdf ->
+                                        trekkKredRapportGenerator.genererPdfInnhold(trekkKredBestilling, organisasjonsNavnOgAdresse)
+                                    VariantFormat.Csv -> trekkKredRapportGenerator.genererCsvInnhold(trekkKredBestilling)
+                                }
+                            },
+                        )
+                    }
                     else -> error("Vet ikke hvordan bestilling av type ${bestilling.genererSom} skal prosesseres ennå")
                 }
             rapportService.lagreRapport(tx, ulagret).also { rapport ->
