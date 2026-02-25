@@ -5,7 +5,7 @@ import java.time.Year
 import java.time.format.DateTimeFormatter
 import kotlin.random.Random
 
-private fun <T> gyldigGenerator(ctor: (String) -> T, genererBase: () -> List<Int>, vararg sifferVekter: List<Int>): T {
+private fun <T> genererMedKontrollsiffer(ctor: (String) -> T, genererBase: () -> List<Int>, vararg sifferVekter: List<Int>): T {
     while (true) {
         val base = genererBase()
         val sifre =
@@ -26,7 +26,7 @@ private fun <T> gyldigGenerator(ctor: (String) -> T, genererBase: () -> List<Int
 private fun Random.genDigitList(length: Int): () -> List<Int> = { List(length) { nextInt(10) } }
 
 fun Bankkonto.Companion.genererGyldig(random: Random = Random.Default): Bankkonto.Validert =
-    gyldigGenerator(Bankkonto::Validert, random.genDigitList(10), Bankkonto.Validert.sifferVekter)
+    genererMedKontrollsiffer(Bankkonto::Validert, random.genDigitList(10), Bankkonto.Validert.sifferVekter)
 
 enum class TestPerson {
     NAV,
@@ -60,8 +60,8 @@ fun Fnr.Companion.genererGyldig(forTestPerson: TestPerson? = null, random: Rando
         dato.justerForTestPerson(forTestPerson).plus(individSiffer)
     }
 
-    return gyldigGenerator(Fnr::Validert, baseGen, Fnr.Validert.sifferVekter1, Fnr.Validert.sifferVekter2)
+    return genererMedKontrollsiffer(Fnr::Validert, baseGen, Fnr.Validert.sifferVekter1, Fnr.Validert.sifferVekter2)
 }
 
 fun OrgNr.Companion.genererGyldig(random: Random = Random.Default): OrgNr.Validert =
-    gyldigGenerator(OrgNr::Validert, random.genDigitList(8), OrgNr.Validert.sifferVekter)
+    genererMedKontrollsiffer(OrgNr::Validert, random.genDigitList(8), OrgNr.Validert.sifferVekter)
