@@ -16,7 +16,10 @@ import tools.jackson.module.kotlin.KotlinFeature
 import tools.jackson.module.kotlin.KotlinModule
 
 @JsonRootName(value = "rundata")
-data class TrekkKredRapportBestilling(@get:JacksonXmlProperty(localName = "brukerdata") val brukerData: Brukerdata)
+data class TrekkKredRapportBestilling(
+    @JacksonXmlProperty(isAttribute = true) @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd") val dato: LocalDate,
+    @get:JacksonXmlProperty(localName = "brukerdata") val brukerData: Brukerdata,
+)
 
 data class Brukerdata(val mottaker: Mottaker, val brevinfo: BrevInfo)
 
@@ -43,14 +46,14 @@ data class UR(
     val orgnummer: String,
     val kreditor: String,
     val kontonummer: String,
-    @get:JacksonXmlProperty(localName = "tssid") val ttsId: String,
+    @get:JacksonXmlProperty(localName = "tssid") val tssId: String,
     @get:JacksonXmlProperty(localName = "rapfom")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
-    val rapportFOM: LocalDate,
+    val rapportFom: LocalDate,
     @get:JacksonXmlProperty(localName = "raptom")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
-    val rapportTOM: LocalDate,
-    @get:JacksonXmlProperty(localName = "arkivref") @JacksonXmlElementWrapper(useWrapping = false) val arkivRef: List<ArkivRef>,
+    val rapportTom: LocalDate,
+    @get:JacksonXmlProperty(localName = "arkivref") @JacksonXmlElementWrapper(useWrapping = false) val arkivRefList: List<ArkivRef>,
     @get:JacksonXmlProperty(localName = "sumtot") val sumTotal: Belop,
 )
 
@@ -58,14 +61,14 @@ data class Belop(@JsonDeserialize(using = BelopDeserializer::class) val belop: B
 
 data class ArkivRef(
     @get:JacksonXmlProperty(isAttribute = true) val nr: String,
-    @get:JacksonXmlProperty(localName = "enhet") @JacksonXmlElementWrapper(useWrapping = false) val enhet: List<Enhet>,
+    @get:JacksonXmlProperty(localName = "enhet") @JacksonXmlElementWrapper(useWrapping = false) val enhetList: List<Enhet>,
     @get:JacksonXmlProperty(localName = "delsumref") val delsumRef: Belop,
 )
 
 data class Enhet(
     @JacksonXmlProperty(isAttribute = true) val enhetnr: String,
     @JacksonXmlProperty(isAttribute = true) val navn: String,
-    @JacksonXmlProperty(localName = "trekklinje") @JacksonXmlElementWrapper(useWrapping = false) val trekkLinje: List<TrekkLinje>,
+    @JacksonXmlProperty(localName = "trekklinje") @JacksonXmlElementWrapper(useWrapping = false) val trekkLinjeList: List<TrekkLinje>,
     val delsum: Belop,
 )
 

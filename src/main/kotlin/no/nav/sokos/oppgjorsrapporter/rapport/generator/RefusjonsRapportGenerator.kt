@@ -45,7 +45,12 @@ import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 
-class RapportGenerator(private val baseUrl: URI, private val client: HttpClient, private val metrics: Metrics, private val clock: Clock) {
+class RefusjonsRapportGenerator(
+    private val baseUrl: URI,
+    private val client: HttpClient,
+    private val metrics: Metrics,
+    private val clock: Clock,
+) {
     private val logger = KotlinLogging.logger {}
 
     fun genererCsvInnhold(bestilling: RefusjonsRapportBestilling): ByteString {
