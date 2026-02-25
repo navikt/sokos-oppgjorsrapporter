@@ -1,7 +1,5 @@
 package no.nav.sokos.oppgjorsrapporter.rapport.varsel
 
-import io.ktor.http.URLBuilder
-import io.ktor.http.path
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -146,7 +144,6 @@ class VarselService(
                         Til og med mai 2026 vil den gamle meldingen "${rapport.type.gammelTittel}" komme som duplikat.
                         """
                             .trimIndent(),
-                // TODO: Skal URL her byttes ut med generell URL for en Oppgjørsrapporter-side (hvis det dukker opp en slik)?
                 additionalInfo =
                     """
                     Les mer om *${rapport.type.fulltNavn}* (tidligere kalt ${rapport.type.gammelKode}) på
@@ -160,14 +157,7 @@ class VarselService(
                     listOf(
                         GuiAction(
                             title = listOf(Content.Value.Item("Gå til nedlastingsside på nav.no")),
-                            url =
-                                URLBuilder(config.application.guiBaseUri.toString())
-                                    .apply {
-                                        path("oppgjorsrapporter")
-                                        parameters.append("id", "${rapport.id.raw}")
-                                    }
-                                    .build()
-                                    .toString(),
+                            url = config.application.guiBaseUri.resolve("rapport/${rapport.id.raw}").toString(),
                             priority = GuiAction.Priority.Primary,
                             action = Action.access,
                         )
