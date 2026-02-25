@@ -93,6 +93,20 @@ object TestUtil {
                         .trimIndent()
             }
 
+    fun withConfigOverride(key: String, value: String, block: () -> Unit) {
+        val orig = System.getProperty(key)
+        try {
+            System.setProperty(key, value)
+            block()
+        } finally {
+            if (orig != null) {
+                System.setProperty(key, orig)
+            } else {
+                System.clearProperty(key)
+            }
+        }
+    }
+
     fun readFile(fileName: String): String =
         this::class.java.classLoader.getResourceAsStream(fileName)?.bufferedReader()?.readLines()?.joinToString(separator = "\n")!!
 

@@ -47,9 +47,23 @@ class VarselService(
         registrerVarsel(tx, rapport)
     }
 
-    fun registrerVarsel(tx: TransactionalSession, forRapport: Rapport) {
-        VarselSystem.entries.forEach {
-            val _ = repository.lagre(tx, UlagretVarsel(forRapport.id, it, Instant.now(clock)))
+    fun registrerVarsel(tx: TransactionalSession, forRapport: Rapport, force: Boolean = false) {
+        val varsleAlle = config.application.pilotProdOrgs.isEmpty()
+        val pilotProd = config.application.pilotProdOrgs.any { it == forRapport.orgnr }
+        logger.warn { "force = $force; varsleAlle=$varsleAlle; pilotProd=$pilotProd; pilotProdOrgs=${config.application.pilotProdOrgs}" }
+        if (force || varsleAlle || pilotProd) {
+            if (!(varsleAlle || pilotProd)) {
+                logger.warn(TEAM_LOGS_MARKER) {
+                    "Foretar unntaksmessig varsling til ${forRapport.orgnr}, selv om denne ikke er med i pilot-produksjon"
+                }
+            }
+            VarselSystem.entries.forEach {
+                val _ = repository.lagre(tx, UlagretVarsel(forRapport.id, it, Instant.now(clock)))
+            }
+        } else {
+            logger.info(TEAM_LOGS_MARKER) {
+                "Varsling til ${forRapport.orgnr} vil ikke bli gjort pga. manglende deltakelse i pilot-produksjon"
+            }
         }
     }
 

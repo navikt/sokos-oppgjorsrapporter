@@ -311,15 +311,13 @@ abstract class BakgrunnsJobb(private val applicationState: ApplicationState) {
 
 private inline fun <reified T : BakgrunnsJobb> DependencyRegistry.provideJob(job: Job) {
     val jobName = "job.${T::class.simpleName}"
-    key<Job>(jobName) {
-        provide { job }
-        cleanup {
+    provide(jobName) { job }
+        .cleanup {
             // Merk at .cancel() ikke er nok her, da det bare vil sende et signal om at jobben skal kanselleres.
             // Vi vil at cleanup-prosessen skal vente til jobben (og dermed alle barne-jobber den evt. har spawnet) er ferdig
             // kansellert.
             runBlocking { it.cancelAndJoin() }
         }
-    }
     // Sikre at jobName-dependencyen faktisk har blitt resolvet minst en gang, slik at cleanup ikke vil bli skippet
     runBlocking { resolve<Job>(jobName) }
 }
