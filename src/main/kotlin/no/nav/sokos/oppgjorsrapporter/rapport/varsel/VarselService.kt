@@ -134,7 +134,7 @@ class VarselService(
                 additionalInfo =
                     """
                     Les mer om *${rapport.type.fulltNavn}* (tidligere kalt ${rapport.type.gammelKode}) på
-                    [Navs infoside om oppgjørsrapporter](https://www.nav.no/arbeidsgiver/rapporter).
+                    [Navs infoside om oppgjørsrapporten](${rapport.type.infoSide}).
                     """
                         .trimIndent(),
                 externalReference = rapport.uuid.toString(),

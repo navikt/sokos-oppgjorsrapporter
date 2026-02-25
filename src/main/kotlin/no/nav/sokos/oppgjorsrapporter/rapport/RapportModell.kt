@@ -24,6 +24,7 @@ enum class RapportType(
     val fulltNavn: String,
     val gammelKode: String,
     val gammelTittel: String,
+    val infoSide: String,
 ) {
     @JsonNames("K27")
     `ref-arbg`(
@@ -32,6 +33,7 @@ enum class RapportType(
         fulltNavn = "Oppgjørsrapport arbeidsgiver - refusjoner fra Nav",
         gammelKode = "K27",
         gammelTittel = "NAV - oppgjørsrapport - refusjon av syke- og fødselspenger (rapport K27)",
+        infoSide = "https://www.nav.no/arbeidsgiver/k27",
     ),
     @JsonNames("T12")
     `trekk-hend`(
@@ -40,6 +42,7 @@ enum class RapportType(
         fulltNavn = "Trekkhendelser - tilbakemelding fra Nav",
         gammelKode = "T12",
         gammelTittel = "NAV - Trekkhendelser til kreditor og namsmann (T12)", // Gjetning
+        infoSide = "https://www.nav.no/arbeidsgiver/rapporter",
     ),
     @JsonNames("T14")
     `trekk-kred`(
@@ -50,6 +53,7 @@ enum class RapportType(
         // Ut fra koden i altut-t09t14 ser det ut til at meldings-titlene også får en "periode" på slutten; den ignorerer vi i denne
         // sammenhengen
         gammelTittel = "NAV - Trekkoppgjørsrapport (T14)",
+        infoSide = "https://www.nav.no/arbeidsgiver/rapporter",
     ),
 }
 
