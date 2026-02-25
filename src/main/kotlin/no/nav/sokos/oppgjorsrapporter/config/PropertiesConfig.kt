@@ -3,7 +3,10 @@ package no.nav.sokos.oppgjorsrapporter.config
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.config.ApplicationConfigValue
 import java.net.URI
+import mu.KLogger
+import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.utils.OrgNr
 
 fun configFrom(config: ApplicationConfig): PropertiesConfig.Configuration {
     val configSource = configSourceFrom(config)
@@ -30,6 +33,8 @@ class CompositeApplicationConfig(private val primary: ApplicationConfig, private
 }
 
 object PropertiesConfig {
+    private val logger: KLogger = KotlinLogging.logger {}
+
     data class Configuration(
         val application: ApplicationProperties,
         val restEndpoint: RestEndpointProperties,
@@ -54,6 +59,7 @@ object PropertiesConfig {
         val guiBaseUri: URI,
         val profile: Profile,
         val disableBackgroundJobs: Boolean,
+        val pilotProdOrgs: List<OrgNr>,
     ) {
         constructor(
             source: ConfigSource
@@ -63,6 +69,25 @@ object PropertiesConfig {
             guiBaseUri = URI.create(source.get("application.gui_base_uri")),
             profile = Profile.valueOf(source.get("application.profile")),
             disableBackgroundJobs = source.get("application.disable_background_jobs").toBoolean(),
+            pilotProdOrgs =
+                source
+                    .get("application.pilot_prod_orgnrs")
+                    .split("\\s*,\\s*".toRegex())
+                    .map { it.trim() }
+                    .filterNot { it.isEmpty() }
+                    .map(::OrgNr)
+                    .also { pilotOrgs ->
+                        pilotOrgs
+                            .map { OrgNr.Validert.valider(it.raw) }
+                            .mapNotNull { it.exceptionOrNull()?.message }
+                            .sorted()
+                            .takeIf { it.isNotEmpty() }
+                            ?.also { feil ->
+                                logger.warn {
+                                    "Listen av pilot-prod-orgnr inneholder ugyldige elementer: ${feil.joinToString("\n  ", prefix = "\n  ")}"
+                                }
+                            }
+                    },
         )
     }
 

@@ -104,3 +104,25 @@ spec:
       value: https://ereg-services.prod-fss-pub.nais.io/
     - name: PDF_GENERATOR_URL
       value: http://pengeflyt-pdfgen
+    - name: PILOT_PROD_ORGNRS # Hentet fra https://confluence.adeo.no/spaces/TOB/pages/791029635/TOB-6273+-+Orgnr+som+skal+v%C3%A6re+med+i+pilot-produksjon
+      value: >-
+        874652202,
+        889640782,
+        891046642,
+        974237059,
+        974239965,
+        974241730,
+        974242931,
+        974652269,
+        974652277,
+        974652285,
+        974652293,
+        974652358,
+        974789310,
+        975605779,
+        991013628,
+        991076573,
+        991078045,
+        993110469,
+        995277670,
+        999263550,
