@@ -42,9 +42,9 @@ fun TokenValidationContext.gyldigScope(scope: String): Boolean =
     this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("scope").toString() == scope
 
 fun TokenValidationContext.gyldigSystembrukerOgConsumer(): Boolean =
-    getSystembruker().getOrThrow().userOrg.serGyldigUt() && getConsumerOrgnr().serGyldigUt()
+    getSystembruker().getOrThrow().userOrg.delvisValidert() && getConsumerOrgnr().delvisValidert()
 
-fun OrgNr.serGyldigUt(): Boolean = OrgNr.Validert.regex.matches(this.raw)
+fun OrgNr.delvisValidert(): Boolean = OrgNr.Validert.regex.matches(this.raw)
 
 fun TokenValidationContext.getConsumerOrgnr(): OrgNr {
     val consumer = claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("consumer") as Map<*, *>
