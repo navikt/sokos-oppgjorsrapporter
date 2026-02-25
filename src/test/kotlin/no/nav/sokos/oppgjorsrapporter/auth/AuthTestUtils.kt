@@ -1,9 +1,9 @@
 package no.nav.sokos.oppgjorsrapporter.auth
 
-import no.nav.helsearbeidsgiver.utils.wrapper.Fnr
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
-import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
 
 fun MockOAuth2Server.tokenFromDefaultProvider(claims: Map<String, Any> = emptyMap()): String =
     issueToken(issuerId = "default", clientId = "default", tokenCallback = DefaultOAuth2TokenCallback(claims = claims)).serialize()
@@ -46,5 +46,5 @@ fun MockOAuth2Server.gyldigTokenXAuthToken(pid: Fnr, acr: String): String =
     hentToken(
         issuer = AuthClientIdentityProvider.TOKEN_X,
         audience = "dev-gcp:oppgjorsrapporter:sokos-oppgjorsrapporter",
-        claims = mapOf("pid" to pid.verdi, "acr" to acr),
+        claims = mapOf("pid" to pid.raw, "acr" to acr),
     )

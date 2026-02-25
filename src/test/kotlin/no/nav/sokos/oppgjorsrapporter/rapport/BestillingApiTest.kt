@@ -13,16 +13,17 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import kotlin.random.Random
-import no.nav.helsearbeidsgiver.utils.test.wrapper.TestPerson
-import no.nav.helsearbeidsgiver.utils.test.wrapper.genererGyldig
-import no.nav.helsearbeidsgiver.utils.wrapper.Fnr
-import no.nav.helsearbeidsgiver.utils.wrapper.Orgnr
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.mq.Data
 import no.nav.sokos.oppgjorsrapporter.mq.Header
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.Belop
 import no.nav.sokos.oppgjorsrapporter.toDataSource
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.TestPerson
+import no.nav.sokos.utils.genererGyldig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.threeten.extra.MutableClock
@@ -86,9 +87,9 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
     fun `POST _api_bestilling_v1 (med rapportType=ref-arbg og riktig body, men for orgnr som er opphørt) gir feilmelding`() {
         val bestilling =
             genererBestilling(
-                orgnr = Orgnr.genererGyldig(),
+                orgnr = OrgNr.genererGyldig(),
                 valutert = LocalDate.now(),
-                underenheter = genSet(1) { Orgnr.genererGyldig() },
+                underenheter = genSet(1) { OrgNr.genererGyldig() },
                 personer = genSet(10) { randomPerson() },
                 antallPosteringer = 15,
                 ytelser = YtelseType.kjente.shuffled().take(7).toSet(),
@@ -96,12 +97,12 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         val dokument = RefusjonsRapportBestilling.json.encodeToString(bestilling)
 
         stubFor(
-            get("/v2/organisasjon/${bestilling.header.orgnr}/noekkelinfo")
+            get("/v2/organisasjon/${bestilling.header.orgnr.raw}/noekkelinfo")
                 .willReturn(
                     okJson(
                         """
                         {
-                            "organisasjonsnummer": "${bestilling.header.orgnr}",
+                            "organisasjonsnummer": "${bestilling.header.orgnr.raw}",
                             "navn": {
                                 "sammensattnavn": "Et Navn"
                             },
@@ -132,9 +133,9 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
 
         val bestilling =
             genererBestilling(
-                orgnr = Orgnr.genererGyldig(),
+                orgnr = OrgNr.genererGyldig(),
                 valutert = LocalDate.now(),
-                underenheter = genSet(1) { Orgnr.genererGyldig() },
+                underenheter = genSet(1) { OrgNr.genererGyldig() },
                 personer = genSet(10) { randomPerson() },
                 antallPosteringer = 15,
                 ytelser = YtelseType.kjente.shuffled().take(7).toSet(),
@@ -144,12 +145,12 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         // println(dokument)
 
         stubFor(
-            get("/v2/organisasjon/${bestilling.header.orgnr}/noekkelinfo")
+            get("/v2/organisasjon/${bestilling.header.orgnr.raw}/noekkelinfo")
                 .willReturn(
                     okJson(
                         """
                         {
-                            "organisasjonsnummer": "${bestilling.header.orgnr}",
+                            "organisasjonsnummer": "${bestilling.header.orgnr.raw}",
                             "navn": {
                                 "sammensattnavn": "Organisasjonens Navn"
                             }
@@ -215,12 +216,12 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         }
     }
 
-    data class Person(val fnr: Fnr, val navn: String)
+    data class Person(val fnr: Fnr.Validert, val navn: String)
 
     fun genererBestilling(
-        orgnr: Orgnr,
+        orgnr: OrgNr.Validert,
         valutert: LocalDate,
-        underenheter: Set<Orgnr>,
+        underenheter: Set<OrgNr.Validert>,
         personer: Set<Person>,
         ytelser: Set<YtelseType>,
         antallPosteringer: Int,
@@ -233,7 +234,7 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         require(personer.size <= antallPosteringer) { "Kan ikke dekke ${personer.size} personer med bare $antallPosteringer posteringer" }
         require(ytelser.size <= antallPosteringer) { "Kan ikke dekke ${ytelser.size} ytelser med bare $antallPosteringer posteringer" }
 
-        val bankkonto = List(11) { Random.nextInt(10) }.joinToString("")
+        val bankkonto = Bankkonto.genererGyldig()
 
         fun <T> shuffledIterator(input: Set<T>): Iterator<T> =
             (input.shuffled().asSequence() + generateSequence { input.random() }).iterator()
@@ -249,10 +250,10 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
             val person = personSeq.next()
             Data(
                 8020,
-                underenhetSeq.next().verdi,
+                underenhetSeq.next().somUvalidert(),
                 ytelse.kode,
                 ytelse.beskrivelse,
-                person.fnr.verdi,
+                person.fnr.somUvalidert(),
                 person.navn,
                 belopSeq.next(),
                 null,
@@ -262,7 +263,7 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         }
 
         val datarec = dataRecSeq.take(antallPosteringer).toList()
-        val header = Header(orgnr.verdi, bankkonto, datarec.sumOf { it.belop }, valutert, datarec.size.toLong())
+        val header = Header(orgnr.somUvalidert(), bankkonto.somUvalidert(), datarec.sumOf { it.belop }, valutert, datarec.size.toLong())
 
         return RefusjonsRapportBestilling(header, datarec)
     }

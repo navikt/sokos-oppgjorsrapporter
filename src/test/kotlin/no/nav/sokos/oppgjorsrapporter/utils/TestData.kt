@@ -7,12 +7,15 @@ import java.util.UUID
 import no.nav.sokos.oppgjorsrapporter.mq.Data
 import no.nav.sokos.oppgjorsrapporter.mq.Header
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
-import no.nav.sokos.oppgjorsrapporter.rapport.Bankkonto
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNavn
-import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.TestPerson
+import no.nav.sokos.utils.genererGyldig
 
 object TestData {
     val rapportMock =
@@ -100,10 +103,10 @@ startxref
 
     fun createDataRec(
         navenhet: Int = 8020,
-        bedriftsnummer: String = "933001542",
+        bedriftsnummer: OrgNr.Validert = OrgNr.genererGyldig(),
         kode: String = "H",
         tekst: String = "Sykepenger",
-        fnr: String = "29070049716",
+        fnr: Fnr.Validert = Fnr.genererGyldig(forTestPerson = TestPerson.NAV),
         navn: String = "wopoj hyfom",
         fraDato: LocalDate = LocalDate.parse("2025-05-01"),
         tilDato: LocalDate = LocalDate.parse("2025-05-31"),
@@ -113,10 +116,10 @@ startxref
 
         return Data(
             navenhet = navenhet,
-            bedriftsnummer = bedriftsnummer,
+            bedriftsnummer = bedriftsnummer.somUvalidert(),
             kode = kode,
             tekst = tekst,
-            fnr = fnr,
+            fnr = fnr.somUvalidert(),
             navn = navn,
             fraDato = fraDato,
             tilDato = tilDato,
@@ -126,8 +129,8 @@ startxref
     }
 
     fun createRefusjonsRapportBestilling(
-        headerOrgnr: String = "974600019",
-        headerBankkonto: String = "02470303400",
+        headerOrgnr: OrgNr.Validert = OrgNr.genererGyldig(),
+        headerBankkonto: Bankkonto.Validert = Bankkonto.genererGyldig(),
         headerSumBelop: BigDecimal = BigDecimal.valueOf(9093.00),
         headerValutert: LocalDate = LocalDate.parse("2025-01-28"),
         headerLinjer: Long = 1,
@@ -136,8 +139,8 @@ startxref
         return RefusjonsRapportBestilling(
             header =
                 Header(
-                    orgnr = headerOrgnr,
-                    bankkonto = headerBankkonto,
+                    orgnr = headerOrgnr.somUvalidert(),
+                    bankkonto = headerBankkonto.somUvalidert(),
                     sumBelop = headerSumBelop,
                     valutert = headerValutert,
                     linjer = headerLinjer,
@@ -147,7 +150,7 @@ startxref
     }
 }
 
-data class Ansatt(val fnr: String, val navn: String)
+data class Ansatt(val fnr: Fnr.Validert, val navn: String)
 
 val riktigFormatertRefusjonArbeidsgiverPdfPayloadSortertEtterUnderenhet =
     """

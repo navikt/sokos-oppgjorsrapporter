@@ -27,8 +27,8 @@ import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.Action
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.Content
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.CreateDialogRequest
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.GuiAction
-import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.utils.OrgNr
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

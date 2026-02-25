@@ -11,6 +11,10 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.RefusjonsRapportPdfPaylo
 import no.nav.sokos.oppgjorsrapporter.utils.Ansatt
 import no.nav.sokos.oppgjorsrapporter.utils.TestData.createDataRec
 import no.nav.sokos.oppgjorsrapporter.utils.TestData.createRefusjonsRapportBestilling
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.genererGyldig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -18,16 +22,19 @@ import org.junit.jupiter.api.Test
 class RefusjonsRapportBestillingSerializationTest {
     private val json = RefusjonsRapportBestilling.json
 
+    val orgnr = OrgNr.genererGyldig()
+    val fnr = Fnr.genererGyldig()
+
     @Test
     fun `deserialize nullable LocalDate values properly`() {
         val input =
             """
             {
                 "navenhet": 1,
-                "bedriftsnummer": "123456789",
+                "bedriftsnummer": "${orgnr.verdi}",
                 "kode": "A",
                 "tekst": "Test",
-                "fnr": "12345678901",
+                "fnr": "${fnr.verdi}",
                 "navn": "Test Person",
                 "belop": 100.0,
                 "fraDato": "2024-01-01",
@@ -47,10 +54,10 @@ class RefusjonsRapportBestillingSerializationTest {
         val data =
             Data(
                 navenhet = 1,
-                bedriftsnummer = "123456789",
+                bedriftsnummer = orgnr.somUvalidert(),
                 kode = "A",
                 tekst = "Test",
-                fnr = "12345678901",
+                fnr = fnr.somUvalidert(),
                 navn = "Test Person",
                 belop = BigDecimal("100.0"),
                 fraDato = LocalDate.parse("2024-01-01"),
@@ -64,10 +71,10 @@ class RefusjonsRapportBestillingSerializationTest {
                 """
                 {
                     "navenhet": 1,
-                    "bedriftsnummer": "123456789",
+                    "bedriftsnummer": "${orgnr.verdi}",
                     "kode": "A",
                     "tekst": "Test",
-                    "fnr": "12345678901",
+                    "fnr": "${fnr.verdi}",
                     "navn": "Test Person",
                     "belop": 100.0,
                     "fraDato": "2024-01-01",
@@ -80,27 +87,33 @@ class RefusjonsRapportBestillingSerializationTest {
 
     @Test
     fun `tilCsv skal generere CSV innhold med riktig format`() {
+        val underenhet = OrgNr.genererGyldig()
 
         // maxDato (8 siffer) - Maks dato på format ÅÅÅÅMMDD. Settes til "00000000" hvis feltet mangler
-        val dataRecordUtenMaxDato = createDataRec(maxDato = null)
-        val dataRecordMedMaxDato = createDataRec(maxDato = LocalDate.parse("2026-07-31"))
+        val dataRecordUtenMaxDato = createDataRec(bedriftsnummer = underenhet, fnr = fnr, maxDato = null)
+        val dataRecordMedMaxDato = createDataRec(bedriftsnummer = underenhet, fnr = fnr, maxDato = LocalDate.parse("2026-07-31"))
 
         // navn (25 tegn) - Navn på person, padding med mellomrom til høyre hvis kortere. Semikolon, quote og linjeskift erstattes med
         // mellomrom dersom det ikke forekommer i starten eller slutten.
-        val dataRecordMedNavnKortereEnn25Tegn = createDataRec(navn = "Kort navn")
-        val dataRecordMedNavnLengereEnn25Tegn = createDataRec(navn = "Dette navnet er definitivt lengre enn tjuefem tegn")
-        val dataRecordMedNavnMedSemikolon = createDataRec(navn = "Navn;med;semikolon")
-        val dataRecordMedNavnMedEksakt25Tegn = createDataRec(navn = "Navn med nøyaktig tjuefem") // 25 tegn
-        val dataRecordMedNavnMedLinjeskift = createDataRec(navn = "Navn\r\n\r\nmed\nlinjeskift")
+        val dataRecordMedNavnKortereEnn25Tegn = createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Kort navn")
+        val dataRecordMedNavnLengereEnn25Tegn =
+            createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Dette navnet er definitivt lengre enn tjuefem tegn")
+        val dataRecordMedNavnMedSemikolon = createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Navn;med;semikolon")
+        val dataRecordMedNavnMedEksakt25Tegn =
+            createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Navn med nøyaktig tjuefem") // 25 tegn
+        val dataRecordMedNavnMedLinjeskift = createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Navn\r\n\r\nmed\nlinjeskift")
 
         // belop (11 tegn) - Beløp i ører (10 siffer + fortegn). Kreditbeløp (negative) får '-' på slutten, debetbeløp får ' ' (mellomrom)
         // på slutten
-        val dataRecordMedKreditBeløp = createDataRec(belop = BigDecimal("-9905.00"))
-        val dataRecordMedDebitBeløp = createDataRec(belop = BigDecimal("9905.00"))
-        val dataRecordMedMerSeksDesimaler = createDataRec(belop = BigDecimal("9905.126789"))
+        val dataRecordMedKreditBeløp = createDataRec(bedriftsnummer = underenhet, fnr = fnr, belop = BigDecimal("-9905.00"))
+        val dataRecordMedDebitBeløp = createDataRec(bedriftsnummer = underenhet, fnr = fnr, belop = BigDecimal("9905.00"))
+        val dataRecordMedMerSeksDesimaler = createDataRec(bedriftsnummer = underenhet, fnr = fnr, belop = BigDecimal("9905.126789"))
 
+        val kontonr = Bankkonto.genererGyldig()
         val refusjonsRapportBestilling =
             createRefusjonsRapportBestilling(
+                headerOrgnr = orgnr,
+                headerBankkonto = kontonr,
                 datarec =
                     listOf(
                         dataRecordUtenMaxDato,
@@ -113,20 +126,20 @@ class RefusjonsRapportBestillingSerializationTest {
                         dataRecordMedKreditBeløp,
                         dataRecordMedDebitBeløp,
                         dataRecordMedMerSeksDesimaler,
-                    )
+                    ),
             )
         val forventetCsvInnhold =
             listOf(
-                    "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500 ;0000000000 ;00000000",
-                    "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500 ;0000000000 ;20260731",
-                    "8020;974600019;933001542;H;29070049716;20250501;02470303400;Kort navn                ;20250531;0000990500 ;0000000000 ;20260731",
-                    "8020;974600019;933001542;H;29070049716;20250501;02470303400;Dette navnet er definitiv;20250531;0000990500 ;0000000000 ;20260731",
-                    "8020;974600019;933001542;H;29070049716;20250501;02470303400;Navn med semikolon       ;20250531;0000990500 ;0000000000 ;20260731",
-                    "8020;974600019;933001542;H;29070049716;20250501;02470303400;Navn med nøyaktig tjuefem;20250531;0000990500 ;0000000000 ;20260731",
-                    "8020;974600019;933001542;H;29070049716;20250501;02470303400;Navn med linjeskift      ;20250531;0000990500 ;0000000000 ;20260731",
-                    "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500-;0000000000 ;20260731",
-                    "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990500 ;0000000000 ;20260731",
-                    "8020;974600019;933001542;H;29070049716;20250501;02470303400;wopoj hyfom              ;20250531;0000990513 ;0000000000 ;20260731",
+                    "8020;${orgnr.verdi};${underenhet.verdi};H;${fnr.verdi};20250501;${kontonr.verdi};wopoj hyfom              ;20250531;0000990500 ;0000000000 ;00000000",
+                    "8020;${orgnr.verdi};${underenhet.verdi};H;${fnr.verdi};20250501;${kontonr.verdi};wopoj hyfom              ;20250531;0000990500 ;0000000000 ;20260731",
+                    "8020;${orgnr.verdi};${underenhet.verdi};H;${fnr.verdi};20250501;${kontonr.verdi};Kort navn                ;20250531;0000990500 ;0000000000 ;20260731",
+                    "8020;${orgnr.verdi};${underenhet.verdi};H;${fnr.verdi};20250501;${kontonr.verdi};Dette navnet er definitiv;20250531;0000990500 ;0000000000 ;20260731",
+                    "8020;${orgnr.verdi};${underenhet.verdi};H;${fnr.verdi};20250501;${kontonr.verdi};Navn med semikolon       ;20250531;0000990500 ;0000000000 ;20260731",
+                    "8020;${orgnr.verdi};${underenhet.verdi};H;${fnr.verdi};20250501;${kontonr.verdi};Navn med nøyaktig tjuefem;20250531;0000990500 ;0000000000 ;20260731",
+                    "8020;${orgnr.verdi};${underenhet.verdi};H;${fnr.verdi};20250501;${kontonr.verdi};Navn med linjeskift      ;20250531;0000990500 ;0000000000 ;20260731",
+                    "8020;${orgnr.verdi};${underenhet.verdi};H;${fnr.verdi};20250501;${kontonr.verdi};wopoj hyfom              ;20250531;0000990500-;0000000000 ;20260731",
+                    "8020;${orgnr.verdi};${underenhet.verdi};H;${fnr.verdi};20250501;${kontonr.verdi};wopoj hyfom              ;20250531;0000990500 ;0000000000 ;20260731",
+                    "8020;${orgnr.verdi};${underenhet.verdi};H;${fnr.verdi};20250501;${kontonr.verdi};wopoj hyfom              ;20250531;0000990513 ;0000000000 ;20260731",
                 )
                 .joinToString("\r\n") + "\r\n"
 
@@ -137,11 +150,11 @@ class RefusjonsRapportBestillingSerializationTest {
 
     @Test
     fun `RefusjonsRapportPdfPayload serialiseres riktig, sortert etter ytelse, underenhet, fnr, og periodeFra`() {
-        val underenhet1 = "009876111"
-        val underenhet2 = "009876222"
+        val underenhet1 = OrgNr.Validert("009876111")
+        val underenhet2 = OrgNr.Validert("009876227")
 
-        val person1 = Ansatt(fnr = "12345678111", navn = "Anders Andersen")
-        val person2 = Ansatt(fnr = "12345678222", navn = "Birte Birtesen")
+        val person1 = Ansatt(fnr = Fnr.Validert("12445678102"), navn = "Anders Andersen")
+        val person2 = Ansatt(fnr = Fnr.Validert("12445678293"), navn = "Birte Birtesen")
         val ytelse1 = "Foreldrepenger"
         val ytelse2 = "Sykepenger"
 
@@ -199,7 +212,13 @@ class RefusjonsRapportBestillingSerializationTest {
 
         val totalsum = posteringer.sumOf { it.belop }
 
-        val refusjonsRapportBestilling = createRefusjonsRapportBestilling(headerSumBelop = totalsum, datarec = posteringer)
+        val refusjonsRapportBestilling =
+            createRefusjonsRapportBestilling(
+                headerOrgnr = OrgNr.Validert("974600013"),
+                headerBankkonto = Bankkonto.Validert("02470305404"),
+                headerSumBelop = totalsum,
+                datarec = posteringer,
+            )
         val now = LocalDate.parse("2025-01-31")
         val organisasjonsNavnOgAdresse =
             OrganisasjonsNavnOgAdresse(
@@ -222,13 +241,13 @@ class RefusjonsRapportBestillingSerializationTest {
                   },
                   "bedrift": {
                     "orgnr": {
-                      "verdi": "974600019",
-                      "formattert": "974 600 019"
+                      "verdi": "974600013",
+                      "formattert": "974 600 013"
                     },
                     "navn": "Helsfyr stål og plasikk",
                     "kontonummer": {
-                      "verdi": "02470303400",
-                      "formattert": "0247 03 03400"
+                      "verdi": "02470305404",
+                      "formattert": "0247 03 05404"
                     },
                     "adresse": "Veien 24, 1234, VårBy"
                   },
@@ -246,8 +265,8 @@ class RefusjonsRapportBestillingSerializationTest {
                             "formattert": "009 876 111"
                           },
                           "fnr": {
-                            "verdi": "12345678111",
-                            "formattert": "123456 78111"
+                            "verdi": "12445678102",
+                            "formattert": "124456 78102"
                           },
                           "navn": "Anders Andersen",
                           "periodeFra": "01.01.2025",
@@ -260,12 +279,12 @@ class RefusjonsRapportBestillingSerializationTest {
                         },
                         {
                           "orgnr": {
-                            "verdi": "009876222",
-                            "formattert": "009 876 222"
+                            "verdi": "009876227",
+                            "formattert": "009 876 227"
                           },
                           "fnr": {
-                            "verdi": "12345678222",
-                            "formattert": "123456 78222"
+                            "verdi": "12445678293",
+                            "formattert": "124456 78293"
                           },
                           "navn": "Birte Birtesen",
                           "periodeFra": "15.01.2025",
@@ -291,8 +310,8 @@ class RefusjonsRapportBestillingSerializationTest {
                             "formattert": "009 876 111"
                           },
                           "fnr": {
-                            "verdi": "12345678111",
-                            "formattert": "123456 78111"
+                            "verdi": "12445678102",
+                            "formattert": "124456 78102"
                           },
                           "navn": "Anders Andersen",
                           "periodeFra": "01.01.2025",
@@ -304,12 +323,12 @@ class RefusjonsRapportBestillingSerializationTest {
                         },
                         {
                           "orgnr": {
-                            "verdi": "009876222",
-                            "formattert": "009 876 222"
+                            "verdi": "009876227",
+                            "formattert": "009 876 227"
                           },
                           "fnr": {
-                            "verdi": "12345678222",
-                            "formattert": "123456 78222"
+                            "verdi": "12445678293",
+                            "formattert": "124456 78293"
                           },
                           "navn": "Birte Birtesen",
                           "periodeFra": "15.01.2025",

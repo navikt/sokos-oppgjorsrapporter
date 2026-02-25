@@ -36,6 +36,8 @@ import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.LocalDateRange
 
 private val logger = KotlinLogging.logger {}
@@ -213,7 +215,7 @@ fun Route.rapportApi() {
                         Tag.of(
                             "authorized_party",
                             when (bruker) {
-                                is Systembruker -> tokenValidationContext().getConsumerOrgnr()
+                                is Systembruker -> tokenValidationContext().getConsumerOrgnr().raw
                                 is EntraId ->
                                     (tokenValidationContext().claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name")
                                         as? String) ?: "unknown"

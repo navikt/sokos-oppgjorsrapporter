@@ -9,7 +9,7 @@ import no.nav.security.token.support.core.context.TokenValidationContext
 import no.nav.security.token.support.core.jwt.JwtTokenClaims
 import no.nav.security.token.support.v3.TokenValidationContextPrincipal
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
-import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
+import no.nav.sokos.utils.OrgNr
 
 suspend fun RoutingContext.tokenValidationContext(): TokenValidationContext {
     val principal = call.principal<TokenValidationContextPrincipal>()
@@ -35,26 +35,23 @@ fun TokenValidationContext.getSystembruker(): Result<Systembruker> =
         val systemBrukerOrgMap = authDetails["systemuser_org"] as? Map<*, *>
         val systemBrukerOrgnr = systemBrukerOrgMap?.extractOrgnummer() ?: throw BrukerIkkeFunnet()
         val systemId = authDetails["system_id"] as? String ?: throw BrukerIkkeFunnet()
-        Systembruker(systemBrukerId, OrgNr(systemBrukerOrgnr), systemId)
+        Systembruker(systemBrukerId, systemBrukerOrgnr, systemId)
     }
 
 fun TokenValidationContext.gyldigScope(scope: String): Boolean =
     this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("scope").toString() == scope
 
-fun TokenValidationContext.gyldigSystembrukerOgConsumer(): Boolean {
-    val systembruker = this.getSystembruker()
-    val consumerOrgnr = this.getConsumerOrgnr()
-    return consumerOrgnr.gyldigOrgnr() && systembruker.getOrThrow().userOrg.raw.gyldigOrgnr()
-}
+fun TokenValidationContext.gyldigSystembrukerOgConsumer(): Boolean =
+    getSystembruker().getOrThrow().userOrg.delvisValidert() && getConsumerOrgnr().delvisValidert()
 
-fun String.gyldigOrgnr(): Boolean = this.matches(Regex("\\d{9}"))
+fun OrgNr.delvisValidert(): Boolean = OrgNr.Validert.regex.matches(this.raw)
 
-fun TokenValidationContext.getConsumerOrgnr(): String {
-    val consumer = this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("consumer") as Map<*, *>
+fun TokenValidationContext.getConsumerOrgnr(): OrgNr {
+    val consumer = claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("consumer") as Map<*, *>
     return requireNotNull(consumer.extractOrgnummer())
 }
 
-private fun Map<*, *>.extractOrgnummer(): String? = (get("ID") as? String)?.split(":")?.get(1)
+private fun Map<*, *>.extractOrgnummer(): OrgNr? = (get("ID") as? String)?.split(":")?.get(1)?.let(::OrgNr)
 
 fun TokenValidationContext.getEntraId(): Result<EntraId> = runCatching {
     val claims = this.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)

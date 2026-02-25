@@ -1,7 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter.dialogporten.domene
 
-import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.utils.OrgNr
 
 data class CreateDialogRequest(
     val rapportType: RapportType,

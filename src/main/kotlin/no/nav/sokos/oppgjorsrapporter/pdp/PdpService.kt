@@ -9,7 +9,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.pdpTokenGetter
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
-import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
+import no.nav.sokos.utils.OrgNr
 
 interface PdpService {
     suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean

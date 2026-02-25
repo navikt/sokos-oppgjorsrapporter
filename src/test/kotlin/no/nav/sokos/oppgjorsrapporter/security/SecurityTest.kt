@@ -11,8 +11,8 @@ import no.nav.security.mock.oauth2.withMockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
 import no.nav.sokos.oppgjorsrapporter.rapport.Api
-import no.nav.sokos.oppgjorsrapporter.rapport.OrgNr
 import no.nav.sokos.oppgjorsrapporter.withTestApplication
+import no.nav.sokos.utils.OrgNr
 
 class SecurityTest :
     FunSpec({

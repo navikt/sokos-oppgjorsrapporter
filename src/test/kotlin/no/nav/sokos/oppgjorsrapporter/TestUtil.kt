@@ -26,9 +26,9 @@ object TestUtil {
         dbContainer: PostgreSQLContainer,
         mqContainer: MQContainer? = null,
         dependencyOverrides: Application.() -> Unit = {},
-        thunk: suspend ApplicationTestBuilder.() -> Unit,
+        block: suspend ApplicationTestBuilder.() -> Unit,
     ): TestResult = withMockOAuth2Server {
-        withTestApplication(dbContainer = dbContainer, mqContainer = mqContainer, dependencyOverrides = dependencyOverrides, thunk = thunk)
+        withTestApplication(dbContainer = dbContainer, mqContainer = mqContainer, dependencyOverrides = dependencyOverrides, block = block)
     }
 
     fun testApplicationConfig(
@@ -189,7 +189,7 @@ fun MockOAuth2Server.withTestApplication(
     dbContainer: PostgreSQLContainer,
     mqContainer: MQContainer? = null,
     dependencyOverrides: Application.() -> Unit = {},
-    thunk: suspend ApplicationTestBuilder.() -> Unit,
+    block: suspend ApplicationTestBuilder.() -> Unit,
 ) {
     testApplication {
         configureTestApplicationEnvironment(dbContainer = dbContainer, mqContainer = mqContainer, server = this@withTestApplication)
@@ -200,7 +200,7 @@ fun MockOAuth2Server.withTestApplication(
         }
         startApplication()
 
-        thunk()
+        block()
     }
 }
 

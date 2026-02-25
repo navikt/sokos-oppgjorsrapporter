@@ -19,6 +19,8 @@ import no.nav.sokos.oppgjorsrapporter.auth.TokenX
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.Interval
 import org.threeten.extra.LocalDateRange
 

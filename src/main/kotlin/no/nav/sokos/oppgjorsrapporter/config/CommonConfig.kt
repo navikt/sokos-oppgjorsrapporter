@@ -65,7 +65,7 @@ fun Application.commonConfig() {
             tag(
                 "authorized_party",
                 when (bruker) {
-                    is Systembruker -> validationCtx.getConsumerOrgnr()
+                    is Systembruker -> validationCtx.getConsumerOrgnr().raw
                     is EntraId ->
                         (validationCtx.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name") as? String) ?: "unknown"
                     is TokenX -> "person"

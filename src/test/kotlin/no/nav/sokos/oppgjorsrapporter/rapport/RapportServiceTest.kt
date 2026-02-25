@@ -37,6 +37,9 @@ import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.toDataSource
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.genererGyldig
 
 class RapportServiceTest :
     FunSpec({
@@ -121,11 +124,11 @@ class RapportServiceTest :
                                     tx,
                                     UlagretRapport(
                                         bestillingId = bestilling.id,
-                                        orgnr = OrgNr(grunnlag.header.orgnr),
+                                        orgnr = grunnlag.header.orgnr,
                                         orgNavn = OrgNavn("Test Organisasjon"),
                                         type = bestilling.genererSom,
                                         datoValutert = grunnlag.header.valutert,
-                                        bankkonto = Bankkonto(grunnlag.header.bankkonto),
+                                        bankkonto = grunnlag.header.bankkonto,
                                         antallRader = grunnlag.datarec.size,
                                         antallUnderenheter = grunnlag.datarec.distinctBy { it.bedriftsnummer }.size,
                                         antallPersoner = grunnlag.datarec.distinctBy { it.fnr }.size,
@@ -191,11 +194,11 @@ class RapportServiceTest :
                     val ulagret =
                         UlagretRapport(
                             bestillingId = RapportBestilling.Id(1),
-                            orgnr = OrgNr("39487569"),
+                            orgnr = OrgNr.genererGyldig().somUvalidert(),
                             orgNavn = OrgNavn("Test Organisasjon"),
                             type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
-                            bankkonto = Bankkonto("53785238218"),
+                            bankkonto = Bankkonto.genererGyldig().somUvalidert(),
                             antallRader = 3,
                             antallUnderenheter = 1,
                             antallPersoner = 2,
@@ -230,6 +233,7 @@ class RapportServiceTest :
                     rapport!!.id shouldBe Rapport.Id(1)
                     rapport.orgnr shouldBe OrgNr("123456789")
                     rapport.type shouldBe RapportType.`ref-arbg`
+                    rapport.bankkonto shouldBe Bankkonto("12345678901")
                 }
             }
 
@@ -327,11 +331,11 @@ class RapportServiceTest :
                     val ulagretRapport =
                         UlagretRapport(
                             bestillingId = RapportBestilling.Id(1),
-                            orgnr = OrgNr("39487569"),
+                            orgnr = OrgNr.genererGyldig().somUvalidert(),
                             orgNavn = OrgNavn("Test Organisasjon"),
                             type = RapportType.`ref-arbg`,
                             datoValutert = LocalDate.of(2023, 7, 14),
-                            bankkonto = Bankkonto("53785238218"),
+                            bankkonto = Bankkonto.genererGyldig().somUvalidert(),
                             antallRader = 3,
                             antallUnderenheter = 1,
                             antallPersoner = 2,
@@ -349,7 +353,7 @@ class RapportServiceTest :
                                 variant.id shouldBe Variant.Id(3)
                                 variant.rapportId shouldBe rapport.id
                                 variant.format shouldBe VariantFormat.Pdf
-                                variant.filnavn shouldBe "39487569_ref-arbg_2023-07-14.pdf"
+                                variant.filnavn shouldBe "${rapport.orgnr.raw}_ref-arbg_2023-07-14.pdf"
                                 variant.bytes shouldBe 36
                                 variant
                             }

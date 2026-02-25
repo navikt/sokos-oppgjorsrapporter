@@ -11,10 +11,8 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
 import kotliquery.Row
-
-@Serializable @JvmInline value class OrgNr(val raw: String)
-
-@Serializable @JvmInline value class Bankkonto(val raw: String)
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.OrgNr
 
 @Serializable @JvmInline value class OrgNavn(val raw: String)
 

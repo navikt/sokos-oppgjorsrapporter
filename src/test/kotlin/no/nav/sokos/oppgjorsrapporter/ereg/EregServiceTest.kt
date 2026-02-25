@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.utils.eregResponse
+import no.nav.sokos.utils.OrgNr
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -33,7 +34,7 @@ class EregServiceTest {
 
         val eregService = EregService(URI("http://dummy-ereg-url"), mockHttpClient, mockk(relaxed = true))
 
-        assertThat(eregService.hentOrganisasjonsNavnOgAdresse("990983666"))
+        assertThat(eregService.hentOrganisasjonsNavnOgAdresse(OrgNr("990983666")))
             .isEqualTo(
                 OrganisasjonsNavnOgAdresse(
                     organisasjonsnummer = "990983666",
@@ -67,7 +68,7 @@ class EregServiceTest {
 
         val eregService = EregService(URI("http://dummy-ereg-url"), mockHttpClient, mockk(relaxed = true))
 
-        assertThat(eregService.hentOrganisasjonsNavnOgAdresse("123456789"))
+        assertThat(eregService.hentOrganisasjonsNavnOgAdresse(OrgNr("123456789")))
             .isEqualTo(OrganisasjonsNavnOgAdresse(organisasjonsnummer = "123456789", navn = "Min org", adresse = "Ingen adresse"))
     }
 
@@ -85,7 +86,7 @@ class EregServiceTest {
         val eregService = EregService(URI("http://dummy-ereg-url"), mockHttpClient, mockk<Metrics>(relaxed = true))
 
         assertThrows<RuntimeException> {
-            val _ = eregService.hentOrganisasjonsNavnOgAdresse("990983666")
+            val _ = eregService.hentOrganisasjonsNavnOgAdresse(OrgNr("990983666"))
         }
     }
 }

@@ -28,6 +28,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.gyldigSystembrukerAuthToken
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
 import no.nav.sokos.oppgjorsrapporter.module
 import no.nav.sokos.oppgjorsrapporter.toDataSource
+import no.nav.sokos.utils.OrgNr
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll

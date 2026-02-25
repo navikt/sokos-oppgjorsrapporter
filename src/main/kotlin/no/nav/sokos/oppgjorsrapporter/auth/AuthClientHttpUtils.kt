@@ -6,9 +6,14 @@ import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ParametersBuilder
 import io.ktor.serialization.kotlinx.json.json
-import no.nav.helsearbeidsgiver.utils.json.jsonConfig
+import kotlinx.serialization.json.Json
 
 internal fun createHttpClient(): HttpClient = HttpClient(Apache5) { configure() }
+
+val jsonConfig = Json {
+    ignoreUnknownKeys = true
+    decodeEnumsCaseInsensitive = true
+}
 
 internal fun HttpClientConfig<*>.configure() {
     expectSuccess = true

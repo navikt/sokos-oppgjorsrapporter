@@ -66,11 +66,11 @@ class BestillingProsessor(
                         Pair(
                             UlagretRapport(
                                 bestillingId = bestilling.id,
-                                orgnr = OrgNr(refusjonsRapportBestilling.header.orgnr),
+                                orgnr = refusjonsRapportBestilling.header.orgnr,
                                 orgNavn = OrgNavn(organisasjonsNavnOgAdresse.navn),
                                 type = bestilling.genererSom,
                                 datoValutert = refusjonsRapportBestilling.header.valutert,
-                                bankkonto = Bankkonto(refusjonsRapportBestilling.header.bankkonto),
+                                bankkonto = refusjonsRapportBestilling.header.bankkonto,
                                 antallRader = refusjonsRapportBestilling.datarec.size,
                                 antallUnderenheter = refusjonsRapportBestilling.datarec.distinctBy { it.bedriftsnummer }.size,
                                 antallPersoner = refusjonsRapportBestilling.datarec.distinctBy { it.fnr }.size,
