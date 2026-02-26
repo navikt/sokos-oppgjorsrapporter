@@ -5,8 +5,8 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import java.time.LocalDate
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
-import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
-import no.nav.sokos.oppgjorsrapporter.mq.xmlMapper
+import no.nav.sokos.oppgjorsrapporter.mq.trekk_kred.TrekkKredRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.trekk_kred.xmlMapper
 import tools.jackson.module.kotlin.readValue
 
 class MapTilTrekkKredRapportTest :

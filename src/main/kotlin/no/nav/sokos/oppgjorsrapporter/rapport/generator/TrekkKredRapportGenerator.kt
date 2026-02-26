@@ -29,7 +29,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
-import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.trekk_kred.TrekkKredRapportBestilling
 
 class TrekkKredRapportGenerator(
     private val baseUrl: URI,

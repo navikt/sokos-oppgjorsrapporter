@@ -1,4 +1,4 @@
-package no.nav.sokos.oppgjorsrapporter.mq
+package no.nav.sokos.oppgjorsrapporter.mq.trekk_kred
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonRootName
@@ -7,6 +7,7 @@ import java.math.RoundingMode
 import java.time.LocalDate
 import tools.jackson.core.JsonParser
 import tools.jackson.databind.DeserializationContext
+import tools.jackson.databind.ValueDeserializer
 import tools.jackson.databind.annotation.JsonDeserialize
 import tools.jackson.databind.module.SimpleModule
 import tools.jackson.dataformat.xml.XmlMapper
@@ -92,12 +93,12 @@ val xmlMapper =
         .addModule(kotlinModule)
         .build()
 
-class BelopDeserializer : tools.jackson.databind.ValueDeserializer<BigDecimal>() {
+class BelopDeserializer : ValueDeserializer<BigDecimal>() {
     override fun deserialize(p: JsonParser?, ctxt: DeserializationContext?): BigDecimal? {
         return p?.string.takeUnless { it.isNullOrBlank() }?.let { BigDecimal(p?.string).divide(BigDecimal(100), 2, RoundingMode.HALF_UP) }
     }
 }
 
-class TrimmingDeserializer : tools.jackson.databind.ValueDeserializer<String>() {
+class TrimmingDeserializer : ValueDeserializer<String>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = p.string?.trimEnd()
 }
