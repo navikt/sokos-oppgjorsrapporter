@@ -10,12 +10,14 @@ import no.nav.sokos.oppgjorsrapporter.BakgrunnsJobb
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
-import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
-import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
-import no.nav.sokos.oppgjorsrapporter.mq.xmlMapper
+import no.nav.sokos.oppgjorsrapporter.mq.refusjon.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.trekk_kred.TrekkKredRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.trekk_kred.xmlMapper
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RefusjonsRapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.TrekkKredRapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.OrgNr
 import tools.jackson.module.kotlin.readValue
 
 class BestillingProsessor(
@@ -93,7 +95,7 @@ class BestillingProsessor(
                         val trekkKredBestilling = xmlMapper.readValue<TrekkKredRapportBestilling>(bestilling.dokument)
                         val mottaker = trekkKredBestilling.brukerData.mottaker
                         val urData = trekkKredBestilling.brukerData.brevinfo.variableFelter.ur
-                        val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(urData.orgnummer)
+                        val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(OrgNr(urData.orgnummer))
                         Pair(
                             UlagretRapport(
                                 bestillingId = bestilling.id,

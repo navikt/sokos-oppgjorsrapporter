@@ -146,21 +146,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         }
 
         provide<RefusjonsRapportGenerator> {
-            RefusjonsRapportGenerator(
-                baseUrl = config.restEndpoint.pdfGenBaseUrl,
-                client = resolve("pdfgenClient"),
-                resolve(),
-                resolve(),
-            )
+            RefusjonsRapportGenerator(baseUrl = config.restEndpoint.pdfGenBaseUrl, client = resolve("pdfgenClient"), resolve(), resolve())
         }
 
         provide<TrekkKredRapportGenerator> {
-            TrekkKredRapportGenerator(
-                baseUrl = config.restEndpoint.pdfGenBaseUrl,
-                client = resolve("pdfgenClient"),
-                resolve(),
-                resolve(),
-            )
+            TrekkKredRapportGenerator(baseUrl = config.restEndpoint.pdfGenBaseUrl, client = resolve("pdfgenClient"), resolve(), resolve())
         }
 
         if (config.application.profile == PropertiesConfig.Profile.LOCAL) {

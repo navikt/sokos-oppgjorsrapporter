@@ -33,9 +33,9 @@ import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
-import no.nav.sokos.oppgjorsrapporter.mq.Data
-import no.nav.sokos.oppgjorsrapporter.mq.Header
-import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.refusjon.Data
+import no.nav.sokos.oppgjorsrapporter.mq.refusjon.Header
+import no.nav.sokos.oppgjorsrapporter.mq.refusjon.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.tilCSV
 import no.nav.sokos.oppgjorsrapporter.serialization.AsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
