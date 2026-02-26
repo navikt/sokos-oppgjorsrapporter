@@ -100,6 +100,10 @@ spec:
       value: P_OPPGJORSRAPPORTER
     - name: MQ_REFUSJON_QUEUE
       value: QA.P_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG
+    - name: MQ_TREKKHENDELSER_QUEUE
+      value: QA.P_OPPGJORSRAPPORTER.TREKK_HEND_GRLAG
+    - name: MQ_TREKKOPPGJOR_QUEUE
+      value: QA.P_OPPGJORSRAPPORTER.TREKK_KRED_GRLAG
     - name: EREG_URL
       value: https://ereg-services.prod-fss-pub.nais.io/
     - name: PDF_GENERATOR_URL
