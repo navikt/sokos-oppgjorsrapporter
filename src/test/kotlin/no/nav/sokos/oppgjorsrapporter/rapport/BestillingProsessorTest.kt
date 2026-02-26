@@ -21,7 +21,7 @@ import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
-import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.refusjon.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RefusjonsRapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.TrekkKredRapportGenerator
 import no.nav.sokos.oppgjorsrapporter.toDataSource

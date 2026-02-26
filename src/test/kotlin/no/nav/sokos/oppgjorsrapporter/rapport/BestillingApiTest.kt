@@ -10,9 +10,9 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import kotlin.random.Random
 import no.nav.sokos.oppgjorsrapporter.TestUtil
-import no.nav.sokos.oppgjorsrapporter.mq.Data
-import no.nav.sokos.oppgjorsrapporter.mq.Header
-import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.refusjon.Data
+import no.nav.sokos.oppgjorsrapporter.mq.refusjon.Header
+import no.nav.sokos.oppgjorsrapporter.mq.refusjon.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.Belop
 import no.nav.sokos.oppgjorsrapporter.toDataSource
 import no.nav.sokos.utils.Bankkonto

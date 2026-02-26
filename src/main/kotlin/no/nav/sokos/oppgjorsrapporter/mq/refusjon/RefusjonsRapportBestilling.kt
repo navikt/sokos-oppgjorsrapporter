@@ -1,7 +1,7 @@
 @file:UseSerializers(LocalDateAsStringSerializer::class, InstantAsStringSerializer::class, BigDecimalSerializer::class)
 @file:OptIn(ExperimentalSerializationApi::class)
 
-package no.nav.sokos.oppgjorsrapporter.mq
+package no.nav.sokos.oppgjorsrapporter.mq.refusjon
 
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -9,12 +9,13 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
-import no.nav.helsearbeidsgiver.utils.wrapper.Fnr
-import no.nav.helsearbeidsgiver.utils.wrapper.Orgnr
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.Belop
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
 
 @Serializable
 data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>) {
@@ -25,18 +26,20 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
                         add(header.orgnr)
                         addAll(datarec.map { it.bedriftsnummer })
                     }
-                    .filterNot { Orgnr.erGyldig(it) }
+                    .filterNot { it.erGyldig() }
                     .takeIf { it.isNotEmpty() }
+                    ?.map { it.raw }
                     ?.let { "Ikke gyldig orgnr: ${it.sorted().joinToString()}" },
                 // alle fnr skal være gyldige
                 datarec
                     .map { it.fnr }
                     .toSet()
-                    .filterNot { Fnr.erGyldig(it) }
+                    .filterNot { it.erGyldig() }
                     .takeIf { it.isNotEmpty() }
+                    ?.map { it.raw }
                     ?.let { "Ikke gyldig fnr: ${it.sorted().joinToString()}" },
                 // bankkonto skal kun inneholde siffer, i riktig antall
-                header.bankkonto.takeUnless { it.matches(Regex("^\\d{11}$")) }?.let { "Ugyldig bankkonto: $it" },
+                header.bankkonto.takeUnless { it.erGyldig() }?.let { "Ikke gyldig bankkonto: ${it.raw}" },
                 // valutert dato kan ikke være for gammel (grense valgt på måfå) eller i fremtiden
                 if (header.valutert.isAfter(LocalDate.now())) {
                     "Fremtidig dato for valutering: ${header.valutert}"
@@ -78,8 +81,8 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
 
 @Serializable
 data class Header(
-    val orgnr: String,
-    val bankkonto: String,
+    val orgnr: OrgNr,
+    val bankkonto: Bankkonto,
     val sumBelop: BigDecimal,
     val valutert: LocalDate,
     // Antall elementer i `datarec: List<Data>`.  Trengs egentlig ikke av vår applikasjon, men JSON-genereringen på sender-siden har ikke
@@ -90,10 +93,10 @@ data class Header(
 @Serializable
 data class Data(
     val navenhet: Int,
-    val bedriftsnummer: String,
+    val bedriftsnummer: OrgNr,
     val kode: String,
     val tekst: String,
-    val fnr: String,
+    val fnr: Fnr,
     val navn: String,
     val belop: BigDecimal,
     val fraDato: LocalDate?,
