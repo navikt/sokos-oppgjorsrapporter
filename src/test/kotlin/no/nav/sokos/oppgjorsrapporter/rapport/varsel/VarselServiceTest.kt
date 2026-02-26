@@ -1,18 +1,15 @@
 package no.nav.sokos.oppgjorsrapporter.rapport.varsel
 
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.inspectors.forAll
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
-import io.ktor.server.plugins.di.dependencies
-import io.mockk.Ordering
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.slot
+import io.kotest.matchers.string.shouldInclude
+import io.ktor.server.plugins.di.*
+import io.mockk.*
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -216,8 +213,9 @@ class VarselServiceTest :
                     val sut: VarselService = application.dependencies.resolve()
                     val _ = sut.sendVarsel()
 
-                    val guiUrl = requestSlot.captured.guiActions.first().url
-                    guiUrl shouldBe "https://gui.oppgjorsrapport.example.com/oppgjorsrapporter?id=${rapport.id.raw}"
+                    val guiAction = requestSlot.captured.guiActions.first()
+                    guiAction.url shouldBe "https://gui.oppgjorsrapport.example.com/oppgjorsrapporter/rapport/${rapport.id.raw}"
+                    guiAction.title.forAll { title -> title.value shouldInclude "nav.no" }
                 }
             }
         }
