@@ -50,7 +50,6 @@ class VarselService(
     fun registrerVarsel(tx: TransactionalSession, forRapport: Rapport, force: Boolean = false) {
         val varsleAlle = config.application.pilotProdOrgs.isEmpty()
         val pilotProd = config.application.pilotProdOrgs.any { it == forRapport.orgnr }
-        logger.warn { "force = $force; varsleAlle=$varsleAlle; pilotProd=$pilotProd; pilotProdOrgs=${config.application.pilotProdOrgs}" }
         if (force || varsleAlle || pilotProd) {
             if (!(varsleAlle || pilotProd)) {
                 logger.warn(TEAM_LOGS_MARKER) {
