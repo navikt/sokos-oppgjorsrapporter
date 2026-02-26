@@ -113,8 +113,8 @@ spec:
       # OBS: '/' på slutten av pathen her er viktig, slik at URI#resolve med relativ path gjør ting riktig
       value: https://www.nav.no/oppgjorsrapporter/
     - name: PILOT_PROD_ORGNRS # Hentet fra https://confluence.adeo.no/spaces/TOB/pages/791029635/TOB-6273+-+Orgnr+som+skal+v%C3%A6re+med+i+pilot-produksjon
+      # Midlertidig ute av lista: 874652202,
       value: >-
-        874652202,
         889640782,
         891046642,
         974237059,
