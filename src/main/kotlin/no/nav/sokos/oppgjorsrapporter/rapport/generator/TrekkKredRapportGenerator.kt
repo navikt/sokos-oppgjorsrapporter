@@ -77,7 +77,7 @@ class TrekkKredRapportGenerator(
     }
 }
 
-private fun mapTilTrekkKredRapportPdfPayload(
+fun mapTilTrekkKredRapportPdfPayload(
     bestilling: TrekkKredRapportBestilling,
     organisasjonsNavnOgAdresse: OrganisasjonsNavnOgAdresse,
     rapportSendt: LocalDate,
@@ -110,7 +110,7 @@ private fun mapEnheter(bestilling: TrekkKredRapportBestilling): List<Enhet> {
             val arkivReferanser = urData.arkivRefList.filter { arkivRef -> arkivRef.enhetList.any { it.enhetnr == enhet.enhetnr } }
 
             Enhet(
-                navn = enhet.navn,
+                navn = enhet.navn.trim().takeUnless { it.isBlank() } ?: NavEnhet.navnForEnhet(enhet.enhetnr),
                 totalbelop = enhet.delsum.belop,
                 orgnr = urData.orgnummer,
                 arkivreferanser =
@@ -136,6 +136,15 @@ private fun mapEnheter(bestilling: TrekkKredRapportBestilling): List<Enhet> {
                     },
             )
         }
+}
+
+enum class NavEnhet(val enhet: String, val navn: String) {
+    NOS("8020", "Nav økonomi stønad"),
+    NOP("4819", "Nav økonomi pensjon");
+
+    companion object {
+        fun navnForEnhet(enhet: String) = entries.find { it.enhet == enhet }?.navn ?: throw Exception("Fant ikke enhet $enhet")
+    }
 }
 
 @Serializable
