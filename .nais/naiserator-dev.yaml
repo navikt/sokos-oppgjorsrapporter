@@ -112,3 +112,7 @@ spec:
       value: https://ereg-services-q1.dev-fss-pub.nais.io/
     - name: PDF_GENERATOR_URL
       value: http://pengeflyt-pdfgen
+    - name: OPPGJORSRAPPORT_GUI_URL
+      # Må matche ingress i https://github.com/navikt/sokos-oppgjorsrapporter-selvbetjening-frontend/blob/main/.nais/naiserator-dev.yaml
+      # OBS: '/' på slutten av pathen her er viktig, slik at URI#resolve med relativ path gjør ting riktig
+      value: https://www.ekstern.dev.nav.no/oppgjorsrapporter/

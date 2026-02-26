@@ -1,22 +1,19 @@
 package no.nav.sokos.oppgjorsrapporter.rapport.varsel
 
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.inspectors.forAll
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
-import io.ktor.server.plugins.di.dependencies
-import io.mockk.Ordering
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.slot
+import io.kotest.matchers.string.shouldInclude
+import io.ktor.server.plugins.di.*
+import io.mockk.*
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
 import javax.sql.DataSource
 import kotliquery.sessionOf
 import kotliquery.using
@@ -24,6 +21,7 @@ import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.TestUtil.withConfigOverride
 import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenClient
+import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.CreateDialogRequest
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.toDataSource
@@ -189,6 +187,35 @@ class VarselServiceTest :
                         val _ = dialogportenClient.opprettDialog(any())
                         val _ = repository.oppdater(any(), capture(varselSlot))
                     }
+                }
+            }
+
+            test("lager en dialogport med riktig GUI URL til rapporten") {
+                val repository = mockk<VarselRepository>(relaxed = true)
+                val dialogportenClient = mockk<DialogportenClient>(relaxed = true)
+                val requestSlot = slot<CreateDialogRequest>()
+
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = {
+                        dependencies {
+                            provide { repository }
+                            provide { dialogportenClient }
+                        }
+                    },
+                ) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+                    val rapport = application.dependencies.resolve<RapportService>().finnRapport(Rapport.Id(1))!!
+                    val varsel = Varsel(Varsel.Id(1), rapport.id, VarselSystem.dialogporten, Instant.EPOCH, 0, Instant.EPOCH)
+                    every { repository.finnUprosessertVarsel(any(), any()) }.returns(varsel)
+                    coEvery { dialogportenClient.opprettDialog(capture(requestSlot)) }.returns(UUID.randomUUID())
+
+                    val sut: VarselService = application.dependencies.resolve()
+                    val _ = sut.sendVarsel()
+
+                    val guiAction = requestSlot.captured.guiActions.first()
+                    guiAction.url shouldBe "https://gui.oppgjorsrapport.example.com/oppgjorsrapporter/rapport/${rapport.id.raw}"
+                    guiAction.title.forAll { title -> title.value shouldInclude "nav.no" }
                 }
             }
         }

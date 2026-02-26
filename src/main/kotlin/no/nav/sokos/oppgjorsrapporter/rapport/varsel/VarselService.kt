@@ -144,7 +144,6 @@ class VarselService(
                         Til og med mai 2026 vil den gamle meldingen "${rapport.type.gammelTittel}" komme som duplikat.
                         """
                             .trimIndent(),
-                // TODO: Skal URL her byttes ut med generell URL for en Oppgjørsrapporter-side (hvis det dukker opp en slik)?
                 additionalInfo =
                     """
                     Les mer om *${rapport.type.fulltNavn}* (tidligere kalt ${rapport.type.gammelKode}) på
@@ -157,10 +156,8 @@ class VarselService(
                 guiActions =
                     listOf(
                         GuiAction(
-                            // TODO: Ta bort "virker ikke ennå" når ekstern-frontenden vår er klar
-                            title = listOf(Content.Value.Item("Gå til nedlastingsside på nav.no (virker ikke ennå)")),
-                            // TODO: Korrigere link når URL-namespace for ekstern-frontenden vår lander
-                            url = config.application.guiBaseUri.resolve("/rapport/${rapport.id.raw}").toString(),
+                            title = listOf(Content.Value.Item("Gå til nedlastingsside på nav.no")),
+                            url = config.application.guiBaseUri.resolve("rapport/${rapport.id.raw}").toString(),
                             priority = GuiAction.Priority.Primary,
                             action = Action.access,
                         )
