@@ -49,7 +49,7 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
     private val logger = KotlinLogging.logger {}
 
     fun genererCsvInnhold(bestilling: RefusjonsRapportBestilling): ByteString {
-        return bestilling.tilCSV().encodeToByteString()
+        return bestilling.tilCSV().encodeToByteString(Charsets.ISO_8859_1)
     }
 
     suspend fun genererPdfInnhold(
