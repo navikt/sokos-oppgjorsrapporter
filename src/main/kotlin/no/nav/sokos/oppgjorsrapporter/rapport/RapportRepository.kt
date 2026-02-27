@@ -154,7 +154,7 @@ class RapportRepository(private val clock: Clock) {
                             "inkluderArkiverte" to kriterier.inkluderArkiverte,
                             "orgnummere" to orgnummere.map { it.raw }.toTypedArray(),
                             "fraDato" to kriterier.periode.start,
-                            "tilDato" to kriterier.periode.end,
+                            "tilDato" to kriterier.periode.endInclusive,
                             "bankkonto" to (kriterier as? EkskluderOrgKriterier)?.bankkonto?.raw,
                         ),
                     )

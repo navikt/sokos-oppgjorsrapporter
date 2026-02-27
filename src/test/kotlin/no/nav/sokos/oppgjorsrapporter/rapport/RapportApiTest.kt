@@ -455,16 +455,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "bankkonto": "45678901234",
                         "opprettet": "2023-12-31T22:58:27Z",
                         "arkivert": false
-                    },
-                    {
-                        "id": 6,
-                        "orgnr": "456789012",
-                        "orgNavn": "Test Organisasjon D",
-                        "type": "ref-arbg",
-                        "datoValutert": "2024-01-01",
-                        "bankkonto": "45678901234",
-                        "opprettet": "2023-12-31T23:13:54Z",
-                        "arkivert": false
                     }
                 ]
                 """
@@ -525,16 +515,6 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "datoValutert": "2023-12-31",
                         "bankkonto": "45678901234",
                         "opprettet": "2023-12-31T22:58:27Z",
-                        "arkivert": false
-                    },
-                    {
-                        "id": 6,
-                        "orgnr": "456789012",
-                        "orgNavn": "Test Organisasjon D",
-                        "type": "ref-arbg",
-                        "datoValutert": "2024-01-01",
-                        "bankkonto": "45678901234",
-                        "opprettet": "2023-12-31T23:13:54Z",
                         "arkivert": false
                     }
                 ]
