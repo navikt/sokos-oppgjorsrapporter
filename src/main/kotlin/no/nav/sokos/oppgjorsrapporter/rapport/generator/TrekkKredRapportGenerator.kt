@@ -75,29 +75,63 @@ class TrekkKredRapportGenerator(
             }
         }
     }
+
+    fun mapTilTrekkKredRapportPdfPayload(
+        bestilling: TrekkKredRapportBestilling,
+        organisasjonsNavnOgAdresse: OrganisasjonsNavnOgAdresse,
+        rapportSendt: LocalDate,
+    ): TrekkKredRapportPdfPayload {
+        val urData = bestilling.brukerData.brevinfo.variableFelter.ur
+        val payload =
+            TrekkKredRapportPdfPayload(
+                rapportSendt = rapportSendt,
+                utbetalingsDato = bestilling.dato,
+                totalsum = urData.sumTotal.belop,
+                periode = Periode(fra = urData.rapportFom, urData.rapportTom),
+                bedrift =
+                    Bedrift(
+                        orgnr = organisasjonsNavnOgAdresse.organisasjonsnummer,
+                        tssid = urData.tssId,
+                        navn = organisasjonsNavnOgAdresse.navn,
+                        kontonummer = urData.kontonummer,
+                        adresse = organisasjonsNavnOgAdresse.adresse,
+                    ),
+                enheter = mapEnheter(bestilling),
+            )
+
+        if (!payload.validerPayload(bestilling)) {
+            logger.error { "Validering av pdf payload feilet" }
+            // TODO Kaste exception og legge på BOQ
+        }
+
+        return payload
+    }
 }
 
-fun mapTilTrekkKredRapportPdfPayload(
-    bestilling: TrekkKredRapportBestilling,
-    organisasjonsNavnOgAdresse: OrganisasjonsNavnOgAdresse,
-    rapportSendt: LocalDate,
-): TrekkKredRapportPdfPayload {
-    val urData = bestilling.brukerData.brevinfo.variableFelter.ur
-    return TrekkKredRapportPdfPayload(
-        rapportSendt = rapportSendt,
-        utbetalingsDato = bestilling.dato,
-        totalsum = urData.sumTotal.belop,
-        periode = Periode(fra = urData.rapportFom, urData.rapportTom),
-        bedrift =
-            Bedrift(
-                orgnr = organisasjonsNavnOgAdresse.organisasjonsnummer,
-                tssid = urData.tssId,
-                navn = organisasjonsNavnOgAdresse.navn,
-                kontonummer = urData.kontonummer,
-                adresse = organisasjonsNavnOgAdresse.adresse,
-            ),
-        enheter = mapEnheter(bestilling),
-    )
+fun TrekkKredRapportPdfPayload.validerPayload(bestilling: TrekkKredRapportBestilling): Boolean {
+    let { payload ->
+        val urData = bestilling.brukerData.brevinfo.variableFelter.ur
+        val arkivrefs = payload.enheter.flatMap { it.arkivreferanser.map { it.arkivref } }
+        val delsumArkivref =
+            arkivrefs.associateWith { arkivref ->
+                payload.enheter.flatMap { it.arkivreferanser.filter { it.arkivref == arkivref } }.sumOf { it.refnrsum }
+            }
+
+        val arkivRefSumKorrekt =
+            urData.arkivRefList.all { arkivRef ->
+                println("${arkivRef.nr}: ${arkivRef.delsumRef.belop} == ${delsumArkivref[arkivRef.nr]}")
+                arkivRef.delsumRef.belop.compareTo(delsumArkivref[arkivRef.nr]) == 0
+            }
+
+        val totalsum = urData.sumTotal.belop
+        val payloadTotalsum = payload.enheter.sumOf { it.sumEnhet }
+
+        println("totalsum: $totalsum, payloadTotalsum: $payloadTotalsum")
+
+        val totalsumKorrekt = totalsum.compareTo(payloadTotalsum) == 0
+
+        return arkivRefSumKorrekt && totalsumKorrekt
+    }
 }
 
 private fun mapEnheter(bestilling: TrekkKredRapportBestilling): List<Enhet> {
@@ -111,7 +145,11 @@ private fun mapEnheter(bestilling: TrekkKredRapportBestilling): List<Enhet> {
 
             Enhet(
                 navn = enhet.navn.trim().takeUnless { it.isBlank() } ?: NavEnhet.navnForEnhet(enhet.enhetnr),
-                totalbelop = enhet.delsum.belop,
+                sumEnhet =
+                    urData.arkivRefList
+                        .flatMap { arkiveRef -> arkiveRef.enhetList }
+                        .filter { it.enhetnr == enhet.enhetnr }
+                        .sumOf { it.delsum.belop },
                 orgnr = urData.orgnummer,
                 arkivreferanser =
                     arkivReferanser.map { arkivRef ->
@@ -119,7 +157,7 @@ private fun mapEnheter(bestilling: TrekkKredRapportBestilling): List<Enhet> {
 
                         Arkivreferanse(
                             arkivref = arkivRef.nr,
-                            refnrsum = arkivRef.delsumRef.belop,
+                            refnrsum = treffListe.sumOf { it.belop }, // arkivRef.delsumRef.belop,
                             trekk =
                                 treffListe.map {
                                     Trekk(
@@ -168,7 +206,7 @@ data class Periode(
 @Serializable
 data class Enhet(
     val navn: String,
-    @Serializable(with = BelopSerializer::class) val totalbelop: BigDecimal,
+    @Serializable(with = BelopSerializer::class) val sumEnhet: BigDecimal,
     val orgnr: String,
     val arkivreferanser: List<Arkivreferanse>,
 )
