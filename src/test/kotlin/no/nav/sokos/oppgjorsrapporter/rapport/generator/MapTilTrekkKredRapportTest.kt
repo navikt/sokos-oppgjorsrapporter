@@ -2,7 +2,7 @@ package no.nav.sokos.oppgjorsrapporter.rapport.generator
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
-import java.time.LocalDate
+import kotlinx.serialization.json.Json
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.mq.trekk_kred.TrekkKredRapportBestilling
@@ -17,9 +17,21 @@ class MapTilTrekkKredRapportTest :
 
             val onoa =
                 OrganisasjonsNavnOgAdresse(organisasjonsnummer = "123456789", navn = "ONOG ONOG OH NO ONONOGO", adresse = "Onogata 33")
-            val payload = mapTilTrekkKredRapportPdfPayload(bestilling, onoa, LocalDate.now())
+            val payload = " " // TrekkKredRapportGenerator.mapTilTrekkKredRapportPdfPayload(bestilling, onoa, LocalDate.now())
 
-            // println(Json { prettyPrint = true }.encodeToString(payload))
+            println(Json { prettyPrint = true }.encodeToString(payload))
             payload.shouldNotBeNull()
+        }
+
+        test("sjekker csv") {
+            val bestilling = xmlMapper.readValue<TrekkKredRapportBestilling>(TestUtil.readFile("mq/trekk_kred_bestilling.xml"))
+
+            println("Versjon 1 med sumlinjer etter alle enheter")
+            println("------------------------------------------")
+            println(bestilling.toCsv_V1())
+            println("\n")
+            println("Versjon 2 med sumlinjer etter hver enhet og arkivreferanse")
+            println("------------------------------------------")
+            println(bestilling.toCsv_V2())
         }
     })
