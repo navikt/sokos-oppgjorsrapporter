@@ -16,6 +16,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.encodeToByteString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -30,6 +31,7 @@ import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.trekk_kred.TrekkKredRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.LINJESKIFT
 
 class TrekkKredRapportGenerator(
     private val baseUrl: URI,
@@ -40,8 +42,7 @@ class TrekkKredRapportGenerator(
     private val logger = KotlinLogging.logger {}
 
     fun genererCsvInnhold(bestilling: TrekkKredRapportBestilling): ByteString {
-        // return bestilling.tilCSV().encodeToByteString()
-        TODO()
+        return bestilling.toCsv_V2().encodeToByteString()
     }
 
     suspend fun genererPdfInnhold(
@@ -106,6 +107,123 @@ class TrekkKredRapportGenerator(
 
         return payload
     }
+}
+
+fun TrekkKredRapportBestilling.toCsv_V1(): String {
+    val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+    fun formaterBigDecimal(bd: BigDecimal) = bd.toString().let { it.dropLast(3) + it.substring(it.length - 2) }
+
+    val headerLinje =
+        "H;" +
+            "${brukerData.brevinfo.brevdato.format(dateFormatter)};" +
+            "${brukerData.mottaker.navn.fulltNavn};" +
+            "${dato.format(dateFormatter)};" +
+            "${brukerData.brevinfo.variableFelter.ur.orgnummer};" +
+            " ;" +
+            "${brukerData.brevinfo.variableFelter.ur.kontonummer};" +
+            "${brukerData.brevinfo.variableFelter.ur.tssId};" +
+            "${brukerData.brevinfo.variableFelter.ur.rapportFom.format(dateFormatter)};" +
+            "${brukerData.brevinfo.variableFelter.ur.rapportTom.format(dateFormatter)};"
+    val trekklinjer =
+        with(brukerData.brevinfo.variableFelter.ur) {
+                arkivRefList.flatMap { arkivRef ->
+                    arkivRef.enhetList.flatMap { enhet ->
+                        enhet.trekkLinjeList.map {
+                            "E;" +
+                                "${arkivRef.nr};" +
+                                "${enhet.enhetnr};" +
+                                "${enhet.navn};" +
+                                "${it.saksreferanse};" +
+                                "${it.arbeidgiverOrgnr};" +
+                                "${it.fnr};" +
+                                "${it.navn};" +
+                                "${it.trekkFOM};" +
+                                "${it.trekkTOM};" +
+                                "${formaterBigDecimal(it.belop)};" +
+                                "${it.kidStatus}"
+                        }
+                    }
+                }
+            }
+            .joinToString(separator = LINJESKIFT, postfix = LINJESKIFT)
+
+    val sumEnheter =
+        "D;${
+        formaterBigDecimal(
+            brukerData.brevinfo
+                .variableFelter
+                .ur
+                .arkivRefList.flatMap { it.enhetList }
+                .sumOf { enhet -> enhet.delsum.belop })
+    } "
+
+    val sumArkivref =
+        "A;${
+        formaterBigDecimal(
+            brukerData.brevinfo
+                .variableFelter
+                .ur
+                .arkivRefList.sumOf { it.delsumRef.belop })
+    }"
+
+    val sumKreditor = "T;${formaterBigDecimal(brukerData.brevinfo.variableFelter.ur.sumTotal.belop)}"
+
+    return "$headerLinje$LINJESKIFT$trekklinjer$sumEnheter$LINJESKIFT$sumArkivref$LINJESKIFT$sumKreditor"
+}
+
+fun TrekkKredRapportBestilling.toCsv_V2(): String {
+    val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+    fun formaterBigDecimal(bd: BigDecimal) = bd.toString().let { it.dropLast(3) + it.substring(it.length - 2) }
+
+    val headerLinje =
+        "H;" +
+            "${brukerData.brevinfo.brevdato.format(dateFormatter)};" +
+            "${brukerData.mottaker.navn.fulltNavn};" +
+            "${dato.format(dateFormatter)};" +
+            "${brukerData.brevinfo.variableFelter.ur.orgnummer};" +
+            " ;" +
+            "${brukerData.brevinfo.variableFelter.ur.kontonummer};" +
+            "${brukerData.brevinfo.variableFelter.ur.tssId};" +
+            "${brukerData.brevinfo.variableFelter.ur.rapportFom.format(dateFormatter)};" +
+            "${brukerData.brevinfo.variableFelter.ur.rapportTom.format(dateFormatter)};"
+    val trekklinjer =
+        with(brukerData.brevinfo.variableFelter.ur) {
+            val arkivrefLinjer =
+                arkivRefList
+                    .map { arkivRef ->
+                        val enhetLinjer =
+                            arkivRef.enhetList
+                                .map { enhet ->
+                                    val trekklinjer =
+                                        enhet.trekkLinjeList
+                                            .map {
+                                                "E;" +
+                                                    "${arkivRef.nr};" +
+                                                    "${enhet.enhetnr};" +
+                                                    "${enhet.navn};" +
+                                                    "${it.saksreferanse};" +
+                                                    "${it.arbeidgiverOrgnr};" +
+                                                    "${it.fnr};" +
+                                                    "${it.navn};" +
+                                                    "${it.trekkFOM};" +
+                                                    "${it.trekkTOM};" +
+                                                    "${formaterBigDecimal(it.belop)};" +
+                                                    "${it.kidStatus}"
+                                            }
+                                            .joinToString(separator = LINJESKIFT, postfix = LINJESKIFT)
+                                    val sumlinjeEnhet = "D;${formaterBigDecimal(enhet.delsum.belop)}"
+                                    "$trekklinjer$sumlinjeEnhet"
+                                }
+                                .joinToString(separator = LINJESKIFT, postfix = LINJESKIFT)
+                        val sumlinjerArkivref = "A;${formaterBigDecimal(arkivRef.delsumRef.belop)}"
+                        "${enhetLinjer}${sumlinjerArkivref}"
+                    }
+                    .joinToString(separator = LINJESKIFT, postfix = LINJESKIFT)
+            val sumlinjeTotal = "T;${formaterBigDecimal(sumTotal.belop)}$LINJESKIFT"
+            arkivrefLinjer + sumlinjeTotal + LINJESKIFT
+        }
+
+    return "$headerLinje$LINJESKIFT$trekklinjer"
 }
 
 fun TrekkKredRapportPdfPayload.validerPayload(bestilling: TrekkKredRapportBestilling): Boolean {

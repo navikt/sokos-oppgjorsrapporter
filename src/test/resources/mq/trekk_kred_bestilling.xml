@@ -31,16 +31,16 @@
                                 <navn>DONALD DUCK MED VENNER</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>75200</belop>
+                                <belop>10000</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000815306</dettssid>
                             </trekklinje>
                             <delsum>
-                                <belop>75200</belop>
+                                <belop>10000</belop>
                             </delsum>
                         </enhet>
                         <delsumref>
-                            <belop>75200</belop>
+                            <belop>10000</belop>
                         </delsumref>
                     </arkivref>
                     <arkivref nr="235750560 ">
@@ -52,7 +52,7 @@
                                 <navn>JJJJJCCCCCBBB AAAAAAAAAAA</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>75200</belop>
+                                <belop>7500</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000818309</dettssid>
                             </trekklinje>
@@ -63,20 +63,20 @@
                                 <navn>BURGER MED POMMES FRITES</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>75200</belop>
+                                <belop>5000</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000818309</dettssid>
                             </trekklinje>
                             <delsum>
-                                <belop>150400</belop>
+                                <belop>12500</belop>
                             </delsum>
                         </enhet>
                         <delsumref>
-                            <belop>150400</belop>
+                            <belop>12500</belop>
                         </delsumref>
                     </arkivref>
                     <sumtot>
-                        <belop>225600</belop>
+                        <belop>22500</belop>
                     </sumtot>
                 </UR>
             </variablefelter>
