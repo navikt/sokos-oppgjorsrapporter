@@ -21,9 +21,8 @@ import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
-import no.nav.sokos.oppgjorsrapporter.mq.refusjon.RefusjonsRapportBestilling
-import no.nav.sokos.oppgjorsrapporter.rapport.generator.RefusjonsRapportGenerator
-import no.nav.sokos.oppgjorsrapporter.rapport.generator.TrekkKredRapportGenerator
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.toDataSource
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import no.nav.sokos.oppgjorsrapporter.withEnabledBakgrunnsJobb
@@ -73,8 +72,8 @@ class BestillingProsessorTest :
                                     }
                             }
                         }
-                        dependencies.provide<RefusjonsRapportGenerator> {
-                            mockk<RefusjonsRapportGenerator>(relaxed = true) {
+                        dependencies.provide<RapportGenerator> {
+                            mockk<RapportGenerator>(relaxed = true) {
                                 coEvery { genererPdfInnhold(any(), any()) } returns ByteString("test pdf content".toByteArray())
                             }
                         }
@@ -125,8 +124,8 @@ class BestillingProsessorTest :
                                     )
                             }
                         }
-                        dependencies.provide<TrekkKredRapportGenerator> {
-                            mockk<TrekkKredRapportGenerator>(relaxed = true) {
+                        dependencies.provide<RapportGenerator> {
+                            mockk<RapportGenerator>(relaxed = true) {
                                 coEvery { genererPdfInnhold(any(), any()) } returns ByteString("test pdf content".toByteArray())
                             }
                         }
@@ -171,8 +170,8 @@ class BestillingProsessorTest :
                                     }
                             }
                         }
-                        dependencies.provide<RefusjonsRapportGenerator> {
-                            mockk<RefusjonsRapportGenerator>(relaxed = true) {
+                        dependencies.provide<RapportGenerator> {
+                            mockk<RapportGenerator>(relaxed = true) {
                                 coEvery { genererPdfInnhold(any(), any()) } returns ByteString("test pdf content".toByteArray())
                             }
                         }
@@ -249,8 +248,8 @@ class BestillingProsessorTest :
                                     }
                             }
                         }
-                        dependencies.provide<RefusjonsRapportGenerator> {
-                            mockk<RefusjonsRapportGenerator>(relaxed = true) {
+                        dependencies.provide<RapportGenerator> {
+                            mockk<RapportGenerator>(relaxed = true) {
                                 coEvery { genererPdfInnhold(any(), any()) } returns ByteString("test pdf content".toByteArray())
                             }
                         }

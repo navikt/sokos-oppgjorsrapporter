@@ -1,7 +1,7 @@
 @file:UseSerializers(LocalDateAsStringSerializer::class, InstantAsStringSerializer::class, BigDecimalSerializer::class)
 @file:OptIn(ExperimentalSerializationApi::class)
 
-package no.nav.sokos.oppgjorsrapporter.mq.refusjon
+package no.nav.sokos.oppgjorsrapporter.mq
 
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -18,7 +18,7 @@ import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 
 @Serializable
-data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>) {
+data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>) : RapportBestillingMsg() {
     fun valider() {
         listOfNotNull(
                 // alle orgnr skal være gyldige
