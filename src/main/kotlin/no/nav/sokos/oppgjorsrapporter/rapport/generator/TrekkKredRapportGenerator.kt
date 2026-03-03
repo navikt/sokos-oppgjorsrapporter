@@ -33,13 +33,14 @@ import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.trekk_kred.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.LINJESKIFT
 
+private val logger = KotlinLogging.logger {}
+
 class TrekkKredRapportGenerator(
     private val baseUrl: URI,
     private val client: HttpClient,
     private val metrics: Metrics,
     private val clock: Clock,
 ) {
-    private val logger = KotlinLogging.logger {}
 
     fun genererCsvInnhold(bestilling: TrekkKredRapportBestilling): ByteString {
         return bestilling.toCsv_V2().encodeToByteString()
@@ -54,8 +55,7 @@ class TrekkKredRapportGenerator(
             client.post(pdfGenUrl) {
                 contentType(ContentType.Application.Json)
                 setBody(
-                    mapTilTrekkKredRapportPdfPayload(
-                        bestilling = bestilling,
+                    bestilling.mapTilTrekkKredRapportPdfPayload(
                         organisasjonsNavnOgAdresse = arbeidsgiverNavnOgAdresse,
                         rapportSendt = LocalDate.now(clock),
                     )
@@ -76,37 +76,36 @@ class TrekkKredRapportGenerator(
             }
         }
     }
+}
 
-    fun mapTilTrekkKredRapportPdfPayload(
-        bestilling: TrekkKredRapportBestilling,
-        organisasjonsNavnOgAdresse: OrganisasjonsNavnOgAdresse,
-        rapportSendt: LocalDate,
-    ): TrekkKredRapportPdfPayload {
-        val urData = bestilling.brukerData.brevinfo.variableFelter.ur
-        val payload =
-            TrekkKredRapportPdfPayload(
-                rapportSendt = rapportSendt,
-                utbetalingsDato = bestilling.dato,
-                totalsum = urData.sumTotal.belop,
-                periode = Periode(fra = urData.rapportFom, urData.rapportTom),
-                bedrift =
-                    Bedrift(
-                        orgnr = organisasjonsNavnOgAdresse.organisasjonsnummer,
-                        tssid = urData.tssId,
-                        navn = organisasjonsNavnOgAdresse.navn,
-                        kontonummer = urData.kontonummer,
-                        adresse = organisasjonsNavnOgAdresse.adresse,
-                    ),
-                enheter = mapEnheter(bestilling),
-            )
+fun TrekkKredRapportBestilling.mapTilTrekkKredRapportPdfPayload(
+    organisasjonsNavnOgAdresse: OrganisasjonsNavnOgAdresse,
+    rapportSendt: LocalDate,
+): TrekkKredRapportPdfPayload {
+    val urData = brukerData.brevinfo.variableFelter.ur
+    val payload =
+        TrekkKredRapportPdfPayload(
+            rapportSendt = rapportSendt,
+            utbetalingsDato = dato,
+            totalsum = urData.sumTotal.belop,
+            periode = Periode(fra = urData.rapportFom, urData.rapportTom),
+            bedrift =
+                Bedrift(
+                    orgnr = organisasjonsNavnOgAdresse.organisasjonsnummer,
+                    tssid = urData.tssId,
+                    navn = organisasjonsNavnOgAdresse.navn,
+                    kontonummer = urData.kontonummer,
+                    adresse = organisasjonsNavnOgAdresse.adresse,
+                ),
+            enheter = mapEnheter(this),
+        )
 
-        if (!payload.validerPayload(bestilling)) {
-            logger.error { "Validering av pdf payload feilet" }
-            // TODO Kaste exception og legge på BOQ
-        }
-
-        return payload
+    if (!payload.validerPayload(this)) {
+        logger.error { "Validering av pdf payload feilet" }
+        // TODO Kaste exception og legge på BOQ
     }
+
+    return payload
 }
 
 fun TrekkKredRapportBestilling.toCsv_V1(): String {
