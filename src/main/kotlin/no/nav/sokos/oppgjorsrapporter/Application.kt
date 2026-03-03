@@ -75,8 +75,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.PdfgenHttpClientSetup
-import no.nav.sokos.oppgjorsrapporter.rapport.generator.RefusjonsRapportGenerator
-import no.nav.sokos.oppgjorsrapporter.rapport.generator.TrekkKredRapportGenerator
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
@@ -137,21 +136,15 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             EregService(config.restEndpoint.eregBaseUrl, client, resolve())
         }
 
-        provide<HttpClient>("pdfgenClient") {
-            httpClient("pdfgen", PdfgenHttpClientSetup) {
-                install(HttpTimeout) {
-                    socketTimeoutMillis = 60_000
-                    requestTimeoutMillis = 60_000
+        provide<RapportGenerator> {
+            val client =
+                httpClient("pdfgen", PdfgenHttpClientSetup) {
+                    install(HttpTimeout) {
+                        socketTimeoutMillis = 60_000
+                        requestTimeoutMillis = 60_000
+                    }
                 }
-            }
-        }
-
-        provide<RefusjonsRapportGenerator> {
-            RefusjonsRapportGenerator(baseUrl = config.restEndpoint.pdfGenBaseUrl, client = resolve("pdfgenClient"), resolve(), resolve())
-        }
-
-        provide<TrekkKredRapportGenerator> {
-            TrekkKredRapportGenerator(baseUrl = config.restEndpoint.pdfGenBaseUrl, client = resolve("pdfgenClient"), resolve(), resolve())
+            RapportGenerator(baseUrl = config.restEndpoint.pdfGenBaseUrl, client = client, resolve(), resolve())
         }
 
         if (config.application.profile == PropertiesConfig.Profile.LOCAL) {

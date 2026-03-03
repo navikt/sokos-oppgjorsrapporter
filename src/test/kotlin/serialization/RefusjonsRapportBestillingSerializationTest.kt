@@ -4,8 +4,8 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
-import no.nav.sokos.oppgjorsrapporter.mq.refusjon.Data
-import no.nav.sokos.oppgjorsrapporter.mq.refusjon.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.Data
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.tilCSV
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RefusjonsRapportPdfPayload
 import no.nav.sokos.oppgjorsrapporter.utils.Ansatt

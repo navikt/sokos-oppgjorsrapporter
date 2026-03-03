@@ -3,40 +3,20 @@
 
 package no.nav.sokos.oppgjorsrapporter.rapport.generator
 
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
-import io.ktor.http.isSuccess
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.net.URI
 import java.text.NumberFormat
-import java.time.Clock
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.groupBy
-import kotlinx.io.bytestring.ByteString
-import kotlinx.io.bytestring.encodeToByteString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
-import mu.KotlinLogging
-import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
-import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
-import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
-import no.nav.sokos.oppgjorsrapporter.mq.refusjon.Data
-import no.nav.sokos.oppgjorsrapporter.mq.refusjon.Header
-import no.nav.sokos.oppgjorsrapporter.mq.refusjon.RefusjonsRapportBestilling
-import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.tilCSV
+import no.nav.sokos.oppgjorsrapporter.mq.Data
+import no.nav.sokos.oppgjorsrapporter.mq.Header
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.serialization.AsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.util.fraNorskFormat
@@ -44,58 +24,6 @@ import no.nav.sokos.oppgjorsrapporter.util.tilNorskFormat
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
-
-class RefusjonsRapportGenerator(
-    private val baseUrl: URI,
-    private val client: HttpClient,
-    private val metrics: Metrics,
-    private val clock: Clock,
-) {
-    private val logger = KotlinLogging.logger {}
-
-    fun genererCsvInnhold(bestilling: RefusjonsRapportBestilling): ByteString {
-        return bestilling.tilCSV().encodeToByteString(Charsets.ISO_8859_1)
-    }
-
-    suspend fun genererPdfInnhold(
-        bestilling: RefusjonsRapportBestilling,
-        arbeidsgiverNavnOgAdresse: OrganisasjonsNavnOgAdresse,
-    ): ByteString {
-        return run {
-            val payload =
-                RefusjonsRapportPdfPayload(
-                    bestilling = bestilling,
-                    organisasjonsNavnOgAdresse = arbeidsgiverNavnOgAdresse,
-                    rapportSendt = LocalDate.now(clock),
-                )
-            val pdfGenUrl = baseUrl.resolve("/api/v1/genpdf/oppgjorsrapporter/refusjon-arbg-sortert-etter-ytelse").toURL()
-            val response =
-                client.post(pdfGenUrl) {
-                    contentType(ContentType.Application.Json)
-                    setBody(payload)
-                }
-            metrics.tellEksternEndepunktRequest(response, pdfGenUrl.path)
-
-            when {
-                response.status.isSuccess() -> {
-                    val pdfInnhold = response.body<ByteArray>()
-                    ByteString(pdfInnhold)
-                }
-
-                else -> {
-                    val apiError = ApiError(response, "Noe gikk galt ved kall mot PDF-generator tjenesten")
-
-                    logger.error { "Feil ved kall mot PDF-generator tjenesten $apiError" }
-                    throw RuntimeException("Feil ved kall mot PDF-generator tjenesten: $apiError")
-                }
-            }
-        }
-    }
-}
-
-object PdfgenHttpClientSetup : HttpClientSetup {
-    override val jsonConfig: Json = commonJsonConfig
-}
 
 object CsvGenerering {
     const val LINJESKIFT = "\r\n"
