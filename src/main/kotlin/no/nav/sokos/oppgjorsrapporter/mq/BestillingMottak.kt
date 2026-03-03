@@ -16,9 +16,6 @@ import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
-import no.nav.sokos.oppgjorsrapporter.mq.refusjon.RefusjonsRapportBestilling
-import no.nav.sokos.oppgjorsrapporter.mq.trekk_kred.TrekkKredRapportBestilling
-import no.nav.sokos.oppgjorsrapporter.mq.trekk_kred.xmlMapper
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
@@ -63,8 +60,7 @@ class BestillingMottak(
                     bestilling to bestilling.datarec.size
                 }
                 RapportType.`trekk-kred` -> {
-                    val bestilling = xmlMapper.readValue<TrekkKredRapportBestilling>(melding.data)
-
+                    val bestilling = TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(melding.data)
                     bestilling to
                         bestilling.brukerData.brevinfo.variableFelter.ur.arkivRefList.sumOf {
                             it.enhetList.sumOf { it.trekkLinjeList.size }

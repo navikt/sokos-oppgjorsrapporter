@@ -4,9 +4,9 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
-import no.nav.sokos.oppgjorsrapporter.mq.refusjon.Data
-import no.nav.sokos.oppgjorsrapporter.mq.refusjon.Header
-import no.nav.sokos.oppgjorsrapporter.mq.refusjon.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.Data
+import no.nav.sokos.oppgjorsrapporter.mq.Header
+import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.OrgNavn
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportBestilling
