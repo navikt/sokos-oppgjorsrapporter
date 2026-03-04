@@ -4,9 +4,7 @@
 package no.nav.sokos.oppgjorsrapporter.mq
 
 import java.math.BigDecimal
-import java.time.Clock
 import java.time.LocalDate
-import kotlin.collections.sorted
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -18,7 +16,6 @@ import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.BakgrunnsJobb
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
-import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
@@ -32,10 +29,8 @@ import no.nav.sokos.utils.OrgNr
 
 class BestillingMottak(
     private val consumers: List<MqConsumer>,
-    private val eregService: EregService,
     private val rapportService: RapportService,
     private val metrics: Metrics,
-    private val clock: Clock,
     applicationState: ApplicationState,
 ) : BakgrunnsJobb(applicationState) {
     private val logger = KotlinLogging.logger {}
@@ -54,7 +49,7 @@ class BestillingMottak(
         }
     }
 
-    suspend fun process(melding: Melding, ekstraSjekk: Boolean = false) {
+    fun process(melding: Melding, ekstraSjekk: Boolean = false) {
         val (bestilling, rader) =
             when (melding.rapportType) {
                 RapportType.`ref-arbg` -> {
@@ -62,7 +57,6 @@ class BestillingMottak(
                     if (ekstraSjekk) {
                         bestilling.valider()
                     }
-                    sjekkAktivOrg(bestilling.header.orgnr)
                     bestilling to bestilling.datarec.size
                 }
                 else -> error("Vet ikke hvordan mottatte bestillinger for rapportType ${melding.rapportType} skal håndteres")
@@ -70,24 +64,6 @@ class BestillingMottak(
         logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
         val _ = rapportService.lagreBestilling(melding.kilde, melding.rapportType, melding.data)
         metrics.tellMottak(melding.rapportType, melding.kilde, rader)
-    }
-
-    private suspend fun sjekkAktivOrg(orgnr: OrgNr) {
-        val org =
-            try {
-                eregService.hentNoekkelInfo(orgnr)
-            } catch (e: Exception) {
-                val error = "Bestilling for $orgnr avvist: Feil ved uthenting av nøkkelinfo fra ereg: $e"
-                logger.error(TEAM_LOGS_MARKER, e) { error }
-                throw RuntimeException(error, e)
-            }
-        org.opphoersdato
-            ?.takeUnless { it.isAfter(LocalDate.now(clock)) }
-            ?.let { opphoert ->
-                val error = "Bestilling for $orgnr avvist: Organisasjon er opphørt (fra $opphoert)"
-                logger.error(TEAM_LOGS_MARKER, error)
-                throw IllegalArgumentException(error)
-            }
     }
 
     private suspend fun hentBestilling(consumer: MqConsumer, block: suspend (Melding) -> Unit) {

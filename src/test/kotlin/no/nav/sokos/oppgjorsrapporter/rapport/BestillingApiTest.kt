@@ -84,50 +84,6 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
     }
 
     @Test
-    fun `POST _api_bestilling_v1 (med rapportType=ref-arbg og riktig body, men for orgnr som er opphørt) gir feilmelding`() {
-        val bestilling =
-            genererBestilling(
-                orgnr = OrgNr.genererGyldig(),
-                valutert = LocalDate.now(),
-                underenheter = genSet(1) { OrgNr.genererGyldig() },
-                personer = genSet(10) { randomPerson() },
-                antallPosteringer = 15,
-                ytelser = YtelseType.kjente.shuffled().take(7).toSet(),
-            )
-        val dokument = RefusjonsRapportBestilling.json.encodeToString(bestilling)
-
-        stubFor(
-            get("/v2/organisasjon/${bestilling.header.orgnr.raw}/noekkelinfo")
-                .willReturn(
-                    okJson(
-                        """
-                        {
-                            "organisasjonsnummer": "${bestilling.header.orgnr.raw}",
-                            "navn": {
-                                "sammensattnavn": "Et Navn"
-                            },
-                            "opphoersdato": "2020-01-01"
-                        }
-                        """
-                            .trimIndent()
-                    )
-                )
-        )
-
-        val response =
-            client()
-                .queryParam("rapportType", "ref-arbg")
-                .body(dokument)
-                .post("/api/bestilling/v1")
-                .then()
-                .assertThat()
-                .statusCode(HttpStatusCode.BadRequest.value)
-                .extract()
-                .response()!!
-        assertThat(response.body().asString()).contains("Organisasjon er opphørt")
-    }
-
-    @Test
     fun `POST _api_bestilling_v1 (med rapportType=ref-arbg og riktig body) svarer riktig`() {
         TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
 
