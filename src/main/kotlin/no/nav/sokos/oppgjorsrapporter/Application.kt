@@ -190,7 +190,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         }
         provide {
             val consumers: List<MqConsumer> = consumerKeys.map { resolve<MqConsumer>(it) }
-            BestillingMottak(consumers, resolve(), resolve(), resolve(), resolve(), resolve())
+            BestillingMottak(consumers, resolve(), resolve(), resolve())
         }
 
         if (consumerKeys.isNotEmpty()) {
