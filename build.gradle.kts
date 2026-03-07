@@ -17,6 +17,7 @@ val logstashVersion = "9.0"
 val micrometerVersion = "1.17.0-M2"
 val mockOAuth2ServerVersion = "3.0.1"
 val mockkVersion = "1.14.9"
+val opentelemetryAnnotationsVersion = "2.25.0"
 val pdpClientVersion = "1.1.0"
 val postgresVersion = "42.7.9"
 val swaggerRequestValidatorVersion = "2.46.0"
@@ -87,6 +88,7 @@ dependencies {
     // Monitorering
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:$micrometerVersion")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:$opentelemetryAnnotationsVersion")
 
     // Logging
     implementation("io.github.microutils:kotlin-logging-jvm:$kotlinLoggingVersion")

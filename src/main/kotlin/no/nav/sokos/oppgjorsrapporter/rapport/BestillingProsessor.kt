@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import io.opentelemetry.instrumentation.annotations.WithSpan
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
@@ -55,6 +56,7 @@ class BestillingProsessor(
         }
     }
 
+    @WithSpan
     fun prosesserEnBestilling(): Result<Rapport>? =
         rapportService.prosesserBestilling { tx, bestilling ->
             val (ulagret: UlagretRapport, generator: (suspend (VariantFormat) -> ByteString?)) =
