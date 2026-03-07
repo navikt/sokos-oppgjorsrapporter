@@ -3,6 +3,7 @@
 
 package no.nav.sokos.oppgjorsrapporter.mq
 
+import io.opentelemetry.instrumentation.annotations.WithSpan
 import java.math.BigDecimal
 import java.time.LocalDate
 import kotlinx.coroutines.coroutineScope
@@ -49,6 +50,7 @@ class BestillingMottak(
         }
     }
 
+    @WithSpan
     fun process(melding: Melding, ekstraSjekk: Boolean = false) {
         val (bestilling, rader) =
             when (melding.rapportType) {
@@ -66,6 +68,7 @@ class BestillingMottak(
         metrics.tellMottak(melding.rapportType, melding.kilde, rader)
     }
 
+    @WithSpan
     private suspend fun hentBestilling(consumer: MqConsumer, block: suspend (Melding) -> Unit) {
         consumer.receive()?.let { melding ->
             logger.info(TEAM_LOGS_MARKER) { "Melding mottatt: $melding" }

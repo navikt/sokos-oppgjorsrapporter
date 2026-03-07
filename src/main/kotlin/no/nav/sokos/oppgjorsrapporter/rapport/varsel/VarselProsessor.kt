@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.rapport.varsel
 
+import io.opentelemetry.instrumentation.annotations.WithSpan
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
@@ -18,7 +19,7 @@ class VarselProsessor(private val varselService: VarselService, applicationState
         var t = baseDelay
         while (true) {
             whenEnabled {
-                val resultat = varselService.sendVarsel()
+                val resultat = prosesserEtVarsel()
                 if (resultat == null) {
                     logger.debug { "Fant ingen uprosesserte varsler å prosessere; venter $t før neste forsøk" }
                     delay(t)
@@ -38,4 +39,6 @@ class VarselProsessor(private val varselService: VarselService, applicationState
             }
         }
     }
+
+    @WithSpan private fun prosesserEtVarsel(): Result<Varsel>? = varselService.sendVarsel()
 }
