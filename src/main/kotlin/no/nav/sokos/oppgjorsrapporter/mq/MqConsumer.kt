@@ -13,7 +13,7 @@ import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
-class MqConsumer(private val config: PropertiesConfig.MqProperties, private val rapportType: RapportType, private val queueName: String) {
+class MqConsumer(private val config: PropertiesConfig.MqProperties, private val rapportType: RapportType, val queueName: String) {
     private val logger = KotlinLogging.logger {}
 
     private lateinit var session: Session

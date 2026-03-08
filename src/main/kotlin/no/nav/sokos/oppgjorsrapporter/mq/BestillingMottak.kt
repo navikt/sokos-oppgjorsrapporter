@@ -3,6 +3,7 @@
 
 package no.nav.sokos.oppgjorsrapporter.mq
 
+import io.opentelemetry.instrumentation.annotations.SpanAttribute
 import io.opentelemetry.instrumentation.annotations.WithSpan
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -42,7 +43,7 @@ class BestillingMottak(
                 .map { consumer ->
                     launch {
                         while (true) {
-                            whenEnabled { hentBestilling(consumer) { process(it) } }
+                            whenEnabled { hentBestilling(consumer, consumer.queueName) { process(it) } }
                         }
                     }
                 }
@@ -69,15 +70,17 @@ class BestillingMottak(
     }
 
     @WithSpan
-    private suspend fun hentBestilling(consumer: MqConsumer, block: suspend (Melding) -> Unit) {
+    private suspend fun hentBestilling(consumer: MqConsumer, @SpanAttribute queueName: String, block: suspend (Melding) -> Unit) {
         consumer.receive()?.let { melding ->
-            logger.info(TEAM_LOGS_MARKER) { "Melding mottatt: $melding" }
+            logger.info(TEAM_LOGS_MARKER) { "Melding mottatt fra $queueName: $melding" }
             try {
                 block(melding)
                 consumer.commit()
             } catch (ex: Exception) {
                 consumer.rollback()
-                logger.error(TEAM_LOGS_MARKER, ex) { "Noe gikk galt; lesing av meldingen er rullet tilbake (kanskje til BOQ)" }
+                logger.error(TEAM_LOGS_MARKER, ex) {
+                    "Noe gikk galt; lesing av meldingen fra $queueName er rullet tilbake (kanskje til BOQ)"
+                }
             }
         }
     }
