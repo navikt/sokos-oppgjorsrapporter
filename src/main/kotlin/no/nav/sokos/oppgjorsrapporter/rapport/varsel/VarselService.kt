@@ -129,11 +129,12 @@ class VarselService(
                 rapportType = rapport.type,
                 orgnr = rapport.orgnr,
                 title =
-                    when (rapport.type) {
-                        RapportType.`ref-arbg` -> "${rapport.type.fulltNavn} (utbetalt ${rapport.datoValutert.tilNorskFormat()})"
-                        RapportType.`trekk-hend` -> rapport.type.fulltNavn
-                        RapportType.`trekk-kred` -> rapport.type.fulltNavn
-                    },
+                    (if (etterAltinn2()) "" else "Ny Altinn3 - ") +
+                        when (rapport.type) {
+                            RapportType.`ref-arbg` -> "${rapport.type.fulltNavn} (utbetalt ${rapport.datoValutert.tilNorskFormat()})"
+                            RapportType.`trekk-hend` -> rapport.type.fulltNavn
+                            RapportType.`trekk-kred` -> rapport.type.fulltNavn
+                        },
                 summary =
                     if (etterAltinn2()) "Ny rapport for utbetaling er tilgjengelig for nedlasting."
                     else
