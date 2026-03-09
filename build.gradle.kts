@@ -1,24 +1,24 @@
 group = "no.nav.sokos"
 
-val flywayVersion = "12.0.0"
+val flywayVersion = "12.0.3"
 val hikariVersion = "7.0.2"
 val ibmMqVersion = "9.4.5.0"
 val janinoVersion = "3.1.12"
-val junitVersion = "6.0.2"
+val junitVersion = "6.0.3"
 val jsonUnitVersion = "5.1.0"
 val konfigVersion = "1.6.10.0"
-val kotestVersion = "6.1.3"
+val kotestVersion = "6.1.4"
 val kotlinLoggingVersion = "3.0.5"
 val kotlinxSerializationVersion = "1.10.0"
 val kotliqueryVersion = "1.9.1"
 val ktorVersion = "3.4.0"
-val logbackVersion = "1.5.28"
+val logbackVersion = "1.5.32"
 val logstashVersion = "9.0"
 val micrometerVersion = "1.17.0-M2"
 val mockOAuth2ServerVersion = "3.0.1"
 val mockkVersion = "1.14.9"
 val pdpClientVersion = "1.1.0"
-val postgresVersion = "42.7.9"
+val postgresVersion = "42.7.10"
 val swaggerRequestValidatorVersion = "2.46.0"
 val testcontainersVersion = "2.0.3"
 val threetenExtraVersion = "1.8.0"
@@ -32,7 +32,7 @@ plugins {
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
     id("com.diffplug.spotless") version "8.2.1"
-    id("org.jetbrains.kotlinx.kover") version "0.9.6"
+    id("org.jetbrains.kotlinx.kover") version "0.9.7"
 }
 
 application {
