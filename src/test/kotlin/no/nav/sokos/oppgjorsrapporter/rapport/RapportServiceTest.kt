@@ -9,7 +9,7 @@ import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldInclude
-import io.ktor.server.application.Application
+import io.ktor.server.application.*
 import io.ktor.server.plugins.di.*
 import io.micrometer.core.instrument.Tags
 import io.mockk.coEvery
@@ -22,11 +22,13 @@ import java.util.*
 import java.util.concurrent.CountDownLatch
 import javax.sql.DataSource
 import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import kotlinx.io.bytestring.append
 import kotlinx.io.bytestring.buildByteString
 import kotlinx.io.bytestring.encodeToByteString
 import kotliquery.sessionOf
 import kotliquery.using
+import no.nav.sokos.oppgjorsrapporter.MultiGaugeUtils.extract
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
@@ -340,6 +342,9 @@ class RapportServiceTest :
                             antallUnderenheter = 1,
                             antallPersoner = 2,
                         )
+
+                    metrikkForRapporter(application.dependencies).totalForType(ulagretRapport.type) shouldBe 1
+
                     val variant =
                         using(sessionOf(application.dependencies.resolve<DataSource>())) {
                             it.transaction { tx ->
@@ -359,6 +364,8 @@ class RapportServiceTest :
                             }
                         }
 
+                    metrikkForRapporter(application.dependencies).totalForType(ulagretRapport.type) shouldBe 2
+
                     val auditLog = sut.hentAuditLog(RapportAuditKriterier(variant.rapportId, variantId = variant.id)).single()
                     auditLog.hendelse shouldBe RapportAudit.Hendelse.VARIANT_OPPRETTET
                     auditLog.brukernavn shouldBe "system"
@@ -368,6 +375,12 @@ class RapportServiceTest :
             test("kan hente innholdet fra en variant") {
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
                     TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+
+                    val metrikkBefore = metrikkForRapporter(application.dependencies)
+                    val rapportType = RapportType.`ref-arbg`
+                    val totalBefore = metrikkBefore.totalForType(rapportType)
+                    val tags = arrayOf("rapporttype" to rapportType.name, "nedlastinger" to "1", "auth_type" to "entraid")
+                    metrikkBefore.extract(*tags).single() shouldBe 0
 
                     val sut: RapportService = application.dependencies.resolve()
                     val rapportId = Rapport.Id(4)
@@ -380,6 +393,10 @@ class RapportServiceTest :
                         ) { _, data ->
                             data
                         }
+
+                    val metrikkAfter = metrikkForRapporter(application.dependencies)
+                    metrikkAfter.totalForType(rapportType) shouldBe totalBefore
+                    metrikkAfter.extract(*tags).single() shouldBe 1
 
                     val expected = buildByteString {
                         append("PDF".encodeToByteString())
@@ -400,6 +417,12 @@ class RapportServiceTest :
                 TestUtil.withFullApplication(dbContainer = dbContainer) {
                     TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
 
+                    val metrikkBefore = metrikkForRapporter(application.dependencies)
+                    val rapportType = RapportType.`ref-arbg`
+                    val totalBefore = metrikkBefore.totalForType(rapportType)
+                    val tags = arrayOf("rapporttype" to rapportType.name, "nedlastinger" to "1", "auth_type" to "systembruker")
+                    metrikkBefore.extract(*tags).single() shouldBe 0
+
                     val sut: RapportService = application.dependencies.resolve()
                     val rapportId = Rapport.Id(4)
                     val innhold =
@@ -411,6 +434,10 @@ class RapportServiceTest :
                         ) { _, data ->
                             data
                         }
+
+                    val metrikkAfter = metrikkForRapporter(application.dependencies)
+                    metrikkAfter.totalForType(rapportType) shouldBe totalBefore
+                    metrikkAfter.extract(*tags).single() shouldBe 1
 
                     val expected = buildByteString {
                         append("PDF".encodeToByteString())
@@ -448,3 +475,9 @@ class RapportServiceTest :
             }
         }
     })
+
+fun metrikkForRapporter(dependencies: DependencyRegistry) =
+    runBlocking { dependencies.resolve<DataSource>() to dependencies.resolve<RapportRepository>() }
+        .let { (datasource, repository) -> using(sessionOf(datasource)) { it.transaction { tx -> repository.metrikkForRapporter(tx) } } }
+
+fun Iterable<Pair<Tags, Long>>.totalForType(type: RapportType) = extract("rapporttype" to type.name, "nedlastinger" to "any").single()

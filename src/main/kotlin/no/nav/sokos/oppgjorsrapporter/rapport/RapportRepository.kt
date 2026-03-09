@@ -373,6 +373,20 @@ class RapportRepository(private val clock: Clock) {
         queryOf(
                 """
                 WITH rtyp AS (SELECT * FROM unnest(enum_range(null::rapport.rapport_type)) AS rapport_type),
+                     nedlastinger AS (SELECT id,
+                                             rapport_id,
+                                             CASE
+                                                 WHEN brukernavn LIKE 'entraid:%'
+                                                     OR brukernavn LIKE 'azure:%' THEN 'entraid'
+                                                 WHEN brukernavn LIKE 'tokenx:%' THEN 'idporten'
+                                                 ELSE 'systembruker'
+                                             END AS auth_type
+                                      FROM rapport.rapport_audit
+                                      WHERE hendelse = :nedlastet),
+                     dimtotal AS (SELECT *
+                                  FROM rtyp,
+                                       (VALUES ('any')) AS t1(antall_nedlastinger),
+                                       (VALUES ('any')) AS t2(auth_type)),
                      dim0 AS (SELECT *
                               FROM rtyp,
                                    (VALUES ('0')) AS t1(antall_nedlastinger),
@@ -380,33 +394,35 @@ class RapportRepository(private val clock: Clock) {
                      dimensjoner AS (SELECT *
                                      FROM rtyp,
                                           (VALUES ('1'), ('2+')) AS t1(antall_nedlastinger),
-                                          (VALUES ('entraid'), ('systembruker')) AS t2(auth_type)
+                                          (VALUES ('entraid'), ('idporten'), ('systembruker')) AS t2(auth_type)
                                      UNION
                                      SELECT *
                                      FROM dim0),
                      telling AS (SELECT r.id    AS rapport_id,
                                         r.type  AS rapport_type,
                                         CASE
-                                            WHEN COUNT(a.id) <= 1 THEN COUNT(a.id)::text
+                                            WHEN COUNT(n.id) <= 1 THEN COUNT(n.id)::text
                                             ELSE '2+'
-                                            END AS antall_nedlastinger,
-                                        CASE
-                                            WHEN brukernavn IS NULL THEN 'n/a'
-                                            WHEN brukernavn LIKE 'entraid:%'
-                                                OR brukernavn LIKE 'azure:%' THEN 'entraid'
-                                            ELSE 'systembruker'
-                                            END AS auth_type
+                                        END AS antall_nedlastinger,
+                                        COALESCE(n.auth_type, 'n/a') AS auth_type
                                  FROM rapport.rapport r
-                                          LEFT JOIN rapport.rapport_audit a
-                                                    ON a.rapport_id = r.id AND a.hendelse = :hendelse
-                                 GROUP BY r.id, r.type, a.brukernavn)
+                                          LEFT JOIN nedlastinger n ON n.rapport_id = r.id
+                                 GROUP BY r.id, r.type, COALESCE(n.auth_type, 'n/a'))
                 SELECT COUNT(DISTINCT t.rapport_id) AS antall_rapporter, rapport_type, antall_nedlastinger, auth_type
                 FROM dimensjoner d
                          LEFT JOIN telling t USING (rapport_type, antall_nedlastinger, auth_type)
                 GROUP BY (rapport_type, antall_nedlastinger, auth_type)
+                UNION
+                SELECT COUNT(r.id) AS antall_rapporter,
+                       d.rapport_type,
+                       d.antall_nedlastinger,
+                       d.auth_type
+                FROM dimtotal d
+                        LEFT JOIN rapport.rapport r ON r.type = d.rapport_type
+                GROUP BY (rapport_type, antall_nedlastinger, auth_type)
                 """
                     .trimIndent(),
-                mapOf("hendelse" to RapportAudit.Hendelse.VARIANT_NEDLASTET.name),
+                mapOf("nedlastet" to RapportAudit.Hendelse.VARIANT_NEDLASTET.name),
             )
             .map {
                 Pair(

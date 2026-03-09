@@ -15,8 +15,10 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.util.*
 import javax.sql.DataSource
+import kotlinx.coroutines.runBlocking
 import kotliquery.sessionOf
 import kotliquery.using
+import no.nav.sokos.oppgjorsrapporter.MultiGaugeUtils.extract
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.TestUtil.withConfigOverride
@@ -24,6 +26,7 @@ import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenClient
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.CreateDialogRequest
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.toDataSource
 import no.nav.sokos.utils.OrgNr
 
@@ -38,14 +41,20 @@ class VarselServiceTest :
                     dependencyOverrides = { dependencies { provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) } } },
                 ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+
+                    val tags = arrayOf("rapporttype" to RapportType.`ref-arbg`.name, "feilet" to "false")
+                    metrikkForVarsler(application.dependencies).extract(*tags).single() shouldBe 0
+
                     val rapport = application.dependencies.resolve<RapportService>().finnRapport(Rapport.Id(1))!!
 
                     val sut: VarselService = application.dependencies.resolve()
                     val repository: VarselRepository = application.dependencies.resolve()
                     using(sessionOf(application.dependencies.resolve<DataSource>())) {
-                        it.transaction { tx ->
-                            sut.registrerVarsel(tx, rapport)
+                        it.transaction { tx -> sut.registrerVarsel(tx, rapport) }
 
+                        metrikkForVarsler(application.dependencies).extract(*tags).single() shouldBe 1
+
+                        it.transaction { tx ->
                             // Verifiser at det er registrert et varsel som ser ut som forventet, og slett det
                             val varsel = repository.finnUprosessertVarsel(tx, Instant.EPOCH)!!
                             varsel shouldBe Varsel(Varsel.Id(1), rapport.id, VarselSystem.dialogporten, Instant.EPOCH, 0, Instant.EPOCH)
@@ -54,6 +63,38 @@ class VarselServiceTest :
                             // Det skal ikke være registrert flere varsler
                             repository.finnUprosessertVarsel(tx, Instant.EPOCH) shouldBe null
                         }
+                    }
+
+                    metrikkForVarsler(application.dependencies).extract(*tags).single() shouldBe 0
+                }
+            }
+
+            test("kan registrere behovet for multiple varsler i databasen") {
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = { dependencies { provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) } } },
+                ) {
+                    TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+
+                    fun varslerForType(type: RapportType): Long =
+                        metrikkForVarsler(application.dependencies).extract("rapporttype" to type.name, "feilet" to "false").single()
+                    RapportType.entries.forAll { varslerForType(it) shouldBe 0 }
+
+                    val sut: VarselService = application.dependencies.resolve()
+                    val dataSource = application.dependencies.resolve<DataSource>()
+                    val expect = mutableMapOf<RapportType, Long>()
+                    for (i in 1L..6L) {
+                        val rapport = application.dependencies.resolve<RapportService>().finnRapport(Rapport.Id(i))!!
+                        expect.compute(rapport.type) { _, n -> (n ?: 0) + 1 }
+
+                        using(sessionOf(dataSource)) { it.transaction { tx -> sut.registrerVarsel(tx, rapport) } }
+
+                        val after = varslerForType(rapport.type)
+                        after shouldBeGreaterThan 0
+                        after shouldBe expect[rapport.type]!!
+
+                        val total = metrikkForVarsler(application.dependencies).extract().sum()
+                        total shouldBe i
                     }
                 }
             }
@@ -73,14 +114,19 @@ class VarselServiceTest :
                         TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                         val rapport = application.dependencies.resolve<RapportService>().finnRapport(Rapport.Id(1))!!
 
+                        val tags = arrayOf("rapporttype" to rapport.type.name, "feilet" to "false")
+                        metrikkForVarsler(application.dependencies).extract(*tags).single() shouldBe 0
+
                         pilotOrgs shouldContain rapport.orgnr
 
                         val sut: VarselService = application.dependencies.resolve()
                         val repository: VarselRepository = application.dependencies.resolve()
                         using(sessionOf(application.dependencies.resolve<DataSource>())) {
-                            it.transaction { tx ->
-                                sut.registrerVarsel(tx, rapport)
+                            it.transaction { tx -> sut.registrerVarsel(tx, rapport) }
 
+                            metrikkForVarsler(application.dependencies).extract(*tags).single() shouldBe 1
+
+                            it.transaction { tx ->
                                 // Verifiser at det er registrert et varsel som ser ut som forventet, og slett det
                                 val varsel = repository.finnUprosessertVarsel(tx, Instant.EPOCH)!!
                                 varsel shouldBe Varsel(Varsel.Id(1), rapport.id, VarselSystem.dialogporten, Instant.EPOCH, 0, Instant.EPOCH)
@@ -90,6 +136,8 @@ class VarselServiceTest :
                                 repository.finnUprosessertVarsel(tx, Instant.EPOCH) shouldBe null
                             }
                         }
+
+                        metrikkForVarsler(application.dependencies).extract(*tags).single() shouldBe 0
                     }
                 }
             }
@@ -103,6 +151,9 @@ class VarselServiceTest :
                         TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                         val rapport = application.dependencies.resolve<RapportService>().finnRapport(Rapport.Id(1))!!
 
+                        val tags = arrayOf("rapporttype" to rapport.type.name, "feilet" to "false")
+                        metrikkForVarsler(application.dependencies).extract(*tags).single() shouldBe 0
+
                         pilotOrgs shouldNotContain rapport.orgnr
 
                         val sut: VarselService = application.dependencies.resolve()
@@ -115,6 +166,8 @@ class VarselServiceTest :
                                 repository.finnUprosessertVarsel(tx, Instant.EPOCH) shouldBe null
                             }
                         }
+
+                        metrikkForVarsler(application.dependencies).extract(*tags).single() shouldBe 0
                     }
                 }
             }
@@ -220,3 +273,9 @@ class VarselServiceTest :
             }
         }
     })
+
+fun metrikkForVarsler(dependencies: DependencyRegistry) =
+    runBlocking { dependencies.resolve<DataSource>() to dependencies.resolve<VarselRepository>() }
+        .let { (datasource, repository) ->
+            using(sessionOf(datasource)) { it.transaction { tx -> repository.metrikkForUprosesserteVarsler(tx) } }
+        }
