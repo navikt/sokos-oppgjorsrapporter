@@ -26,6 +26,7 @@ import io.ktor.server.plugins.di.dependencies
 import io.ktor.util.AttributeKey
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import io.opentelemetry.instrumentation.annotations.WithSpan
 import java.time.Clock
 import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
@@ -298,6 +299,7 @@ abstract class BakgrunnsJobb(private val applicationState: ApplicationState) {
 
     abstract suspend fun run()
 
+    @WithSpan
     suspend fun whenEnabled(block: suspend () -> Unit) {
         currentCoroutineContext().ensureActive()
         if (applicationState.disabledBackgroundJobs.contains(this::class)) {
