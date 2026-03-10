@@ -30,25 +30,25 @@ object TrekkKredPdfMapper {
         val urData = brukerData.brevinfo.variableFelter.ur
         val payload =
             TrekkKredRapportPdfPayload(
-                rapportSendt = rapportSendt,
-                utbetalingsDato = dato,
-                totalsum = urData.sumTotal.belop,
-                periode = Periode(fra = urData.rapportFom, urData.rapportTom),
-                bedrift =
-                    Bedrift(
-                        orgnr = organisasjonsNavnOgAdresse.organisasjonsnummer,
-                        tssid = urData.tssId,
-                        navn = organisasjonsNavnOgAdresse.navn,
-                        kontonummer = urData.kontonummer,
-                        adresse = organisasjonsNavnOgAdresse.adresse,
-                    ),
-                enheter = mapEnheter(this),
-            )
-
-        if (!payload.validerPayload(this)) {
-            logger.error { "Validering av pdf payload feilet" }
-            // TODO Kaste exception og legge på BOQ
-        }
+                    rapportSendt = rapportSendt,
+                    utbetalingsDato = dato,
+                    totalsum = urData.sumTotal.belop,
+                    periode = Periode(fra = urData.rapportFom, urData.rapportTom),
+                    bedrift =
+                        Bedrift(
+                            orgnr = organisasjonsNavnOgAdresse.organisasjonsnummer,
+                            tssid = urData.tssId,
+                            navn = organisasjonsNavnOgAdresse.navn,
+                            kontonummer = urData.kontonummer,
+                            adresse = organisasjonsNavnOgAdresse.adresse,
+                        ),
+                    enheter = mapEnheter(this),
+                )
+                .also {
+                    if (it.validerPayload(this)) {
+                        throw Exception("Validering av pdf payload for bestilling feilet")
+                    }
+                }
 
         return payload
     }
@@ -106,16 +106,18 @@ object TrekkKredPdfMapper {
 
             val arkivRefSumKorrekt =
                 urData.arkivRefList.all { arkivRef ->
-                    println("${arkivRef.nr}: ${arkivRef.delsumRef.belop} == ${delsumArkivref[arkivRef.nr]}")
-                    arkivRef.delsumRef.belop.compareTo(delsumArkivref[arkivRef.nr]) == 0
+                    (arkivRef.delsumRef.belop.compareTo(delsumArkivref[arkivRef.nr]) == 0).also {
+                        if (!it) logger.error { "Delsum for arkivref ${arkivRef.nr} er feil" }
+                    }
                 }
 
             val totalsum = urData.sumTotal.belop
             val payloadTotalsum = payload.enheter.sumOf { it.sumEnhet }
 
-            println("totalsum: $totalsum, payloadTotalsum: $payloadTotalsum")
-
-            val totalsumKorrekt = totalsum.compareTo(payloadTotalsum) == 0
+            val totalsumKorrekt =
+                (totalsum.compareTo(payloadTotalsum) == 0).also {
+                    if (!it) logger.error { "Totalsum er feil for ${urData.orgnummer}. Skulle vært $totalsum, men var $payloadTotalsum" }
+                }
 
             return arkivRefSumKorrekt && totalsumKorrekt
         }
