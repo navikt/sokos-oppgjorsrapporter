@@ -47,7 +47,7 @@
                                 <navn>DONALD DUCK MED VENNER</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>15000</belop>
+                                <belop>  15000</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000815306</dettssid>
                             </trekklinje>
@@ -76,7 +76,7 @@
                         </delsumref>
                     </arkivref>
                     <arkivref nr="235750560 ">
-                        <enhet enhetnr="8020" navn="NAV �konomi St�nad       ">
+                        <enhet enhetnr="8020" navn="NAV ?konomi St?nad       ">
                             <trekklinje>
                                 <saksref>Barnevernstjenesten</saksref>
                                 <arborgnr>895821802</arborgnr>

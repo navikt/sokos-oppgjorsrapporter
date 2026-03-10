@@ -100,7 +100,7 @@ data class TrekkKredRapportBestilling(
 
 class BelopDeserializer : ValueDeserializer<BigDecimal>() {
     override fun deserialize(p: JsonParser?, ctxt: DeserializationContext?): BigDecimal? {
-        return p?.string.takeUnless { it.isNullOrBlank() }?.let { BigDecimal(p?.string).divide(BigDecimal(100), 2, RoundingMode.HALF_UP) }
+        return p?.string?.trim().takeUnless { it.isNullOrBlank() }?.let { BigDecimal(it).divide(BigDecimal(100), 2, RoundingMode.HALF_UP) }
     }
 }
 
