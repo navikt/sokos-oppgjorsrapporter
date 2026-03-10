@@ -1,9 +1,5 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
-import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.okJson
-import com.github.tomakehurst.wiremock.client.WireMock.stubFor
-import com.github.tomakehurst.wiremock.junit5.WireMockTest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -28,7 +24,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.threeten.extra.MutableClock
 
-@WireMockTest(httpPort = 8090) // Må matche "localhost:8090" i application.conf sin "ereg.base_url"-verdi
 class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T12:00:00Z"), ZoneOffset.UTC)) {
     protected override val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf("group"))
 
@@ -100,22 +95,6 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         // Kommenter inn linja under og kjør denne test-metoden for å få et eksempel på et gyldig JSON-dokument
         // println(dokument)
 
-        stubFor(
-            get("/v2/organisasjon/${bestilling.header.orgnr.raw}/noekkelinfo")
-                .willReturn(
-                    okJson(
-                        """
-                        {
-                            "organisasjonsnummer": "${bestilling.header.orgnr.raw}",
-                            "navn": {
-                                "sammensattnavn": "Organisasjonens Navn"
-                            }
-                        }
-                        """
-                            .trimIndent()
-                    )
-                )
-        )
         val response =
             client()
                 .queryParam("rapportType", "ref-arbg")
