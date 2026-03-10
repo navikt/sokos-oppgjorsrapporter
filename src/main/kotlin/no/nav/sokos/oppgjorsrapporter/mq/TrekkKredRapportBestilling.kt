@@ -58,7 +58,7 @@ data class TrekkKredRapportBestilling(
     data class UR(
         @JsonDeserialize(using = OrgnnrDeserializer::class) val orgnummer: OrgNr,
         val kreditor: String,
-        val kontonummer: Bankkonto,
+        @JsonDeserialize(using = BankkontoDeserializer::class) val kontonummer: Bankkonto?,
         @get:JacksonXmlProperty(localName = "tssid") val tssId: String,
         @get:JacksonXmlProperty(localName = "rapfom")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
@@ -79,21 +79,27 @@ data class TrekkKredRapportBestilling(
     )
 
     data class Enhet(
-        @JacksonXmlProperty(isAttribute = true) val enhetnr: String,
-        @JacksonXmlProperty(isAttribute = true) val navn: String,
-        @JacksonXmlProperty(localName = "trekklinje") @JacksonXmlElementWrapper(useWrapping = false) val trekkLinjeList: List<TrekkLinje>,
+        @get:JacksonXmlProperty(isAttribute = true) val enhetnr: String,
+        @get:JacksonXmlProperty(isAttribute = true) val navn: String,
+        @get:JacksonXmlProperty(localName = "trekklinje")
+        @JacksonXmlElementWrapper(useWrapping = false)
+        val trekkLinjeList: List<TrekkLinje>,
         val delsum: Belop,
     )
 
     data class TrekkLinje(
-        @JacksonXmlProperty(localName = "saksref") val saksreferanse: String,
-        @JacksonXmlProperty(localName = "arborgnr") @JsonDeserialize(using = OrgnnrDeserializer::class) val arbeidgiverOrgnr: OrgNr,
+        @get:JacksonXmlProperty(localName = "saksref") val saksreferanse: String,
+        @get:JacksonXmlProperty(localName = "arborgnr") @JsonDeserialize(using = OrgnnrDeserializer::class) val arbeidgiverOrgnr: OrgNr,
         val fnr: Fnr,
         val navn: String,
-        @JacksonXmlProperty(localName = "trekkfom") val trekkFOM: String,
-        @JacksonXmlProperty(localName = "trekktom") val trekkTOM: String,
+        @get:JacksonXmlProperty(localName = "trekkfom")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
+        val trekkFOM: LocalDate,
+        @get:JacksonXmlProperty(localName = "trekktom")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
+        val trekkTOM: LocalDate,
         @JsonDeserialize(using = BelopDeserializer::class) val belop: BigDecimal,
-        @JacksonXmlProperty(localName = "kidstatus") val kidStatus: String,
+        @get:JacksonXmlProperty(localName = "kidstatus") val kidStatus: String,
         val dettssid: String,
     )
 }
@@ -110,4 +116,9 @@ class TrimmingDeserializer : ValueDeserializer<String>() {
 
 class OrgnnrDeserializer : ValueDeserializer<OrgNr>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = p.string?.trim()?.trimStart('0')?.let { OrgNr(it) }
+}
+
+class BankkontoDeserializer : ValueDeserializer<Bankkonto?>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext) =
+        p.string?.trim()?.trimStart('0')?.takeIf { it.isNotBlank() }?.let { Bankkonto(it) }
 }
