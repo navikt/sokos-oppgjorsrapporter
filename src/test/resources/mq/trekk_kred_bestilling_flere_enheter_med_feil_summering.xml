@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<rundata dato="20260217" sysid="UR" mode="PRODUCTION">
+    <brukerdata spraak="NB">
+        <mottaker>
+            <navn>
+                <fulltnavn>MOLDE KOMMUNE</fulltnavn>
+            </navn>
+            <adresse>
+                <adresselinje1></adresselinje1>
+                <adresselinje2></adresselinje2>
+                <adresselinje3></adresselinje3>
+                <postnr>0000</postnr>
+                <sted></sted>
+            </adresse>
+        </mottaker>
+        <brevinfo brevdato="20260217" malpakke="UR.T14">
+            <variablefelter>
+                <UR>
+                    <orgnummer>00921221967</orgnummer>
+                    <kreditor></kreditor>
+                    <kontonummer>42141415926</kontonummer>
+                    <tssid>80000815306</tssid>
+                    <rapfom>20260201</rapfom>
+                    <raptom>20260228</raptom>
+                    <arkivref nr="235753327 ">
+                        <enhet enhetnr="8020" navn="                         ">
+                            <trekklinje>
+                                <saksref>Molde barnevern</saksref>
+                                <arborgnr>000000003</arborgnr>
+                                <fnr>15267807496</fnr>
+                                <navn>DONALD DUCK MED VENNER</navn>
+                                <trekkfom>20260201</trekkfom>
+                                <trekktom>20260228</trekktom>
+                                <belop>10000</belop>
+                                <kidstatus>KU</kidstatus>
+                                <dettssid>80000815306</dettssid>
+                            </trekklinje>
+                            <delsum>
+                                <belop>10000</belop>
+                            </delsum>
+                        </enhet>
+                        <enhet enhetnr="4819" navn="                         ">
+                            <trekklinje>
+                                <saksref>Molde barnevern</saksref>
+                                <arborgnr>000000001</arborgnr>
+                                <fnr>15267807496</fnr>
+                                <navn>DONALD DUCK MED VENNER</navn>
+                                <trekkfom>20260201</trekkfom>
+                                <trekktom>20260228</trekktom>
+                                <belop>15000</belop>
+                                <kidstatus>KU</kidstatus>
+                                <dettssid>80000815306</dettssid>
+                            </trekklinje>
+                            <delsum>
+                                <belop>15000</belop>
+                            </delsum>
+                        </enhet>
+                        <enhet enhetnr="8020" navn="                         ">
+                            <trekklinje>
+                                <saksref>Molde barnevern</saksref>
+                                <arborgnr>000000002</arborgnr>
+                                <fnr>15267807496</fnr>
+                                <navn>DONALD DUCK MED VENNER</navn>
+                                <trekkfom>20260201</trekkfom>
+                                <trekktom>20260228</trekktom>
+                                <belop>17500</belop>
+                                <kidstatus>KU</kidstatus>
+                                <dettssid>80000815306</dettssid>
+                            </trekklinje>
+                            <delsum>
+                                <belop>17500</belop>
+                            </delsum>
+                        </enhet>
+                        <delsumref>
+                            <belop>42500</belop>
+                        </delsumref>
+                    </arkivref>
+                    <arkivref nr="235750560 ">
+                        <enhet enhetnr="8020" navn="NAV �konomi St�nad       ">
+                            <trekklinje>
+                                <saksref>Barnevernstjenesten</saksref>
+                                <arborgnr>895821802</arborgnr>
+                                <fnr>19486545678</fnr>
+                                <navn>JJJJJCCCCCBBB AAAAAAAAAAA</navn>
+                                <trekkfom>20260201</trekkfom>
+                                <trekktom>20260228</trekktom>
+                                <belop>20000</belop>
+                                <kidstatus>KU</kidstatus>
+                                <dettssid>80000818309</dettssid>
+                            </trekklinje>
+                            <trekklinje>
+                                <saksref>Frivillig forvaltning, H. Berg</saksref>
+                                <arborgnr>895821802</arborgnr>
+                                <fnr>29667789766</fnr>
+                                <navn>BURGER MED POMMES FRITES</navn>
+                                <trekkfom>20260201</trekkfom>
+                                <trekktom>20260228</trekktom>
+                                <belop>25100</belop>
+                                <kidstatus>KU</kidstatus>
+                                <dettssid>80000818309</dettssid>
+                            </trekklinje>
+                            <delsum>
+                                <belop>45000</belop>
+                            </delsum>
+                        </enhet>
+                        <enhet enhetnr="4819" navn="                         ">
+                            <trekklinje>
+                                <saksref>Molde barnevern</saksref>
+                                <arborgnr>000000004</arborgnr>
+                                <fnr>15267807496</fnr>
+                                <navn>DONALD DUCK MED VENNER</navn>
+                                <trekkfom>20260201</trekkfom>
+                                <trekktom>20260228</trekktom>
+                                <belop>37500</belop>
+                                <kidstatus>KU</kidstatus>
+                                <dettssid>80000815306</dettssid>
+                            </trekklinje>
+                            <delsum>
+                                <belop>37500</belop>
+                            </delsum>
+                        </enhet>
+
+                        <delsumref>
+                            <belop>82500</belop>
+                        </delsumref>
+                    </arkivref>
+                    <sumtot>
+                        <belop>125000</belop>
+                    </sumtot>
+                </UR>
+            </variablefelter>
+        </brevinfo>
+    </brukerdata>
+</rundata>
