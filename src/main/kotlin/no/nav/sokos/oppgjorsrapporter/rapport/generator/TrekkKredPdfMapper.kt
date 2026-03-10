@@ -19,7 +19,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
-import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 
@@ -42,7 +41,7 @@ object TrekkKredPdfMapper {
                             orgnr = organisasjonsNavnOgAdresse.organisasjonsnummer,
                             tssid = urData.tssId,
                             navn = organisasjonsNavnOgAdresse.navn,
-                            kontonummer = urData.kontonummer,
+                            kontonummer = urData.kontonummer?.raw ?: "",
                             adresse = organisasjonsNavnOgAdresse.adresse,
                         ),
                     enheter = mapEnheter(this),
@@ -88,7 +87,7 @@ object TrekkKredPdfMapper {
                                             saksreferanse = it.saksreferanse,
                                             periodeFra = it.trekkFOM,
                                             periodeTil = it.trekkTOM,
-                                            belop = it.belop.toString(),
+                                            belop = it.belop,
                                             tssId = it.dettssid,
                                         )
                                     },
@@ -152,7 +151,7 @@ data class Periode(
     @Serializable(with = DatoSerializer::class) val til: LocalDate,
 )
 
-@Serializable data class Bedrift(val orgnr: String, val tssid: String, val navn: String, val kontonummer: Bankkonto, val adresse: String)
+@Serializable data class Bedrift(val orgnr: String, val tssid: String, val navn: String, val kontonummer: String, val adresse: String)
 
 @Serializable
 data class Enhet(
@@ -174,9 +173,9 @@ data class Trekk(
     val fnr: Fnr,
     val navn: String,
     val saksreferanse: String,
-    val periodeFra: String,
-    val periodeTil: String,
-    val belop: String,
+    @Serializable(with = DatoSerializer::class) val periodeFra: LocalDate,
+    @Serializable(with = DatoSerializer::class) val periodeTil: LocalDate,
+    @Serializable(with = BelopSerializer::class) val belop: BigDecimal,
     val tssId: String,
 )
 
@@ -203,7 +202,7 @@ object BelopSerializer : KSerializer<BigDecimal> {
 object DatoSerializer : KSerializer<LocalDate> {
     override val descriptor = PrimitiveSerialDescriptor("java.time.LocalDate", PrimitiveKind.STRING)
 
-    private var dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+    private var dtf = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
     override fun deserialize(decoder: Decoder): LocalDate =
         when (decoder) {
