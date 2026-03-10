@@ -5,8 +5,6 @@ package no.nav.sokos.oppgjorsrapporter.mq
 
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.instrumentation.annotations.WithSpan
-import java.math.BigDecimal
-import java.time.LocalDate
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -22,7 +20,6 @@ import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
-import no.nav.sokos.utils.OrgNr
 import tools.jackson.module.kotlin.readValue
 
 class BestillingMottak(
