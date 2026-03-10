@@ -57,6 +57,7 @@ class BestillingMottak(
                 }
                 RapportType.`trekk-kred` -> {
                     val bestilling = TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(melding.data)
+                    // TODO Skal vi implementere "ekstraSjekk" eller er dette strengt tatt nødvendig for T14?
                     bestilling to
                         bestilling.brukerData.brevinfo.variableFelter.ur.arkivRefList.sumOf {
                             it.enhetList.sumOf { it.trekkLinjeList.size }

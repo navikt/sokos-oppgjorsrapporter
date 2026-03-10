@@ -104,7 +104,7 @@ fun TrekkKredRapportBestilling.toCsv_V2(): String {
                                                     "${it.trekkFOM};" +
                                                     "${it.trekkTOM};" +
                                                     "${formaterBigDecimal(it.belop)};" +
-                                                    "${it.kidStatus}"
+                                                    it.kidStatus
                                             }
                                             .joinToString(separator = LINJESKIFT, postfix = LINJESKIFT)
                                     val sumlinjeEnhet = "D;${formaterBigDecimal(enhet.delsum.belop)}"

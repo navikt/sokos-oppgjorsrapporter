@@ -15,7 +15,6 @@ import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
-import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.OrgNr
 import tools.jackson.module.kotlin.readValue
 
@@ -95,16 +94,16 @@ class BestillingProsessor(
                             TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(bestilling.dokument)
                         val mottaker = trekkKredRapportBestilling.brukerData.mottaker
                         val urData = trekkKredRapportBestilling.brukerData.brevinfo.variableFelter.ur
-                        val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(OrgNr(urData.orgnummer))
+                        val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(OrgNr(urData.orgnummer.raw))
                         Pair(
                             UlagretRapport(
                                 bestillingId = bestilling.id,
-                                orgnr = OrgNr(urData.orgnummer),
+                                orgnr = urData.orgnummer,
                                 orgNavn = OrgNavn(mottaker.navn.fulltNavn),
                                 type = bestilling.genererSom,
                                 datoValutert = trekkKredRapportBestilling.dato,
                                 antallRader = urData.arkivRefList.sumOf { it.enhetList.sumOf { it.trekkLinjeList.size } },
-                                bankkonto = Bankkonto(urData.kontonummer),
+                                bankkonto = urData.kontonummer,
                                 antallUnderenheter = null,
                                 antallPersoner =
                                     urData.arkivRefList
