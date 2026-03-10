@@ -3,7 +3,7 @@
 
 package no.nav.sokos.oppgjorsrapporter.mq
 
-import io.opentelemetry.instrumentation.annotations.SpanAttribute
+import io.opentelemetry.api.trace.Span
 import io.opentelemetry.instrumentation.annotations.WithSpan
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -43,7 +43,7 @@ class BestillingMottak(
                 .map { consumer ->
                     launch {
                         while (true) {
-                            whenEnabled { hentBestilling(consumer, consumer.queueName) { process(it) } }
+                            whenEnabled { hentBestilling(consumer) { process(it) } }
                         }
                     }
                 }
@@ -70,9 +70,11 @@ class BestillingMottak(
     }
 
     @WithSpan
-    private suspend fun hentBestilling(consumer: MqConsumer, @SpanAttribute queueName: String, block: suspend (Melding) -> Unit) {
+    private suspend fun hentBestilling(consumer: MqConsumer, block: suspend (Melding) -> Unit) {
+        val queueName = consumer.queueName
+        Span.current().setAttribute("mq.queueName", queueName)
         consumer.receive()?.let { melding ->
-            logger.info(TEAM_LOGS_MARKER) { "Melding mottatt fra $queueName: $melding" }
+            logger.info(TEAM_LOGS_MARKER) { "Melding mottatt: $melding" }
             try {
                 block(melding)
                 consumer.commit()
