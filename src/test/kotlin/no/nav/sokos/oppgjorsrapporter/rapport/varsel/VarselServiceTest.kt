@@ -57,7 +57,16 @@ class VarselServiceTest :
                         it.transaction { tx ->
                             // Verifiser at det er registrert et varsel som ser ut som forventet, og slett det
                             val varsel = repository.finnUprosessertVarsel(tx, Instant.EPOCH)!!
-                            varsel shouldBe Varsel(Varsel.Id(1), rapport.id, VarselSystem.dialogporten, Instant.EPOCH, 0, Instant.EPOCH)
+                            varsel shouldBe
+                                Varsel(
+                                    id = Varsel.Id(1),
+                                    rapportId = rapport.id,
+                                    system = VarselSystem.dialogporten,
+                                    opprettet = Instant.EPOCH,
+                                    antallForsok = 0,
+                                    nesteForsok = Instant.EPOCH,
+                                    oppgitt = null,
+                                )
                             repository.slett(tx, varsel.id)
 
                             // Det skal ikke være registrert flere varsler
@@ -129,7 +138,16 @@ class VarselServiceTest :
                             it.transaction { tx ->
                                 // Verifiser at det er registrert et varsel som ser ut som forventet, og slett det
                                 val varsel = repository.finnUprosessertVarsel(tx, Instant.EPOCH)!!
-                                varsel shouldBe Varsel(Varsel.Id(1), rapport.id, VarselSystem.dialogporten, Instant.EPOCH, 0, Instant.EPOCH)
+                                varsel shouldBe
+                                    Varsel(
+                                        id = Varsel.Id(1),
+                                        rapportId = rapport.id,
+                                        system = VarselSystem.dialogporten,
+                                        opprettet = Instant.EPOCH,
+                                        antallForsok = 0,
+                                        nesteForsok = Instant.EPOCH,
+                                        oppgitt = null,
+                                    )
                                 repository.slett(tx, varsel.id)
 
                                 // Det skal ikke være registrert flere varsler
@@ -172,6 +190,57 @@ class VarselServiceTest :
                 }
             }
 
+            test("kan markere et varsel-behov som oppgitt") {
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = { dependencies { provide<Clock> { Clock.fixed(Instant.EPOCH, ZoneOffset.UTC) } } },
+                ) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+
+                    val rapport = application.dependencies.resolve<RapportService>().finnRapport(Rapport.Id(1))!!
+
+                    metrikkForVarsler(application.dependencies)
+                        .extract("rapporttype" to rapport.type.name, "feilet" to "false")
+                        .single() shouldBe 0
+
+                    val sut: VarselService = application.dependencies.resolve()
+                    val repository: VarselRepository = application.dependencies.resolve()
+                    using(sessionOf(application.dependencies.resolve<DataSource>())) {
+                        it.transaction { tx -> sut.registrerVarsel(tx, rapport) }
+
+                        metrikkForVarsler(application.dependencies)
+                            .extract("rapporttype" to rapport.type.name, "feilet" to "false")
+                            .single() shouldBe 1
+
+                        it.transaction { tx ->
+                            // Verifiser at det er registrert et varsel som ser ut som forventet, og marker det som 'oppgitt'
+                            val varsel = repository.finnUprosessertVarsel(tx, Instant.EPOCH)!!
+                            varsel shouldBe
+                                Varsel(
+                                    id = Varsel.Id(1),
+                                    rapportId = rapport.id,
+                                    system = VarselSystem.dialogporten,
+                                    opprettet = Instant.EPOCH,
+                                    antallForsok = 0,
+                                    nesteForsok = Instant.EPOCH,
+                                    oppgitt = null,
+                                )
+                            val _ = repository.oppdater(tx, varsel.copy(oppgitt = Instant.now()))
+
+                            // Et oppgitt varsel må flagges som "ikke oppgitt" igjen før det kan plukkes opp av finnUprosessertVarsel(); se
+                            // TOB-6334
+                            repository.finnUprosessertVarsel(tx, Instant.EPOCH) shouldBe null
+                        }
+                    }
+
+                    // Et oppgitt varsel regnes med i metrikken med tag "feilet" == "oppgitt"
+                    val metrikk = metrikkForVarsler(application.dependencies)
+                    metrikk.extract("rapporttype" to rapport.type.name, "feilet" to "false").single() shouldBe 0
+                    metrikk.extract("rapporttype" to rapport.type.name, "feilet" to "true").single() shouldBe 0
+                    metrikk.extract("rapporttype" to rapport.type.name, "feilet" to "oppgitt").single() shouldBe 1
+                }
+            }
+
             test("kan prosessere et varsel") {
                 val repository = mockk<VarselRepository>(relaxed = true)
                 val dialogportenClient = mockk<DialogportenClient>(relaxed = true)
@@ -186,7 +255,16 @@ class VarselServiceTest :
                 ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                     val rapport = application.dependencies.resolve<RapportService>().finnRapport(Rapport.Id(1))!!
-                    val varsel = Varsel(Varsel.Id(1), rapport.id, VarselSystem.dialogporten, Instant.EPOCH, 0, Instant.EPOCH)
+                    val varsel =
+                        Varsel(
+                            id = Varsel.Id(1),
+                            rapportId = rapport.id,
+                            system = VarselSystem.dialogporten,
+                            opprettet = Instant.EPOCH,
+                            antallForsok = 0,
+                            nesteForsok = Instant.EPOCH,
+                            oppgitt = null,
+                        )
                     every { repository.finnUprosessertVarsel(any(), any()) }.returns(varsel)
                     val dialogUuid = UUID.randomUUID()
                     coEvery { dialogportenClient.opprettDialog(any()) }.returns(dialogUuid)
@@ -220,7 +298,16 @@ class VarselServiceTest :
                 ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                     val rapport = application.dependencies.resolve<RapportService>().finnRapport(Rapport.Id(1))!!
-                    val varsel = Varsel(Varsel.Id(1), rapport.id, VarselSystem.dialogporten, Instant.EPOCH, 0, Instant.EPOCH)
+                    val varsel =
+                        Varsel(
+                            id = Varsel.Id(1),
+                            rapportId = rapport.id,
+                            system = VarselSystem.dialogporten,
+                            opprettet = Instant.EPOCH,
+                            antallForsok = 0,
+                            nesteForsok = Instant.EPOCH,
+                            oppgitt = null,
+                        )
                     every { repository.finnUprosessertVarsel(any(), any()) }.returns(varsel)
                     coEvery { dialogportenClient.opprettDialog(any()) }.throws(RuntimeException("Dialogporten virker ikke nå"))
                     val varselSlot = slot<Varsel>()
@@ -259,7 +346,16 @@ class VarselServiceTest :
                 ) {
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
                     val rapport = application.dependencies.resolve<RapportService>().finnRapport(Rapport.Id(1))!!
-                    val varsel = Varsel(Varsel.Id(1), rapport.id, VarselSystem.dialogporten, Instant.EPOCH, 0, Instant.EPOCH)
+                    val varsel =
+                        Varsel(
+                            id = Varsel.Id(1),
+                            rapportId = rapport.id,
+                            system = VarselSystem.dialogporten,
+                            opprettet = Instant.EPOCH,
+                            antallForsok = 0,
+                            nesteForsok = Instant.EPOCH,
+                            oppgitt = null,
+                        )
                     every { repository.finnUprosessertVarsel(any(), any()) }.returns(varsel)
                     coEvery { dialogportenClient.opprettDialog(capture(requestSlot)) }.returns(UUID.randomUUID())
 

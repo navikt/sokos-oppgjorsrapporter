@@ -100,23 +100,28 @@ class VarselService(
                 }
                 .onFailure { err ->
                     metrics.tellVarselProsessering(varsel.system, rapportType, operasjon, feilet = true)
-                    logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel: $err" }
-                    val (antall, neste) =
-                        with(varsel) {
-                            val maxDelay = Duration.ofMinutes(5)
-                            val base = 1.5
-                            val baseDelay = Duration.ofMillis(1_000)
-                            val maxJitter = Duration.ofMillis(500)
-                            val vent =
-                                minOf(
-                                    maxDelay,
-                                    baseDelay
-                                        .multipliedBy(base.pow(antallForsok).toLong())
-                                        .plusMillis(Random.nextLong(maxJitter.toMillis())),
-                                )
-                            Pair(antallForsok + 1, nesteForsok.plus(vent))
-                        }
-                    val _ = repository.oppdater(tx, varsel.copy(antallForsok = antall, nesteForsok = neste))
+                    if (varsel.antallForsok >= 15) {
+                        logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel; vil ikke forsøke flere ganger: $err" }
+                        val _ = repository.oppdater(tx, varsel.copy(oppgitt = Instant.now(clock)))
+                    } else {
+                        logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel: $err" }
+                        val (antall, neste) =
+                            with(varsel) {
+                                val maxDelay = Duration.ofMinutes(5)
+                                val base = 1.5
+                                val baseDelay = Duration.ofMillis(1_000)
+                                val maxJitter = Duration.ofMillis(500)
+                                val vent =
+                                    minOf(
+                                        maxDelay,
+                                        baseDelay
+                                            .multipliedBy(base.pow(antallForsok).toLong())
+                                            .plusMillis(Random.nextLong(maxJitter.toMillis())),
+                                    )
+                                Pair(antallForsok + 1, nesteForsok.plus(vent))
+                            }
+                        val _ = repository.oppdater(tx, varsel.copy(antallForsok = antall, nesteForsok = neste))
+                    }
                 }
         }
     }
