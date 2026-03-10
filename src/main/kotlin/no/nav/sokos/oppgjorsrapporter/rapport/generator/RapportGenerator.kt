@@ -43,7 +43,7 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
     }
 
     suspend fun genererPdfInnhold(bestilling: RapportBestillingMsg, arbeidsgiverNavnOgAdresse: OrganisasjonsNavnOgAdresse): ByteString {
-        val pdfgenUrl = bestilling.resolvePdfGenPdfgenUrl()
+        val pdfgenUrl = bestilling.resolvePdfgenUrl()
         val pdfgenPayload =
             when (bestilling) {
                 is RefusjonsRapportBestilling -> {
@@ -82,7 +82,7 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
         }
     }
 
-    private fun RapportBestillingMsg.resolvePdfGenPdfgenUrl() =
+    private fun RapportBestillingMsg.resolvePdfgenUrl() =
         when (this) {
             is RefusjonsRapportBestilling -> baseUrl.resolve(REFUSJON_ARBG_PDFGEN_PATH).toURL()
             is TrekkKredRapportBestilling -> baseUrl.resolve(TREKK_KRED_PDFGEN_PATH).toURL()
