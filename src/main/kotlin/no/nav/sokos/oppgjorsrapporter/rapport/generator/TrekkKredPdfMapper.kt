@@ -19,6 +19,9 @@ import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
 
 object TrekkKredPdfMapper {
     private val logger = KotlinLogging.logger {}
@@ -45,7 +48,7 @@ object TrekkKredPdfMapper {
                     enheter = mapEnheter(this),
                 )
                 .also {
-                    if (it.validerPayload(this)) {
+                    if (!it.validerPayload(this)) {
                         throw Exception("Validering av pdf payload for bestilling feilet")
                     }
                 }
@@ -149,13 +152,13 @@ data class Periode(
     @Serializable(with = DatoSerializer::class) val til: LocalDate,
 )
 
-@Serializable data class Bedrift(val orgnr: String, val tssid: String, val navn: String, val kontonummer: String, val adresse: String)
+@Serializable data class Bedrift(val orgnr: String, val tssid: String, val navn: String, val kontonummer: Bankkonto, val adresse: String)
 
 @Serializable
 data class Enhet(
     val navn: String,
     @Serializable(with = BelopSerializer::class) val sumEnhet: BigDecimal,
-    val orgnr: String,
+    val orgnr: OrgNr,
     val arkivreferanser: List<Arkivreferanse>,
 )
 
@@ -168,7 +171,7 @@ data class Arkivreferanse(
 
 @Serializable
 data class Trekk(
-    val fnr: String,
+    val fnr: Fnr,
     val navn: String,
     val saksreferanse: String,
     val periodeFra: String,

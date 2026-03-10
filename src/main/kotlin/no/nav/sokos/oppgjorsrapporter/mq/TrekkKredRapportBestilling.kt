@@ -5,6 +5,9 @@ import com.fasterxml.jackson.annotation.JsonRootName
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
+import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
 import tools.jackson.core.JsonParser
 import tools.jackson.databind.DeserializationContext
 import tools.jackson.databind.ValueDeserializer
@@ -53,9 +56,9 @@ data class TrekkKredRapportBestilling(
     data class VariableFelter(@get:JacksonXmlProperty(localName = "UR") val ur: UR)
 
     data class UR(
-        val orgnummer: String,
+        val orgnummer: OrgNr,
         val kreditor: String,
-        val kontonummer: String,
+        val kontonummer: Bankkonto,
         @get:JacksonXmlProperty(localName = "tssid") val tssId: String,
         @get:JacksonXmlProperty(localName = "rapfom")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
@@ -84,8 +87,8 @@ data class TrekkKredRapportBestilling(
 
     data class TrekkLinje(
         @JacksonXmlProperty(localName = "saksref") val saksreferanse: String,
-        @JacksonXmlProperty(localName = "arborgnr") val arbeidgiverOrgnr: String,
-        val fnr: String,
+        @JacksonXmlProperty(localName = "arborgnr") val arbeidgiverOrgnr: OrgNr,
+        val fnr: Fnr,
         val navn: String,
         @JacksonXmlProperty(localName = "trekkfom") val trekkFOM: String,
         @JacksonXmlProperty(localName = "trekktom") val trekkTOM: String,

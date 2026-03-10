@@ -31,12 +31,12 @@
                                 <navn>DONALD DUCK MED VENNER</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>75200</belop>
+                                <belop>10000</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000815306</dettssid>
                             </trekklinje>
                             <delsum>
-                                <belop>75200</belop>
+                                <belop>10000</belop>
                             </delsum>
                         </enhet>
                         <enhet enhetnr="4819" navn="                         ">
@@ -47,12 +47,12 @@
                                 <navn>DONALD DUCK MED VENNER</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>75200</belop>
+                                <belop>15000</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000815306</dettssid>
                             </trekklinje>
                             <delsum>
-                                <belop>75200</belop>
+                                <belop>15000</belop>
                             </delsum>
                         </enhet>
                         <enhet enhetnr="8020" navn="                         ">
@@ -63,16 +63,16 @@
                                 <navn>DONALD DUCK MED VENNER</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>75200</belop>
+                                <belop>17500</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000815306</dettssid>
                             </trekklinje>
                             <delsum>
-                                <belop>75200</belop>
+                                <belop>17500</belop>
                             </delsum>
                         </enhet>
                         <delsumref>
-                            <belop>75200</belop>
+                            <belop>42500</belop>
                         </delsumref>
                     </arkivref>
                     <arkivref nr="235750560 ">
@@ -84,7 +84,7 @@
                                 <navn>JJJJJCCCCCBBB AAAAAAAAAAA</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>75200</belop>
+                                <belop>20000</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000818309</dettssid>
                             </trekklinje>
@@ -95,12 +95,12 @@
                                 <navn>BURGER MED POMMES FRITES</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>75200</belop>
+                                <belop>25000</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000818309</dettssid>
                             </trekklinje>
                             <delsum>
-                                <belop>150400</belop>
+                                <belop>45000</belop>
                             </delsum>
                         </enhet>
                         <enhet enhetnr="4819" navn="                         ">
@@ -111,21 +111,21 @@
                                 <navn>DONALD DUCK MED VENNER</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>75200</belop>
+                                <belop>37500</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000815306</dettssid>
                             </trekklinje>
                             <delsum>
-                                <belop>75200</belop>
+                                <belop>37500</belop>
                             </delsum>
                         </enhet>
 
                         <delsumref>
-                            <belop>150400</belop>
+                            <belop>82500</belop>
                         </delsumref>
                     </arkivref>
                     <sumtot>
-                        <belop>225600</belop>
+                        <belop>125000</belop>
                     </sumtot>
                 </UR>
             </variablefelter>
