@@ -56,7 +56,7 @@ data class TrekkKredRapportBestilling(
     data class VariableFelter(@get:JacksonXmlProperty(localName = "UR") val ur: UR)
 
     data class UR(
-        val orgnummer: OrgNr,
+        @JsonDeserialize(using = OrgnnrDeserializer::class) val orgnummer: OrgNr,
         val kreditor: String,
         val kontonummer: Bankkonto,
         @get:JacksonXmlProperty(localName = "tssid") val tssId: String,
@@ -87,7 +87,7 @@ data class TrekkKredRapportBestilling(
 
     data class TrekkLinje(
         @JacksonXmlProperty(localName = "saksref") val saksreferanse: String,
-        @JacksonXmlProperty(localName = "arborgnr") val arbeidgiverOrgnr: OrgNr,
+        @JacksonXmlProperty(localName = "arborgnr") @JsonDeserialize(using = OrgnnrDeserializer::class) val arbeidgiverOrgnr: OrgNr,
         val fnr: Fnr,
         val navn: String,
         @JacksonXmlProperty(localName = "trekkfom") val trekkFOM: String,
@@ -106,4 +106,8 @@ class BelopDeserializer : ValueDeserializer<BigDecimal>() {
 
 class TrimmingDeserializer : ValueDeserializer<String>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = p.string?.trimEnd()
+}
+
+class OrgnnrDeserializer : ValueDeserializer<OrgNr>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = p.string?.trim()?.trimStart('0')?.let { OrgNr(it) }
 }
