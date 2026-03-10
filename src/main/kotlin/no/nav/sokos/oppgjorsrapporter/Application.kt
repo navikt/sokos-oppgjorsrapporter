@@ -199,7 +199,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             applicationState.registerSystem("MQ") { mqErrors }
 
             val exceptionHandler = CoroutineExceptionHandler { _, e ->
-                logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet" }
+                logger.error(TEAM_LOGS_MARKER, e) { "Mottatt alvorlig exception i MQ-subsystemet: $e" }
                 // Ved å legge til en feil på et registrert system, flippes applicationState.ready til `false`
                 mqErrors.add(e.toString())
                 applicationState.alive = false
@@ -282,7 +282,7 @@ private fun httpClient(
         try {
             execute(request)
         } catch (e: Exception) {
-            httpLogger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall mot $loggerName" }
+            httpLogger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall mot $loggerName: $e" }
             throw e
         }
     }

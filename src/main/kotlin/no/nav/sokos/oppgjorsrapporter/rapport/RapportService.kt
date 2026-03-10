@@ -69,7 +69,7 @@ class RapportService(
                 }
                 .onFailure { e ->
                     logger.error { "Prosessering av '${bestilling.genererSom}'-bestilling #${bestilling.id.raw} feilet" }
-                    logger.error(TEAM_LOGS_MARKER, e) { "Prosessering av $bestilling feilet" }
+                    logger.error(TEAM_LOGS_MARKER, e) { "Prosessering av $bestilling feilet: $e" }
                     // Rull tilbake evt. database-endringer som ble gjort av `process` før ting feilet
                     tx.connection.underlying.rollback(savepoint)
 

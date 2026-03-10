@@ -100,7 +100,7 @@ class VarselService(
                 }
                 .onFailure { err ->
                     metrics.tellVarselProsessering(varsel.system, rapportType, operasjon, feilet = true)
-                    logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel:" }
+                    logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel: $err" }
                     val (antall, neste) =
                         with(varsel) {
                             val maxDelay = Duration.ofMinutes(5)
