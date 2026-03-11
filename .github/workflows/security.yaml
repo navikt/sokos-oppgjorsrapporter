@@ -2,12 +2,12 @@ name: Security
 
 on:
   schedule:
-    - cron: '0 6 * * 1'
+    - cron: "0 6 * * 1"
   workflow_dispatch:
 
 permissions:
-  contents: "read"
-  id-token: "write"
+  contents: read
+  id-token: write
   security-events: write
   actions: read
 
@@ -15,7 +15,7 @@ jobs:
   security-analyze-code:
     name: Security analyze
     if: success() || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    uses: navikt/pengeflyt-gha-workflows/.github/workflows/security.yaml@main
+    uses: navikt/pengeflyt-gha-workflows/.github/workflows/security.yaml@fix/security-workflow-for-prosjekter-som-henter-private-dependencies-fra-gar
     secrets: inherit
     with:
-      language: 'kotlin'
+      language: "kotlin"
