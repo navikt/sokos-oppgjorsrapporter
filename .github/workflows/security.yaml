@@ -11,11 +11,16 @@ permissions:
   security-events: write
   actions: read
 
+env:
+  ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
+  ORG_GRADLE_PROJECT_kotlin_daemon_jvmargs: "-Xmx4g"
+
 jobs:
   security-analyze-code:
     name: Security analyze
     if: success() || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    uses: navikt/pengeflyt-gha-workflows/.github/workflows/security.yaml@fix/security-workflow-for-prosjekter-som-henter-private-dependencies-fra-gar
+    uses: navikt/pengeflyt-gha-workflows/.github/workflows/security.yaml@main
     secrets: inherit
     with:
+      team: oppgjorsrapporter
       language: "kotlin"
