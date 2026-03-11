@@ -44,7 +44,7 @@ object TrekkKredPdfMapper {
                             kontonummer = urData.kontonummer?.raw ?: "",
                             adresse = organisasjonsNavnOgAdresse.adresse,
                         ),
-                    enheter = mapEnheter(this),
+                    enheter = mapEnheter(),
                 )
                 .also {
                     if (!it.validerPayload(this)) {
@@ -55,11 +55,11 @@ object TrekkKredPdfMapper {
         return payload
     }
 
-    private fun mapEnheter(bestilling: TrekkKredRapportBestilling): List<Enhet> {
-        val urData = bestilling.brukerData.brevinfo.variableFelter.ur
+    private fun TrekkKredRapportBestilling.mapEnheter(): List<Enhet> {
+        val urData = brukerData.brevinfo.variableFelter.ur
 
         return urData.arkivRefList
-            .flatMap { arkiveRef -> arkiveRef.enhetList }
+            .flatMap { it.enhetList }
             .distinctBy { it.enhetnr }
             .map { enhet ->
                 val arkivReferanser = urData.arkivRefList.filter { arkivRef -> arkivRef.enhetList.any { it.enhetnr == enhet.enhetnr } }
@@ -68,29 +68,33 @@ object TrekkKredPdfMapper {
                     navn = enhet.navn.trim().takeUnless { it.isBlank() } ?: NavEnhet.navnForEnhet(enhet.enhetnr),
                     sumEnhet =
                         urData.arkivRefList
-                            .flatMap { arkiveRef -> arkiveRef.enhetList }
+                            .flatMap { arkivref -> arkivref.enhetList }
                             .filter { it.enhetnr == enhet.enhetnr }
                             .sumOf { it.delsum.belop },
                     orgnr = urData.orgnummer,
-                    arkivreferanser =
-                        arkivReferanser.map { arkivRef ->
-                            val treffListe = arkivRef.enhetList.filter { it.enhetnr == enhet.enhetnr }.flatMap { it.trekkLinjeList }
+                    arkivreferanser = arkivReferanser.map { arkivRef -> arkivRef.mapArkivreferanse(enhet.enhetnr) },
+                )
+            }
+    }
 
-                            Arkivreferanse(
-                                arkivref = arkivRef.nr,
-                                refnrsum = treffListe.sumOf { it.belop }, // arkivRef.delsumRef.belop,
-                                trekk =
-                                    treffListe.map {
-                                        Trekk(
-                                            fnr = it.fnr,
-                                            navn = it.navn,
-                                            saksreferanse = it.saksreferanse,
-                                            periodeFra = it.trekkFOM,
-                                            periodeTil = it.trekkTOM,
-                                            belop = it.belop,
-                                            tssId = it.dettssid,
-                                        )
-                                    },
+    private fun TrekkKredRapportBestilling.ArkivRef.mapArkivreferanse(enhetnr: String): Arkivreferanse {
+        return enhetList
+            .filter { it.enhetnr == enhetnr }
+            .flatMap { it.trekkLinjeList }
+            .let { trekkListe ->
+                Arkivreferanse(
+                    arkivref = nr,
+                    refnrsum = trekkListe.sumOf { it.belop },
+                    trekk =
+                        trekkListe.map {
+                            Trekk(
+                                fnr = it.fnr,
+                                navn = it.navn,
+                                saksreferanse = it.saksreferanse,
+                                periodeFra = it.trekkFOM,
+                                periodeTil = it.trekkTOM,
+                                belop = it.belop,
+                                tssId = it.dettssid,
                             )
                         },
                 )
@@ -100,16 +104,22 @@ object TrekkKredPdfMapper {
     fun TrekkKredRapportPdfPayload.validerPayload(bestilling: TrekkKredRapportBestilling): Boolean {
         let { payload ->
             val urData = bestilling.brukerData.brevinfo.variableFelter.ur
-            val arkivrefs = payload.enheter.flatMap { it.arkivreferanser.map { it.arkivref } }
-            val delsumArkivref =
-                arkivrefs.associateWith { arkivref ->
-                    payload.enheter.flatMap { it.arkivreferanser.filter { it.arkivref == arkivref } }.sumOf { it.refnrsum }
-                }
 
-            val arkivRefSumKorrekt =
-                urData.arkivRefList.all { arkivRef ->
-                    (arkivRef.delsumRef.belop.compareTo(delsumArkivref[arkivRef.nr]) == 0).also {
-                        if (!it) logger.error { "Delsum for arkivref ${arkivRef.nr} er feil" }
+            val arkivrefDelsumMap =
+                payload.enheter
+                    .flatMap { it.arkivreferanser }
+                    .groupBy { it.arkivref }
+                    .mapValues { (_, arkivreferanser) -> arkivreferanser.sumOf { it.refnrsum } }
+
+            val arkivrefSumKorrekt =
+                urData.arkivRefList.all { arkivref ->
+                    val forventetDelsum = arkivref.delsumRef.belop
+                    val faktiskDelsum = arkivrefDelsumMap[arkivref.nr]
+                    (forventetDelsum.compareTo(faktiskDelsum) == 0).also { korrekt ->
+                        if (!korrekt)
+                            logger.error {
+                                "Delsum for arkivref ${arkivref.nr} er feil. Forventet $forventetDelsum, men var $faktiskDelsum"
+                            }
                     }
                 }
 
@@ -117,11 +127,11 @@ object TrekkKredPdfMapper {
             val payloadTotalsum = payload.enheter.sumOf { it.sumEnhet }
 
             val totalsumKorrekt =
-                (totalsum.compareTo(payloadTotalsum) == 0).also {
-                    if (!it) logger.error { "Totalsum er feil for ${urData.orgnummer}. Skulle vært $totalsum, men var $payloadTotalsum" }
+                (totalsum.compareTo(payloadTotalsum) == 0).also { korrekt ->
+                    if (!korrekt) logger.error { "Totalsum er feil for ${urData.orgnummer}. Forventet $totalsum, men var $payloadTotalsum" }
                 }
 
-            return arkivRefSumKorrekt && totalsumKorrekt
+            return arkivrefSumKorrekt && totalsumKorrekt
         }
     }
 }

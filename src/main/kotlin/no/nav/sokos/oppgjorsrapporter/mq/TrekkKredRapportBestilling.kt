@@ -3,7 +3,6 @@ package no.nav.sokos.oppgjorsrapporter.mq
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonRootName
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.time.LocalDate
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
@@ -106,7 +105,13 @@ data class TrekkKredRapportBestilling(
 
 class BelopDeserializer : ValueDeserializer<BigDecimal>() {
     override fun deserialize(p: JsonParser?, ctxt: DeserializationContext?): BigDecimal? {
-        return p?.string?.trim().takeUnless { it.isNullOrBlank() }?.let { BigDecimal(it).divide(BigDecimal(100), 2, RoundingMode.HALF_UP) }
+        val sanitized = p?.string?.trim()?.takeUnless { it.isEmpty() } ?: return null
+        val normalized =
+            when {
+                sanitized.endsWith("-") -> "-" + sanitized.removeSuffix("-")
+                else -> sanitized
+            }
+        return BigDecimal(normalized).movePointLeft(2)
     }
 }
 

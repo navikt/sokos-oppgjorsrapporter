@@ -13,6 +13,7 @@ import tools.jackson.module.kotlin.readValue
 
 class TrekkKredPdfMapperTest :
     FunSpec({
+        val fixedDate = LocalDate.of(2026, 3, 10)
         val onoa = OrganisasjonsNavnOgAdresse(organisasjonsnummer = "123456789", navn = "ONOG ONOG OH NO ONONOGO", adresse = "Onogata 33")
 
         test("Generer trekk-kred payload til pdfgen og valider felter") {
@@ -21,7 +22,7 @@ class TrekkKredPdfMapperTest :
                     TestUtil.readFile("mq/trekk_kred_bestilling_flere_enheter.xml")
                 )
 
-            val payload = bestilling.mapTilTrekkKredRapportPdfPayload(onoa, LocalDate.now())
+            val payload = bestilling.mapTilTrekkKredRapportPdfPayload(onoa, fixedDate)
 
             val jsonPayload = Json.encodeToString(payload)
 
@@ -35,7 +36,7 @@ class TrekkKredPdfMapperTest :
                 )
 
             shouldThrowWithMessage<Exception>("Validering av pdf payload for bestilling feilet") {
-                bestilling.mapTilTrekkKredRapportPdfPayload(onoa, LocalDate.now())
+                bestilling.mapTilTrekkKredRapportPdfPayload(onoa, fixedDate)
             }
         }
     })

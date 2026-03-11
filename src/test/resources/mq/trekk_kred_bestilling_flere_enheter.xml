@@ -28,7 +28,7 @@
                                 <saksref>Molde barnevern</saksref>
                                 <arborgnr>000000003</arborgnr>
                                 <fnr>15267807496</fnr>
-                                <navn>DONALD DUCK MED VENNER</navn>
+                                <navn>Dolly DUCK MED VENNER</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
                                 <belop>10000</belop>
@@ -60,7 +60,7 @@
                                 <saksref>Molde barnevern</saksref>
                                 <arborgnr>000000002</arborgnr>
                                 <fnr>15267807496</fnr>
-                                <navn>DONALD DUCK MED VENNER</navn>
+                                <navn>DeDaDe DaDeDa</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
                                 <belop>17500</belop>
@@ -84,7 +84,7 @@
                                 <navn>JJJJJCCCCCBBB AAAAAAAAAAA</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>20000</belop>
+                                <belop>   20000-</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000818309</dettssid>
                             </trekklinje>
@@ -95,12 +95,12 @@
                                 <navn>BURGER MED POMMES FRITES</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
-                                <belop>25000</belop>
+                                <belop>      25000</belop>
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000818309</dettssid>
                             </trekklinje>
                             <delsum>
-                                <belop>45000</belop>
+                                <belop>    5000</belop>
                             </delsum>
                         </enhet>
                         <enhet enhetnr="4819" navn="                         ">
@@ -108,7 +108,7 @@
                                 <saksref>Molde barnevern</saksref>
                                 <arborgnr>000000004</arborgnr>
                                 <fnr>15267807496</fnr>
-                                <navn>DONALD DUCK MED VENNER</navn>
+                                <navn>Mr DUCK</navn>
                                 <trekkfom>20260201</trekkfom>
                                 <trekktom>20260228</trekktom>
                                 <belop>37500</belop>
@@ -121,11 +121,11 @@
                         </enhet>
 
                         <delsumref>
-                            <belop>82500</belop>
+                            <belop>42500</belop>
                         </delsumref>
                     </arkivref>
                     <sumtot>
-                        <belop>125000</belop>
+                        <belop>85000</belop>
                     </sumtot>
                 </UR>
             </variablefelter>
