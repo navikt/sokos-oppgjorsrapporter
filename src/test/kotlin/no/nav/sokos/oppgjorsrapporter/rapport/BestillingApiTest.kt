@@ -84,10 +84,16 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
 
         val bestilling =
             genererBestilling(
-                orgnr = OrgNr.genererGyldig(),
+                orgnr = // OrgNr.Validert("hovedorg"),
+                OrgNr.genererGyldig(),
                 valutert = LocalDate.now(),
-                underenheter = genSet(1) { OrgNr.genererGyldig() },
-                personer = genSet(10) { randomPerson() },
+                underenheter = // setOf(OrgNr.Validert("underorg")),
+                genSet(1) { OrgNr.genererGyldig() },
+                personer =
+                    genSet(10) { Fnr.genererGyldig(TestPerson.NAV) }
+                        // setOf(Fnr.Validert("person1"), ...),
+                        .map(::randomPerson)
+                        .toSet(),
                 antallPosteringer = 15,
                 ytelser = YtelseType.kjente.shuffled().take(7).toSet(),
             )
@@ -209,8 +215,7 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         }
     }
 
-    fun randomPerson(): Person {
-        val fnr = Fnr.genererGyldig(forTestPerson = TestPerson.NAV)
+    fun randomPerson(fnr: Fnr.Validert): Person {
         val random = Random(fnr.verdi.toLong())
         return Person(fnr, genererNavn(random))
     }
