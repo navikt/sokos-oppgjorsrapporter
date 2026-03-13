@@ -230,9 +230,15 @@ data class RapportAudit(
         tekst = row.stringOrNull("tekst"),
     )
 
+    companion object {
+        internal val systemBrukernavn = "system"
+    }
+
     enum class Hendelse {
         RAPPORT_BESTILLING_MOTTATT,
         RAPPORT_OPPRETTET,
+        RAPPORT_VARSEL_SENDT,
+        RAPPORT_VARSEL_OPPGITT,
         RAPPORT_ARKIVERT,
         RAPPORT_DEARKIVERT,
         VARIANT_OPPRETTET,

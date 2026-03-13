@@ -56,6 +56,21 @@ class VarselRepository {
             .asUpdate
             .let { tx.run(it) }
 
+    fun finnOppgitte(tx: TransactionalSession): List<Varsel> =
+        queryOf(
+                """
+                SELECT v.*
+                FROM rapport.varsel_behov v
+                JOIN rapport.rapport r ON v.rapport_id = r.id
+                WHERE v.oppgitt IS NOT NULL
+                ORDER BY r.opprettet DESC
+                """
+                    .trimIndent()
+            )
+            .map(::Varsel)
+            .asList
+            .let { tx.run(it) }
+
     fun slett(tx: TransactionalSession, varselId: Varsel.Id) {
         return queryOf("DELETE FROM rapport.varsel_behov WHERE id=:id", mapOf("id" to varselId.raw)).asExecute.let { tx.run(it) }
     }

@@ -160,7 +160,7 @@ class RapportRepository(private val clock: Clock) {
                     )
                 }
 
-                is EtterIdKriterier -> {
+                is EtterIdKriterier ->
                     queryOf(
                         """
                         SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
@@ -180,7 +180,24 @@ class RapportRepository(private val clock: Clock) {
                             "etter_id" to kriterier.etterId.raw,
                         ),
                     )
-                }
+
+                is SpesifikkeIderKriterier ->
+                    queryOf(
+                        """
+                        SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
+                               antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
+                        FROM rapport.rapport
+                        WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
+                          AND (arkivert IS NULL OR :inkluderArkiverte)
+                          AND id = ANY(:rapportId)
+                        """
+                            .trimIndent(),
+                        mapOf(
+                            "rapportType" to kriterier.rapportTyper.map { it.name }.toTypedArray(),
+                            "inkluderArkiverte" to kriterier.inkluderArkiverte,
+                            "rapportId" to kriterier.ider.map { it.raw }.toTypedArray(),
+                        ),
+                    )
             }
             .map { row -> Rapport(row) }
             .asList
