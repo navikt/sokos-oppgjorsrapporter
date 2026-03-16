@@ -31,7 +31,7 @@ enum class RapportType(
         fulltNavn = "Oppgjørsrapport arbeidsgiver - refusjoner fra Nav",
         gammelKode = "K27",
         gammelTittel = "NAV - oppgjørsrapport - refusjon av syke- og fødselspenger (rapport K27)",
-        infoSide = "https://www.nav.no/arbeidsgiver-oppgjorsrapport",
+        infoSide = "https://www.nav.no/arbeidsgiver/oppgjorsrapport",
     ),
     @JsonNames("T12")
     `trekk-hend`(
