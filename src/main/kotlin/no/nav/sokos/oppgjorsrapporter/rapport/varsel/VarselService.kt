@@ -82,18 +82,7 @@ class VarselService(
                             if (rapport.dialogportenUuid == null) {
                                 operasjon = "opprette"
                                 opprettDialog(rapport).let { nyDialogUuid ->
-                                    rapportRepository.audit(
-                                        tx,
-                                        RapportAudit(
-                                            RapportAudit.Id(0),
-                                            rapport.id,
-                                            null,
-                                            Instant.now(clock),
-                                            RapportAudit.Hendelse.RAPPORT_VARSEL_SENDT,
-                                            RapportAudit.systemBrukernavn,
-                                            "Opprettet dialog med id $nyDialogUuid",
-                                        ),
-                                    )
+                                    varsel.audit(tx, RapportAudit.Hendelse.RAPPORT_VARSEL_SENDT, "Opprettet dialog med id $nyDialogUuid")
 
                                     if (rapportRepository.settDialogUuid(tx, rapport.id, nyDialogUuid) == 0) {
                                         logger.info { "Noe har satt dialogporten_uuid på ${rapport.id} underveis i jobben med $varsel" }
@@ -118,40 +107,46 @@ class VarselService(
                     if (varsel.antallForsok >= 15) {
                         logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel; vil ikke forsøke flere ganger: $err" }
                         val now = Instant.now(clock)
-                        rapportRepository.audit(
-                            tx,
-                            RapportAudit(
-                                RapportAudit.Id(0),
-                                varsel.rapportId,
-                                null,
-                                now,
-                                RapportAudit.Hendelse.RAPPORT_VARSEL_OPPGITT,
-                                RapportAudit.systemBrukernavn,
-                                null,
-                            ),
-                        )
+                        varsel.audit(tx, RapportAudit.Hendelse.RAPPORT_VARSEL_OPPGITT)
                         val _ = repository.oppdater(tx, varsel.copy(oppgitt = now))
                     } else {
                         logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel: $err" }
-                        val (antall, neste) =
-                            with(varsel) {
-                                val maxDelay = Duration.ofMinutes(5)
-                                val base = 1.5
-                                val baseDelay = Duration.ofMillis(1_000)
-                                val maxJitter = Duration.ofMillis(500)
-                                val vent =
-                                    minOf(
-                                        maxDelay,
-                                        baseDelay
-                                            .multipliedBy(base.pow(antallForsok).toLong())
-                                            .plusMillis(Random.nextLong(maxJitter.toMillis())),
-                                    )
-                                Pair(antallForsok + 1, nesteForsok.plus(vent))
-                            }
-                        val _ = repository.oppdater(tx, varsel.copy(antallForsok = antall, nesteForsok = neste))
+                        val _ = repository.oppdater(tx, exponentiallyBackedOff(varsel))
                     }
                 }
         }
+    }
+
+    private fun Varsel.audit(tx: TransactionalSession, hendelse: RapportAudit.Hendelse, tekst: String? = null) {
+        rapportRepository.audit(
+            tx,
+            RapportAudit(
+                RapportAudit.Id(0),
+                this.rapportId,
+                null,
+                Instant.now(clock),
+                hendelse,
+                RapportAudit.systemBrukernavn,
+                tekst = tekst,
+            ),
+        )
+    }
+
+    private fun exponentiallyBackedOff(varsel: Varsel): Varsel {
+        val (antall, neste) =
+            with(varsel) {
+                val maxDelay = Duration.ofMinutes(5)
+                val base = 1.5
+                val baseDelay = Duration.ofMillis(1_000)
+                val maxJitter = Duration.ofMillis(500)
+                val vent =
+                    minOf(
+                        maxDelay,
+                        baseDelay.multipliedBy(base.pow(antallForsok).toLong()).plusMillis(Random.nextLong(maxJitter.toMillis())),
+                    )
+                Pair(antallForsok + 1, nesteForsok.plus(vent))
+            }
+        return varsel.copy(antallForsok = antall, nesteForsok = neste)
     }
 
     fun finnOppgitte(): List<Pair<Varsel, Rapport>> = withTransaction { tx ->
@@ -159,8 +154,7 @@ class VarselService(
         val rapporter =
             rapportRepository
                 .listRapporter(tx, SpesifikkeIderKriterier(varsler.map { it.rapportId }, RapportType.entries.toSet(), true))
-                .map { it.id to it }
-                .toMap()
+                .associateBy { it.id }
         varsler.map { v ->
             val r = rapporter.get(v.rapportId)
             checkNotNull(r) { "Fant ikke rapport for $v" }
