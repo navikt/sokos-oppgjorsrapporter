@@ -15,10 +15,10 @@ class TrekkKredCsvMapperTest :
 
             println("Versjon 1 med sumlinjer etter alle enheter")
             println("------------------------------------------")
-            println(bestilling.toCsv_V1())
+            println(bestilling.toCsvV1())
             println("\n")
             println("Versjon 2 med sumlinjer etter hver enhet og arkivreferanse")
             println("------------------------------------------")
-            println(bestilling.toCsv_V2())
+            println(bestilling.toCsvV2())
         }
     })

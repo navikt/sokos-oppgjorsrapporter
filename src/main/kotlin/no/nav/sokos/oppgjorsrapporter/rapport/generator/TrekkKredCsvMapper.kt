@@ -5,10 +5,11 @@ import java.time.format.DateTimeFormatter
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.LINJESKIFT
 
-fun TrekkKredRapportBestilling.toCsv_V1(): String {
-    val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
-    fun formaterBigDecimal(bd: BigDecimal) = bd.toString().let { it.dropLast(3) + it.substring(it.length - 2) }
+private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 
+private fun BigDecimal.formater() = toString().let { it.dropLast(3) + it.substring(it.length - 2) }
+
+fun TrekkKredRapportBestilling.toCsvV1(): String {
     val headerLinje =
         "H;" +
             "${brukerData.brevinfo.brevdato.format(dateFormatter)};" +
@@ -35,7 +36,7 @@ fun TrekkKredRapportBestilling.toCsv_V1(): String {
                                 "${it.navn};" +
                                 "${it.trekkFOM};" +
                                 "${it.trekkTOM};" +
-                                "${formaterBigDecimal(it.belop)};" +
+                                "${it.belop.formater()};" +
                                 it.kidStatus
                         }
                     }
@@ -45,32 +46,27 @@ fun TrekkKredRapportBestilling.toCsv_V1(): String {
 
     val sumEnheter =
         "D;${
-            formaterBigDecimal(
-                brukerData.brevinfo
-                    .variableFelter
-                    .ur
-                    .arkivRefList.flatMap { it.enhetList }
-                    .sumOf { enhet -> enhet.delsum.belop })
+            brukerData.brevinfo
+                .variableFelter
+                .ur
+                .arkivRefList.flatMap { it.enhetList }
+                .sumOf { enhet -> enhet.delsum.belop }.formater()
         } "
 
     val sumArkivref =
         "A;${
-            formaterBigDecimal(
-                brukerData.brevinfo
-                    .variableFelter
-                    .ur
-                    .arkivRefList.sumOf { it.delsumRef.belop })
+            brukerData.brevinfo
+                .variableFelter
+                .ur
+                .arkivRefList.sumOf { it.delsumRef.belop }.formater()
         }"
 
-    val sumKreditor = "T;${formaterBigDecimal(brukerData.brevinfo.variableFelter.ur.sumTotal.belop)}"
+    val sumKreditor = "T;${brukerData.brevinfo.variableFelter.ur.sumTotal.belop.formater()}"
 
     return "$headerLinje$LINJESKIFT$trekklinjer$sumEnheter$LINJESKIFT$sumArkivref$LINJESKIFT$sumKreditor"
 }
 
-fun TrekkKredRapportBestilling.toCsv_V2(): String {
-    val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
-    fun formaterBigDecimal(bd: BigDecimal) = bd.toString().let { it.dropLast(3) + it.substring(it.length - 2) }
-
+fun TrekkKredRapportBestilling.toCsvV2(): String {
     val headerLinje =
         "H;" +
             "${brukerData.brevinfo.brevdato.format(dateFormatter)};" +
@@ -85,37 +81,31 @@ fun TrekkKredRapportBestilling.toCsv_V2(): String {
     val trekklinjer =
         with(brukerData.brevinfo.variableFelter.ur) {
             val arkivrefLinjer =
-                arkivRefList
-                    .map { arkivRef ->
-                        val enhetLinjer =
-                            arkivRef.enhetList
-                                .map { enhet ->
-                                    val trekklinjer =
-                                        enhet.trekkLinjeList
-                                            .map {
-                                                "E;" +
-                                                    "${arkivRef.nr};" +
-                                                    "${enhet.enhetnr};" +
-                                                    "${enhet.navn};" +
-                                                    "${it.saksreferanse};" +
-                                                    "${it.arbeidgiverOrgnr};" +
-                                                    "${it.fnr};" +
-                                                    "${it.navn};" +
-                                                    "${it.trekkFOM};" +
-                                                    "${it.trekkTOM};" +
-                                                    "${formaterBigDecimal(it.belop)};" +
-                                                    it.kidStatus
-                                            }
-                                            .joinToString(separator = LINJESKIFT, postfix = LINJESKIFT)
-                                    val sumlinjeEnhet = "D;${formaterBigDecimal(enhet.delsum.belop)}"
-                                    "$trekklinjer$sumlinjeEnhet"
+                arkivRefList.joinToString(separator = LINJESKIFT, postfix = LINJESKIFT) { arkivRef ->
+                    val enhetLinjer =
+                        arkivRef.enhetList.joinToString(separator = LINJESKIFT, postfix = LINJESKIFT) { enhet ->
+                            val trekklinjer =
+                                enhet.trekkLinjeList.joinToString(separator = LINJESKIFT, postfix = LINJESKIFT) {
+                                    "E;" +
+                                        "${arkivRef.nr};" +
+                                        "${enhet.enhetnr};" +
+                                        "${enhet.navn};" +
+                                        "${it.saksreferanse};" +
+                                        "${it.arbeidgiverOrgnr};" +
+                                        "${it.fnr};" +
+                                        "${it.navn};" +
+                                        "${it.trekkFOM};" +
+                                        "${it.trekkTOM};" +
+                                        "${it.belop.formater()};" +
+                                        it.kidStatus
                                 }
-                                .joinToString(separator = LINJESKIFT, postfix = LINJESKIFT)
-                        val sumlinjerArkivref = "A;${formaterBigDecimal(arkivRef.delsumRef.belop)}"
-                        "${enhetLinjer}${sumlinjerArkivref}"
-                    }
-                    .joinToString(separator = LINJESKIFT, postfix = LINJESKIFT)
-            val sumlinjeTotal = "T;${formaterBigDecimal(sumTotal.belop)}$LINJESKIFT"
+                            val sumlinjeEnhet = "D;${enhet.delsum.belop.formater()}"
+                            "$trekklinjer$sumlinjeEnhet"
+                        }
+                    val sumlinjerArkivref = "A;${arkivRef.delsumRef.belop.formater()}"
+                    "${enhetLinjer}${sumlinjerArkivref}"
+                }
+            val sumlinjeTotal = "T;${sumTotal.belop.formater()}$LINJESKIFT"
             arkivrefLinjer + sumlinjeTotal + LINJESKIFT
         }
 

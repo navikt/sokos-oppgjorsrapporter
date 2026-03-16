@@ -189,7 +189,7 @@ data class Trekk(
     val tssId: String,
 )
 
-object BelopSerializer : KSerializer<BigDecimal> {
+private object BelopSerializer : KSerializer<BigDecimal> {
     override val descriptor = PrimitiveSerialDescriptor("java.math.BigDecimal", PrimitiveKind.STRING)
 
     private val symbols = DecimalFormatSymbols(Locale.of("nb", "NO")).apply { groupingSeparator = ' ' }
@@ -209,7 +209,7 @@ object BelopSerializer : KSerializer<BigDecimal> {
         }
 }
 
-object DatoSerializer : KSerializer<LocalDate> {
+private object DatoSerializer : KSerializer<LocalDate> {
     override val descriptor = PrimitiveSerialDescriptor("java.time.LocalDate", PrimitiveKind.STRING)
 
     private var dtf = DateTimeFormatter.ofPattern("dd.MM.yyyy")
