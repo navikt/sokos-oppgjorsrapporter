@@ -12,8 +12,11 @@ import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.utils.OrgNr
+import tools.jackson.module.kotlin.readValue
 
 class BestillingProsessor(
     private val metrics: Metrics,
@@ -86,7 +89,37 @@ class BestillingProsessor(
                             },
                         )
                     }
-
+                    RapportType.`trekk-kred` -> {
+                        val trekkKredRapportBestilling =
+                            TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(bestilling.dokument)
+                        val mottaker = trekkKredRapportBestilling.brukerData.mottaker
+                        val urData = trekkKredRapportBestilling.brukerData.brevinfo.variableFelter.ur
+                        val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(OrgNr(urData.orgnummer.raw))
+                        Pair(
+                            UlagretRapport(
+                                bestillingId = bestilling.id,
+                                orgnr = urData.orgnummer,
+                                orgNavn = OrgNavn(mottaker.navn.fulltNavn),
+                                type = bestilling.genererSom,
+                                datoValutert = trekkKredRapportBestilling.dato,
+                                antallRader = urData.arkivRefList.sumOf { it.enhetList.sumOf { it.trekkLinjeList.size } },
+                                bankkonto = urData.kontonummer,
+                                antallUnderenheter = null,
+                                antallPersoner =
+                                    urData.arkivRefList
+                                        .flatMap { it.enhetList.flatMap { it.trekkLinjeList.map { it.fnr } } }
+                                        .distinct()
+                                        .size,
+                            ),
+                            suspend { variant: VariantFormat ->
+                                when (variant) {
+                                    VariantFormat.Pdf ->
+                                        rapportGenerator.genererPdfInnhold(trekkKredRapportBestilling, organisasjonsNavnOgAdresse)
+                                    VariantFormat.Csv -> rapportGenerator.genererCsvInnhold(trekkKredRapportBestilling)
+                                }
+                            },
+                        )
+                    }
                     else -> error("Vet ikke hvordan bestilling av type ${bestilling.genererSom} skal prosesseres ennå")
                 }
             rapportService.lagreRapport(tx, ulagret).also { rapport ->

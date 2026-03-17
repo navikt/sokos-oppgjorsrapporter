@@ -135,6 +135,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 }
             EregService(config.restEndpoint.eregBaseUrl, client, resolve())
         }
+
         provide<RapportGenerator> {
             val client =
                 httpClient("pdfgen", PdfgenHttpClientSetup) {
@@ -143,7 +144,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                         requestTimeoutMillis = 60_000
                     }
                 }
-            RapportGenerator(config.restEndpoint.pdfGenBaseUrl, client, resolve(), resolve())
+            RapportGenerator(baseUrl = config.restEndpoint.pdfGenBaseUrl, client = client, resolve(), resolve())
         }
 
         if (config.application.profile == PropertiesConfig.Profile.LOCAL) {

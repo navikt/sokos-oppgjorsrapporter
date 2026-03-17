@@ -110,6 +110,49 @@ class BestillingProsessorTest :
                 }
             }
 
+            test("oppretter rapport + varianter når det finnes en uprosessesert trekk-kred bestilling i databasen") {
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = {
+                        dependencies.provide<EregService> {
+                            mockk<EregService>(relaxed = true) {
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
+                                    OrganisasjonsNavnOgAdresse(
+                                        navn = "Test Organisasjon",
+                                        adresse = "Testveien 1, 0123 Oslo",
+                                        organisasjonsnummer = "123456789",
+                                    )
+                            }
+                        }
+                        dependencies.provide<RapportGenerator> {
+                            mockk<RapportGenerator>(relaxed = true) {
+                                coEvery { genererPdfInnhold(any(), any()) } returns ByteString("test pdf content".toByteArray())
+                            }
+                        }
+                    },
+                ) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+                    val rapportService: RapportService = application.dependencies.resolve()
+                    val _ =
+                        rapportService.lagreBestilling(
+                            "test",
+                            RapportType.`trekk-kred`,
+                            TestUtil.readFile("mq/trekk_kred_bestilling_flere_enheter.xml"),
+                        )
+
+                    val sut: BestillingProsessor = application.dependencies.resolve()
+
+                    val rapport = sut.prosesserEnBestilling()!!.getOrThrow()
+                    rapport.antallRader shouldBe 6
+                    rapport.antallUnderenheter shouldBe null
+                    rapport.antallPersoner shouldBe 3
+
+                    val varianter = rapportService.listVarianter(rapport.id)
+                    varianter.size shouldBe 2
+                    varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv, VariantFormat.Pdf)
+                }
+            }
+
             test("jobben for bestillings-prosessering plukker automatisk opp uprosessesert bestillinger og prosesserer dem") {
                 TestUtil.withFullApplication(
                     dbContainer = dbContainer,
