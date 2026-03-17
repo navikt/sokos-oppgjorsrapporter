@@ -15,6 +15,7 @@ import kotlinx.io.bytestring.encodeToByteString
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
@@ -54,10 +55,17 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
                     )
                 }
                 is TrekkKredRapportBestilling -> {
-                    bestilling.mapTilTrekkKredRapportPdfPayload(
-                        organisasjonsNavnOgAdresse = arbeidsgiverNavnOgAdresse,
-                        rapportSendt = LocalDate.now(clock),
-                    )
+                    bestilling
+                        .mapTilTrekkKredRapportPdfPayload(
+                            organisasjonsNavnOgAdresse = arbeidsgiverNavnOgAdresse,
+                            rapportSendt = LocalDate.now(clock),
+                        )
+                        .also {
+                            logger.info {
+                                val json = Json.encodeToString(TrekkKredRapportPdfPayload.serializer(), it)
+                                logger.info(TEAM_LOGS_MARKER) { "Sender json til pdfgen: $json" }
+                            }
+                        }
                 }
             }
         val response =
