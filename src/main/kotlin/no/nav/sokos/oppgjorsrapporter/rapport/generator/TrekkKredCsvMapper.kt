@@ -31,8 +31,8 @@ fun TrekkKredRapportBestilling.toCsvV1(): String {
                                 "${enhet.enhetnr};" +
                                 "${enhet.navn};" +
                                 "${it.saksreferanse};" +
-                                "${it.arbeidgiverOrgnr};" +
-                                "${it.fnr};" +
+                                "${it.arbeidgiverOrgnr.raw};" +
+                                "${it.fnr.raw};" +
                                 "${it.navn};" +
                                 "${it.trekkFOM};" +
                                 "${it.trekkTOM};" +
@@ -91,8 +91,8 @@ fun TrekkKredRapportBestilling.toCsvV2(): String {
                                         "${enhet.enhetnr};" +
                                         "${enhet.navn};" +
                                         "${it.saksreferanse};" +
-                                        "${it.arbeidgiverOrgnr};" +
-                                        "${it.fnr};" +
+                                        "${it.arbeidgiverOrgnr.raw};" +
+                                        "${it.fnr.raw};" +
                                         "${it.navn};" +
                                         "${it.trekkFOM};" +
                                         "${it.trekkTOM};" +
