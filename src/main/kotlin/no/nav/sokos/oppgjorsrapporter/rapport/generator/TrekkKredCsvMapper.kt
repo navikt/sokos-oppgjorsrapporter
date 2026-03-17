@@ -15,9 +15,9 @@ fun TrekkKredRapportBestilling.toCsvV1(): String {
             "${brukerData.brevinfo.brevdato.format(dateFormatter)};" +
             "${brukerData.mottaker.navn.fulltNavn};" +
             "${dato.format(dateFormatter)};" +
-            "${brukerData.brevinfo.variableFelter.ur.orgnummer};" +
+            "${brukerData.brevinfo.variableFelter.ur.orgnummer.raw};" +
             " ;" +
-            "${brukerData.brevinfo.variableFelter.ur.kontonummer};" +
+            "${brukerData.brevinfo.variableFelter.ur.kontonummer?.raw};" +
             "${brukerData.brevinfo.variableFelter.ur.tssId};" +
             "${brukerData.brevinfo.variableFelter.ur.rapportFom.format(dateFormatter)};" +
             "${brukerData.brevinfo.variableFelter.ur.rapportTom.format(dateFormatter)};"
@@ -72,9 +72,9 @@ fun TrekkKredRapportBestilling.toCsvV2(): String {
             "${brukerData.brevinfo.brevdato.format(dateFormatter)};" +
             "${brukerData.mottaker.navn.fulltNavn};" +
             "${dato.format(dateFormatter)};" +
-            "${brukerData.brevinfo.variableFelter.ur.orgnummer};" +
+            "${brukerData.brevinfo.variableFelter.ur.orgnummer.raw};" +
             " ;" +
-            "${brukerData.brevinfo.variableFelter.ur.kontonummer};" +
+            "${brukerData.brevinfo.variableFelter.ur.kontonummer?.raw};" +
             "${brukerData.brevinfo.variableFelter.ur.tssId};" +
             "${brukerData.brevinfo.variableFelter.ur.rapportFom.format(dateFormatter)};" +
             "${brukerData.brevinfo.variableFelter.ur.rapportTom.format(dateFormatter)};"
