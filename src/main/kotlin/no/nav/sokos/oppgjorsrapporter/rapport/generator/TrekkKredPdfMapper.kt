@@ -65,7 +65,7 @@ object TrekkKredPdfMapper {
                 val arkivReferanser = urData.arkivRefList.filter { arkivRef -> arkivRef.enhetList.any { it.enhetnr == enhet.enhetnr } }
 
                 Enhet(
-                    navn = enhet.navn.trim().takeUnless { it.isBlank() } ?: NavEnhet.navnForEnhet(enhet.enhetnr),
+                    navn = NavEnhet.navnForEnhet(enhet.enhetnr),
                     sumEnhet =
                         urData.arkivRefList
                             .flatMap { arkivref -> arkivref.enhetList }
