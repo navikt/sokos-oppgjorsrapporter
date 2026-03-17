@@ -13,6 +13,7 @@ data class Varsel(
     val opprettet: Instant,
     val antallForsok: Int,
     val nesteForsok: Instant,
+    val oppgitt: Instant?,
 ) {
     @JvmInline value class Id(val raw: Long)
 
@@ -25,5 +26,6 @@ data class Varsel(
         opprettet = row.instant("opprettet"),
         antallForsok = row.int("antall_forsok"),
         nesteForsok = row.instant("neste_forsok"),
+        oppgitt = row.instantOrNull("oppgitt"),
     )
 }

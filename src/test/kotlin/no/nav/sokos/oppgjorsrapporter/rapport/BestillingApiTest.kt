@@ -1,9 +1,5 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
-import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.okJson
-import com.github.tomakehurst.wiremock.client.WireMock.stubFor
-import com.github.tomakehurst.wiremock.junit5.WireMockTest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -28,7 +24,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.threeten.extra.MutableClock
 
-@WireMockTest(httpPort = 8090) // Må matche "localhost:8090" i application.conf sin "ereg.base_url"-verdi
 class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T12:00:00Z"), ZoneOffset.UTC)) {
     protected override val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf("group"))
 
@@ -89,10 +84,16 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
 
         val bestilling =
             genererBestilling(
-                orgnr = OrgNr.genererGyldig(),
+                orgnr = // OrgNr.Validert("hovedorg"),
+                OrgNr.genererGyldig(),
                 valutert = LocalDate.now(),
-                underenheter = genSet(1) { OrgNr.genererGyldig() },
-                personer = genSet(10) { randomPerson() },
+                underenheter = // setOf(OrgNr.Validert("underorg")),
+                genSet(1) { OrgNr.genererGyldig() },
+                personer =
+                    genSet(10) { Fnr.genererGyldig(TestPerson.NAV) }
+                        // setOf(Fnr.Validert("person1"), ...),
+                        .map(::randomPerson)
+                        .toSet(),
                 antallPosteringer = 15,
                 ytelser = YtelseType.kjente.shuffled().take(7).toSet(),
             )
@@ -100,22 +101,6 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         // Kommenter inn linja under og kjør denne test-metoden for å få et eksempel på et gyldig JSON-dokument
         // println(dokument)
 
-        stubFor(
-            get("/v2/organisasjon/${bestilling.header.orgnr.raw}/noekkelinfo")
-                .willReturn(
-                    okJson(
-                        """
-                        {
-                            "organisasjonsnummer": "${bestilling.header.orgnr.raw}",
-                            "navn": {
-                                "sammensattnavn": "Organisasjonens Navn"
-                            }
-                        }
-                        """
-                            .trimIndent()
-                    )
-                )
-        )
         val response =
             client()
                 .queryParam("rapportType", "ref-arbg")
@@ -230,8 +215,7 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         }
     }
 
-    fun randomPerson(): Person {
-        val fnr = Fnr.genererGyldig(forTestPerson = TestPerson.NAV)
+    fun randomPerson(fnr: Fnr.Validert): Person {
         val random = Random(fnr.verdi.toLong())
         return Person(fnr, genererNavn(random))
     }

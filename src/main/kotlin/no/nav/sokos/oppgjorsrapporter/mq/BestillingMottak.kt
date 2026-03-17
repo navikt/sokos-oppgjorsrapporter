@@ -80,9 +80,7 @@ class BestillingMottak(
                 consumer.commit()
             } catch (ex: Exception) {
                 consumer.rollback()
-                logger.error(TEAM_LOGS_MARKER, ex) {
-                    "Noe gikk galt; lesing av meldingen fra $queueName er rullet tilbake (kanskje til BOQ)"
-                }
+                logger.error(TEAM_LOGS_MARKER, ex) { "Noe gikk galt; meldingen fra $queueName er rullet tilbake (kanskje til BOQ): $ex" }
             }
         }
     }

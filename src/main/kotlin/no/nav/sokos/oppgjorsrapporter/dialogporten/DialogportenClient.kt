@@ -58,7 +58,7 @@ class DialogportenClient(baseUrl: URI, private val httpClient: HttpClient) {
 
     private fun logAndThrow(msg: String, e: Throwable): Nothing {
         logger.error(msg)
-        logger.error(TEAM_LOGS_MARKER, e) { msg }
+        logger.error(TEAM_LOGS_MARKER, e) { "$msg: $e" }
         throw DialogportenException(msg)
     }
 

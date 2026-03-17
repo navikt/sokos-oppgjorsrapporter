@@ -48,7 +48,6 @@ class RapportService(
     private val metrics: Metrics,
 ) : DatabaseSupport(dataSource) {
     private val logger = KotlinLogging.logger {}
-    private val systemBrukernavn = "system"
 
     fun lagreBestilling(kilde: String, rapportType: RapportType, dokument: String): RapportBestilling = withTransaction {
         repository.lagreBestilling(
@@ -69,7 +68,7 @@ class RapportService(
                 }
                 .onFailure { e ->
                     logger.error { "Prosessering av '${bestilling.genererSom}'-bestilling #${bestilling.id.raw} feilet" }
-                    logger.error(TEAM_LOGS_MARKER, e) { "Prosessering av $bestilling feilet" }
+                    logger.error(TEAM_LOGS_MARKER, e) { "Prosessering av $bestilling feilet: $e" }
                     // Rull tilbake evt. database-endringer som ble gjort av `process` før ting feilet
                     tx.connection.underlying.rollback(savepoint)
 
@@ -111,7 +110,7 @@ class RapportService(
                     null,
                     Instant.now(clock),
                     RapportAudit.Hendelse.RAPPORT_OPPRETTET,
-                    systemBrukernavn,
+                    RapportAudit.systemBrukernavn,
                     null,
                 )
             repository.finnBestilling(tx, rapport.bestillingId)?.let { bestilling ->
@@ -171,7 +170,7 @@ class RapportService(
                     it.id,
                     Instant.now(clock),
                     RapportAudit.Hendelse.VARIANT_OPPRETTET,
-                    systemBrukernavn,
+                    RapportAudit.systemBrukernavn,
                     null,
                 ),
             )
@@ -264,6 +263,12 @@ data class EkskluderOrgKriterier(
 data class EtterIdKriterier(
     val orgnr: OrgNr,
     val etterId: Rapport.Id,
+    override val rapportTyper: Set<RapportType>,
+    override val inkluderArkiverte: Boolean,
+) : RapportKriterier
+
+data class SpesifikkeIderKriterier(
+    val ider: List<Rapport.Id>,
     override val rapportTyper: Set<RapportType>,
     override val inkluderArkiverte: Boolean,
 ) : RapportKriterier

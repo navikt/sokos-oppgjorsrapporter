@@ -23,8 +23,10 @@ import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.GuiAction
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.DatabaseSupport
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportAudit
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.oppgjorsrapporter.rapport.SpesifikkeIderKriterier
 import no.nav.sokos.oppgjorsrapporter.util.tilNorskFormat
 
 enum class VarselSystem {
@@ -80,6 +82,8 @@ class VarselService(
                             if (rapport.dialogportenUuid == null) {
                                 operasjon = "opprette"
                                 opprettDialog(rapport).let { nyDialogUuid ->
+                                    varsel.audit(tx, RapportAudit.Hendelse.RAPPORT_VARSEL_SENDT, "Opprettet dialog med id $nyDialogUuid")
+
                                     if (rapportRepository.settDialogUuid(tx, rapport.id, nyDialogUuid) == 0) {
                                         logger.info { "Noe har satt dialogporten_uuid på ${rapport.id} underveis i jobben med $varsel" }
                                     } else {
@@ -100,24 +104,61 @@ class VarselService(
                 }
                 .onFailure { err ->
                     metrics.tellVarselProsessering(varsel.system, rapportType, operasjon, feilet = true)
-                    logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel:" }
-                    val (antall, neste) =
-                        with(varsel) {
-                            val maxDelay = Duration.ofMinutes(5)
-                            val base = 1.5
-                            val baseDelay = Duration.ofMillis(1_000)
-                            val maxJitter = Duration.ofMillis(500)
-                            val vent =
-                                minOf(
-                                    maxDelay,
-                                    baseDelay
-                                        .multipliedBy(base.pow(antallForsok).toLong())
-                                        .plusMillis(Random.nextLong(maxJitter.toMillis())),
-                                )
-                            Pair(antallForsok + 1, nesteForsok.plus(vent))
-                        }
-                    val _ = repository.oppdater(tx, varsel.copy(antallForsok = antall, nesteForsok = neste))
+                    if (varsel.antallForsok >= 15) {
+                        logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel; vil ikke forsøke flere ganger: $err" }
+                        val now = Instant.now(clock)
+                        varsel.audit(tx, RapportAudit.Hendelse.RAPPORT_VARSEL_OPPGITT)
+                        val _ = repository.oppdater(tx, varsel.copy(oppgitt = now))
+                    } else {
+                        logger.error(TEAM_LOGS_MARKER, err) { "Feil ved sending av $varsel: $err" }
+                        val _ = repository.oppdater(tx, exponentiallyBackedOff(varsel))
+                    }
                 }
+        }
+    }
+
+    private fun Varsel.audit(tx: TransactionalSession, hendelse: RapportAudit.Hendelse, tekst: String? = null) {
+        rapportRepository.audit(
+            tx,
+            RapportAudit(
+                RapportAudit.Id(0),
+                this.rapportId,
+                null,
+                Instant.now(clock),
+                hendelse,
+                RapportAudit.systemBrukernavn,
+                tekst = tekst,
+            ),
+        )
+    }
+
+    private fun exponentiallyBackedOff(varsel: Varsel): Varsel {
+        val (antall, neste) =
+            with(varsel) {
+                val maxDelay = Duration.ofMinutes(5)
+                val base = 1.5
+                val baseDelay = Duration.ofMillis(1_000)
+                val maxJitter = Duration.ofMillis(500)
+                val vent =
+                    minOf(
+                        maxDelay,
+                        baseDelay.multipliedBy(base.pow(antallForsok).toLong()).plusMillis(Random.nextLong(maxJitter.toMillis())),
+                    )
+                Pair(antallForsok + 1, nesteForsok.plus(vent))
+            }
+        return varsel.copy(antallForsok = antall, nesteForsok = neste)
+    }
+
+    fun finnOppgitte(): List<Pair<Varsel, Rapport>> = withTransaction { tx ->
+        val varsler = repository.finnOppgitte(tx)
+        val rapporter =
+            rapportRepository
+                .listRapporter(tx, SpesifikkeIderKriterier(varsler.map { it.rapportId }, RapportType.entries.toSet(), true))
+                .associateBy { it.id }
+        varsler.map { v ->
+            val r = rapporter.get(v.rapportId)
+            checkNotNull(r) { "Fant ikke rapport for $v" }
+            v to r
         }
     }
 
