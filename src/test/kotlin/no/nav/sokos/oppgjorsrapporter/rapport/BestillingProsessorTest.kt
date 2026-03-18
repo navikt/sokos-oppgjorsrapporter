@@ -116,12 +116,14 @@ class BestillingProsessorTest :
                     dependencyOverrides = {
                         dependencies.provide<EregService> {
                             mockk<EregService>(relaxed = true) {
-                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } returns
-                                    OrganisasjonsNavnOgAdresse(
-                                        navn = "Test Organisasjon",
-                                        adresse = "Testveien 1, 0123 Oslo",
-                                        organisasjonsnummer = "123456789",
-                                    )
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } answers
+                                    {
+                                        OrganisasjonsNavnOgAdresse(
+                                            navn = "Test Organisasjon",
+                                            adresse = "Testveien 1, 0123 Oslo",
+                                            organisasjonsnummer = firstArg(),
+                                        )
+                                    }
                             }
                         }
                         dependencies.provide<RapportGenerator> {
@@ -146,6 +148,8 @@ class BestillingProsessorTest :
                     rapport.antallRader shouldBe 6
                     rapport.antallUnderenheter shouldBe null
                     rapport.antallPersoner shouldBe 3
+                    rapport.orgnr.raw shouldBe "921221967"
+                    rapport.orgNavn?.raw shouldBe "Test Organisasjon"
 
                     val varianter = rapportService.listVarianter(rapport.id)
                     varianter.size shouldBe 2
