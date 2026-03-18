@@ -15,7 +15,6 @@ import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
-import no.nav.sokos.utils.OrgNr
 import tools.jackson.module.kotlin.readValue
 
 class BestillingProsessor(
@@ -92,22 +91,26 @@ class BestillingProsessor(
                     RapportType.`trekk-kred` -> {
                         val trekkKredRapportBestilling =
                             TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(bestilling.dokument)
-                        val mottaker = trekkKredRapportBestilling.brukerData.mottaker
                         val urData = trekkKredRapportBestilling.brukerData.brevinfo.variableFelter.ur
-                        val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(OrgNr(urData.orgnummer.raw))
+                        val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(urData.orgnummer)
                         Pair(
                             UlagretRapport(
                                 bestillingId = bestilling.id,
                                 orgnr = urData.orgnummer,
-                                orgNavn = OrgNavn(mottaker.navn.fulltNavn),
+                                orgNavn = OrgNavn(organisasjonsNavnOgAdresse.navn),
                                 type = bestilling.genererSom,
                                 datoValutert = trekkKredRapportBestilling.dato,
-                                antallRader = urData.arkivRefList.sumOf { it.enhetList.sumOf { it.trekkLinjeList.size } },
+                                antallRader =
+                                    urData.arkivRefList.sumOf { arkivref ->
+                                        arkivref.enhetList.sumOf { enhet -> enhet.trekkLinjeList.size }
+                                    },
                                 bankkonto = urData.kontonummer,
                                 antallUnderenheter = null,
                                 antallPersoner =
                                     urData.arkivRefList
-                                        .flatMap { it.enhetList.flatMap { it.trekkLinjeList.map { it.fnr } } }
+                                        .flatMap { it.enhetList }
+                                        .flatMap { it.trekkLinjeList }
+                                        .map { it.fnr }
                                         .distinct()
                                         .size,
                             ),
