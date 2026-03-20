@@ -173,8 +173,8 @@ class VarselService(
                     (if (etterAltinn2()) "" else "Ny Altinn3 - ") +
                         when (rapport.type) {
                             RapportType.`ref-arbg` -> "${rapport.type.fulltNavn} (utbetalt ${rapport.datoValutert.tilNorskFormat()})"
-                            RapportType.`trekk-hend` -> "${rapport.type.fulltNavn} (generert ${rapport.datoValutert.tilNorskFormat()})"
-                            RapportType.`trekk-kred` -> rapport.type.fulltNavn
+                            RapportType.`trekk-hend` -> rapport.type.fulltNavn
+                            RapportType.`trekk-kred` -> "${rapport.type.fulltNavn} (generert ${rapport.datoValutert.tilNorskFormat()})"
                         },
                 summary =
                     if (etterAltinn2()) "Ny rapport for utbetaling er tilgjengelig for nedlasting."
