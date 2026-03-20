@@ -88,13 +88,13 @@ fun Routing.internalNaisRoutes(
         get("isAlive") {
             when (alivenessCheck()) {
                 true -> call.respondText { "I'm alive :)" }
-                else -> call.respondText(text = "I'm dead x_x", status = HttpStatusCode.InternalServerError)
+                false -> call.respondText(text = "I'm dead x_x", status = HttpStatusCode.InternalServerError)
             }
         }
         get("isReady") {
             when (readynessCheck()) {
                 true -> call.respondText { "I'm ready! :)" }
-                else ->
+                false ->
                     call.respondText(text = applicationState.readyErrors().joinToString("\n"), status = HttpStatusCode.InternalServerError)
             }
         }

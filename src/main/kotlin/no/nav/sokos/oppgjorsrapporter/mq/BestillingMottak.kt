@@ -63,7 +63,9 @@ class BestillingMottak(
                             it.enhetList.sumOf { it.trekkLinjeList.size }
                         }
                 }
-                else -> error("Vet ikke hvordan mottatte bestillinger for rapportType ${melding.rapportType} skal håndteres")
+                RapportType.`trekk-hend` -> {
+                    error("Vet ikke hvordan mottatte bestillinger for rapportType ${melding.rapportType} skal håndteres")
+                }
             }
         logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
         val _ = rapportService.lagreBestilling(melding.kilde, melding.rapportType, melding.data)

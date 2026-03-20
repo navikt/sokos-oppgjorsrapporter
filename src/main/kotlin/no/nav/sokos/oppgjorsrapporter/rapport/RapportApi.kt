@@ -132,6 +132,7 @@ fun Route.rapportApi() {
                 // Enn så lenge har vi bare en gruppe definert i `azure:`-delen av nais-specen, så ytterligere autorisasjons-sjekker
                 // er ikke nødvendig
             }
+
             is TokenX -> {
                 if (!pdpService.harTilgang(bruker, setOf(orgnr), rapportType.altinnRessurs)) {
                     logger.info(TEAM_LOGS_MARKER) {
