@@ -88,6 +88,7 @@ class BestillingProsessor(
                             },
                         )
                     }
+
                     RapportType.`trekk-kred` -> {
                         val trekkKredRapportBestilling =
                             TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(bestilling.dokument)
@@ -123,7 +124,10 @@ class BestillingProsessor(
                             },
                         )
                     }
-                    else -> error("Vet ikke hvordan bestilling av type ${bestilling.genererSom} skal prosesseres ennå")
+
+                    RapportType.`trekk-hend` -> {
+                        error("Vet ikke hvordan bestilling av type ${bestilling.genererSom} skal prosesseres ennå")
+                    }
                 }
             rapportService.lagreRapport(tx, ulagret).also { rapport ->
                 VariantFormat.entries
