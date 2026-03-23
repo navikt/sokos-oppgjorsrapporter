@@ -7,6 +7,10 @@ on:
   # ... eller når noen trigger det manuelt
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   update-gradle-wrapper:
     runs-on: ubuntu-latest
