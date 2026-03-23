@@ -10,6 +10,8 @@ on:
 jobs:
   update-gradle-wrapper:
     runs-on: ubuntu-latest
+    env:
+      ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
