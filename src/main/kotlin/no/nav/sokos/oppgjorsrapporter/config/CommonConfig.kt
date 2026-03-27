@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.config
 
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -59,6 +60,9 @@ fun Application.commonConfig() {
         meterBinders += listOf(PostgreSQLDatabaseMetrics(dataSource, applicationConfig.postgres.databaseName))
 
         timers { call, _ ->
+            if (call.request.path().endsWith("/innhold") && call.response.status() == HttpStatusCode.OK) {
+                tag("variant", call.response.headers.get(HttpHeaders.ContentType) ?: "unknown")
+            }
             val validationCtx = call.principal<TokenValidationContextPrincipal>()?.context
             val bruker = validationCtx?.getBruker()?.getOrNull()
             tag("auth_type", bruker?.authType ?: "unknown")
