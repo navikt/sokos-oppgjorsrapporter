@@ -4,6 +4,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.request
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
+import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MultiGauge
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Timer
@@ -15,6 +16,8 @@ import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselSystem
 class Metrics(val registry: PrometheusMeterRegistry) {
     private val NAMESPACE = "sokos_oppgjorsrapporter"
 
+    // Får ikke pre-registrert kjente tag-dimensjoner på denne (slik at Prometheus-skraping ser 0-verdier før første
+    // increase()), siden vi vet ikke hvilke verdier f.eks. "host"-taggen kan ha
     private val clientRequestsTeller =
         Counter.builder("${NAMESPACE}_client_http_requests")
             .description("Teller antall http requests til eksterne APIer")
@@ -33,6 +36,8 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .increment()
     }
 
+    // Får ikke pre-registrert kjente tag-dimensjoner på disse (slik at Prometheus-skraping ser 0-verdier før første
+    // increase()), siden vi vet ikke hvilke verdier "kilde"-taggen kan ha
     private val mottatteBestillingerTeller =
         Counter.builder("${NAMESPACE}_bestilling_mottatt_count").description("Antall mottatte rapport-bestillinger").withRegistry(registry)
     private val mottatteBestillingRaderTeller =
@@ -53,6 +58,8 @@ class Metrics(val registry: PrometheusMeterRegistry) {
 
     fun oppdaterUprosesserteBestillinger(rows: Iterable<MultiGauge.Row<Number>>) = uprosesserteBestillingerGauge.register(rows, true)
 
+    // Får ikke pre-registrert kjente tag-dimensjoner på denne (slik at Prometheus-skraping ser 0-verdier før første
+    // increase()), siden vi vet ikke hvilke verdier "kilde"-taggen kan ha
     private val prosesseringAvBestillingTeller =
         Counter.builder("${NAMESPACE}_bestilling_prosessert_count")
             .description("Antall forsøkte prosesseringer av rapport-bestillinger")
@@ -68,11 +75,14 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .withRegistry(registry)
 
     private val rapportBytesTeller =
-        Counter.builder("${NAMESPACE}_rapport_generert_bytes").description("Bytes med genererte rapporter").withRegistry(registry)
+        Counter.builder("${NAMESPACE}_rapport_generert_bytes").description("Bytes med genererte rapporter").withRegistry(registry).apply {
+            initializeTags("rapporttype" to RapportType.entries.map { it.name }, "format" to VariantFormat.entries.map { it.contentType })
+        }
 
     fun tellGenerertRapportVariant(rapportType: RapportType, format: VariantFormat, bytes: Long) =
         rapportBytesTeller.withTags("rapporttype", rapportType.name, "format", format.contentType).increment(bytes.toDouble())
 
+    // Plain Counters (og ikke Meter.MeterProvider<Counter>), så ingen initializeTags() nødvendig
     private val pdpKallTeller = Counter.builder("${NAMESPACE}_pdp_call_count").description("Antall kall gjort mot PDP").register(registry)
     private val pdpDecisionsTeller =
         Counter.builder("${NAMESPACE}_pdp_decision_count").description("Antall avgjørelser PDP er bedt om").register(registry)
@@ -118,6 +128,14 @@ class Metrics(val registry: PrometheusMeterRegistry) {
         Counter.builder("${NAMESPACE}_varsel_prosessert_count")
             .description("Antall forsøkte prosesseringer av varsler")
             .withRegistry(registry)
+            .apply {
+                initializeTags(
+                    "system" to VarselSystem.entries.map { it.name },
+                    "rapporttype" to (RapportType.entries.map { it.name } + "null"),
+                    "operasjon" to listOf("opprette", "arkiver", "dearkiver", "null"),
+                    "feilet" to listOf(true, false).map { it.toString() },
+                )
+            }
 
     fun tellVarselProsessering(system: VarselSystem, rapportType: RapportType?, operasjon: String?, feilet: Boolean) =
         varselProsessertTeller
@@ -136,4 +154,15 @@ class Metrics(val registry: PrometheusMeterRegistry) {
     // Hjelpefunksjon for å kunne gjøre timing av suspend-funksjoner:
     suspend fun <T> coRecord(timer: (Result<T>) -> Timer, f: suspend () -> T): T =
         Timer.start(registry).let { sample -> runCatching { f() }.also { sample.stop(timer(it)) }.getOrThrow() }
+
+    // Hjelpefunksjon for å kunne pre-registrere kjente labels for en Counter, slik at den kan leses av som 0 allerede før den
+    // .increase()s første gang
+    private fun Meter.MeterProvider<Counter>.initializeTags(vararg labels: Pair<String, Iterable<String>>) {
+        labels
+            .fold(listOf(emptyList())) { tags: List<List<Tag>>, (label, values) ->
+                val labelTags = values.map { Tag.of(label, it) }
+                tags.flatMap { before -> labelTags.map { before + it } }
+            }
+            .forEach { tags -> withTags(tags) }
+    }
 }
