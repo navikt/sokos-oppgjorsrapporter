@@ -1,6 +1,6 @@
 group = "no.nav.sokos"
 
-val flywayVersion = "12.1.0"
+val flywayVersion = "12.1.1"
 val hikariVersion = "7.0.2"
 val ibmMqVersion = "9.4.5.0"
 val janinoVersion = "3.1.12"
@@ -22,18 +22,18 @@ val opentelemetryAnnotationsVersion = "2.26.0"
 val pdpClientVersion = "1.1.0"
 val postgresVersion = "42.7.10"
 val swaggerRequestValidatorVersion = "2.46.0"
-val testcontainersVersion = "2.0.3"
+val testcontainersVersion = "2.0.4"
 val threetenExtraVersion = "1.8.0"
 val tokenSupportVersion = "6.0.0"
 val utilsVersion = "0.10.1"
 
 plugins {
-    val kotlinVersion = "2.3.10"
+    val kotlinVersion = "2.3.20"
 
     application
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
-    id("com.diffplug.spotless") version "8.3.0"
+    id("com.diffplug.spotless") version "8.4.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.7"
 }
 
