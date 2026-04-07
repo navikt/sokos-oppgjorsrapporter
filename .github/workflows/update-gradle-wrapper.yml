@@ -18,7 +18,7 @@ jobs:
       ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # ratchet:actions/checkout@v4
 
       - name: Update Gradle Wrapper
-        uses: gradle-update/update-gradle-wrapper-action@v2
+        uses: gradle-update/update-gradle-wrapper-action@512b1875f3b6270828abfe77b247d5895a2da1e5 # ratchet:gradle-update/update-gradle-wrapper-action@v2

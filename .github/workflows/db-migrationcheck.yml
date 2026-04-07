@@ -12,7 +12,7 @@ jobs:
   squawk_lint_migrations:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # ratchet:actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Find modified migrations
@@ -21,7 +21,7 @@ jobs:
           echo "Migration files: $modified_migrations"
           echo "file_names=$modified_migrations" >> $GITHUB_OUTPUT
         id: modified-migrations
-      - uses: sbdchd/squawk-action@v2
+      - uses: sbdchd/squawk-action@68d739e098ab69cf46c64fdbf6175bb29d195a16 # ratchet:sbdchd/squawk-action@v2
         with:
           files: ${{ steps.modified-migrations.outputs.file_names }}
           config: ".squawk.toml"
