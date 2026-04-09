@@ -16,7 +16,7 @@ info:
 servers:
   - url: https://sokos-oppgjorsrapporter.ekstern.dev.nav.no/
     description: dev
-  - url: https://sokos-oppgjorsrapporter.ekstern.nav.no/
+  - url: https://sokos-oppgjorsrapporter.nav.no/
     description: prod
 
 security:
