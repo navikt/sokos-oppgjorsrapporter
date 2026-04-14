@@ -51,7 +51,7 @@ enum class RapportType(
         // Ut fra koden i altut-t09t14 ser det ut til at meldings-titlene også får en "periode" på slutten; den ignorerer vi i denne
         // sammenhengen
         gammelTittel = "NAV - Trekkoppgjørsrapport (T14)",
-        infoSide = "https://www.nav.no/arbeidsgiver/rapporter",
+        infoSide = "https://www.nav.no/samarbeidspartner/trekkoppgjorsrapport",
     ),
 }
 

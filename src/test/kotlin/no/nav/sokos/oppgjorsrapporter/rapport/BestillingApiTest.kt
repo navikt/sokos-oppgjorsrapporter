@@ -1,8 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.*
 import io.restassured.RestAssured
 import io.restassured.specification.RequestSpecification
 import java.time.Instant
@@ -15,11 +13,7 @@ import no.nav.sokos.oppgjorsrapporter.mq.Header
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.Belop
 import no.nav.sokos.oppgjorsrapporter.toDataSource
-import no.nav.sokos.utils.Bankkonto
-import no.nav.sokos.utils.Fnr
-import no.nav.sokos.utils.OrgNr
-import no.nav.sokos.utils.TestPerson
-import no.nav.sokos.utils.genererGyldig
+import no.nav.sokos.utils.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.threeten.extra.MutableClock
@@ -82,18 +76,41 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
     fun `POST _api_bestilling_v1 (med rapportType=ref-arbg og riktig body) svarer riktig`() {
         TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
 
+        val hovedOrgnr =
+            // Et tilfeldig hoved-orgnr:
+            OrgNr.genererGyldig()
+        // Et spesifikt hoved-orgnr:
+        //            OrgNr.Validert("orgnr")
+
+        val underenheter =
+            // N tilfeldige underenheter:
+            genSet(1) { OrgNr.genererGyldig() }
+        // Spesifikke underenheter:
+        //            setOf(
+        //                OrgNr.Validert("orgnr"),
+        //                OrgNr.Validert("orgnr"),
+        //                OrgNr.Validert("orgnr"),
+        //            )
+
+        val personer =
+            // N tilfeldige personer:
+            genSet(10) { Fnr.genererGyldig(TestPerson.NAV) }.map { randomPerson(it, underenheter) }.toSet()
+        // Spesifikke fnr med tilfeldige underenheter:
+        //            setOf(
+        //                Fnr.Validert("fnr"),
+        //            )
+        //                .map { randomPerson(it, underenheter) }
+        //                .toSet()
+        // Spesifikke fnr med spesifikke underenheter:
+        //            setOf(
+        //                randomPerson(Fnr.Validert("fnr"), setOf(OrgNr.Validert("orgnr"))),
+        //            )
+
         val bestilling =
             genererBestilling(
-                orgnr = // OrgNr.Validert("hovedorg"),
-                OrgNr.genererGyldig(),
+                orgnr = hovedOrgnr,
                 valutert = LocalDate.now(),
-                underenheter = // setOf(OrgNr.Validert("underorg")),
-                genSet(1) { OrgNr.genererGyldig() },
-                personer =
-                    genSet(10) { Fnr.genererGyldig(TestPerson.NAV) }
-                        // setOf(Fnr.Validert("person1"), ...),
-                        .map(::randomPerson)
-                        .toSet(),
+                personer = personer,
                 antallPosteringer = 15,
                 ytelser = YtelseType.kjente.shuffled().take(7).toSet(),
             )
@@ -157,31 +174,29 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         }
     }
 
-    data class Person(val fnr: Fnr.Validert, val navn: String)
+    data class Person(val fnr: Fnr.Validert, val navn: String, val underenheter: Set<OrgNr.Validert>) {
+        init {
+            require(underenheter.isNotEmpty())
+        }
+
+        val underenhetSeq = shuffledIterator(underenheter)
+    }
 
     fun genererBestilling(
         orgnr: OrgNr.Validert,
         valutert: LocalDate,
-        underenheter: Set<OrgNr.Validert>,
         personer: Set<Person>,
         ytelser: Set<YtelseType>,
         antallPosteringer: Int,
     ): RefusjonsRapportBestilling {
         require(valutert <= LocalDate.now()) { "Valutert dato kan ikke være i fremtiden" }
 
-        require(underenheter.size <= antallPosteringer) {
-            "Kan ikke dekke ${underenheter.size} underenheter med bare $antallPosteringer posteringer"
-        }
         require(personer.size <= antallPosteringer) { "Kan ikke dekke ${personer.size} personer med bare $antallPosteringer posteringer" }
         require(ytelser.size <= antallPosteringer) { "Kan ikke dekke ${ytelser.size} ytelser med bare $antallPosteringer posteringer" }
 
         val bankkonto = Bankkonto.genererGyldig()
 
-        fun <T> shuffledIterator(input: Set<T>): Iterator<T> =
-            (input.shuffled().asSequence() + generateSequence { input.random() }).iterator()
-
         val ytelseSeq = shuffledIterator(ytelser)
-        val underenhetSeq = shuffledIterator(underenheter)
         val personSeq = shuffledIterator(personer)
 
         val belopSeq = generateSequence { Belop(Random.nextDouble(30000.toDouble()).toBigDecimal()).verdi }.iterator()
@@ -191,7 +206,7 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
             val person = personSeq.next()
             Data(
                 8020,
-                underenhetSeq.next().somUvalidert(),
+                person.underenhetSeq.next().somUvalidert(),
                 ytelse.kode,
                 ytelse.beskrivelse,
                 person.fnr.somUvalidert(),
@@ -215,9 +230,9 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         }
     }
 
-    fun randomPerson(fnr: Fnr.Validert): Person {
+    fun randomPerson(fnr: Fnr.Validert, underenheter: Set<OrgNr.Validert>): Person {
         val random = Random(fnr.verdi.toLong())
-        return Person(fnr, genererNavn(random))
+        return Person(fnr, genererNavn(random), underenheter.shuffled(random).take(random.nextInt(underenheter.size) + 1).toSet())
     }
 
     fun genererNavn(random: Random): String {
@@ -228,6 +243,8 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
         return (fornavn + etternavn).joinToString(" ")
     }
 }
+
+fun <T> shuffledIterator(input: Set<T>): Iterator<T> = (input.shuffled().asSequence() + generateSequence { input.random() }).iterator()
 
 object NavneData {
     // Sakset fra https://www.ssb.no/befolkning/navn/statistikk/navn
