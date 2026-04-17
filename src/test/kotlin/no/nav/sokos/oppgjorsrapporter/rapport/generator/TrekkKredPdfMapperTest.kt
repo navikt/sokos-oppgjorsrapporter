@@ -19,7 +19,7 @@ class TrekkKredPdfMapperTest :
         test("Generer trekk-kred payload til pdfgen og valider felter") {
             val bestilling =
                 TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(
-                    TestUtil.readFile("mq/trekk_kred_bestilling_flere_enheter.xml")
+                    javaClass.classLoader.getResourceAsStream("mq/trekk_kred_bestilling_flere_enheter.xml")!!
                 )
 
             val payload = bestilling.mapTilTrekkKredRapportPdfPayload(onoa, fixedDate)
@@ -32,7 +32,7 @@ class TrekkKredPdfMapperTest :
         test("Når validering etter mapping feiler så skal det kastes exception") {
             val bestilling =
                 TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(
-                    TestUtil.readFile("mq/trekk_kred_bestilling_flere_enheter_med_feil_summering.xml")
+                    javaClass.classLoader.getResourceAsStream("mq/trekk_kred_bestilling_flere_enheter_med_feil_summering.xml")!!
                 )
 
             shouldThrowWithMessage<Exception>("Validering av pdf payload for bestilling feilet") {

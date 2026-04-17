@@ -38,7 +38,7 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
                 bestilling.tilCSV()
             }
             is TrekkKredRapportBestilling -> {
-                bestilling.toCsvV1()
+                bestilling.toCsv()
             }
         }.encodeToByteString(Charsets.ISO_8859_1)
     }
