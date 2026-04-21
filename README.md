@@ -24,6 +24,18 @@ APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening-frontend](https://g
 
 ## Bygge og kjøre prosjekt
 
+0. Sørg for at Gradle klarer å finne et personal access token (PAT) med `read:packages`-rettighet for `val githubPassword: String by project`
+   * Hvis du ikke allerede har et slikt PAT (f.eks. i `~/.npmrc`), kan det lages [her](https://github.com/settings/tokens):
+     1. Trykk "Generate new token"
+     2. Velg "classic"
+     3. Fyll inn `Note`, sett `Expiration` til nokså langt inn i fremtiden (eller evig), sett kryss for `read:packages`
+     4. Trykk på "Generate token"
+   * Det finnes en del måter å overbevise Gradle om at `githubPassword: String by project` skal resolve til tokenet; en er å
+     legge inn en linje a la dette i `~/.gradle/gradle.properties`:
+
+       ```
+       githubPassword=ghp_......
+       ```
 1. Bygg prosjektet ved å kjøre `./gradlew installDist`
 2. Start appen lokalt ved å kjøre main metoden i ***Application.kt***
 3. Siden en del av testene benytter [testcontainers](https://testcontainers.com/), trenger man et fungerende Docker-kompatibelt "container runtime" på maskinen man skal kjøre på; se
