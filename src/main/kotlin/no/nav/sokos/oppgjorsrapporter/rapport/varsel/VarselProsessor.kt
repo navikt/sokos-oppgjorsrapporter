@@ -8,6 +8,7 @@ import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.BakgrunnsJobb
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
+import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
 
 class VarselProsessor(private val varselService: VarselService, applicationState: ApplicationState) : BakgrunnsJobb(applicationState) {
     private val logger: KLogger = KotlinLogging.logger {}
@@ -40,5 +41,5 @@ class VarselProsessor(private val varselService: VarselService, applicationState
         }
     }
 
-    @WithSpan private fun prosesserEtVarsel(): Result<Varsel>? = varselService.sendVarsel()
+    @WithSpan private fun prosesserEtVarsel(): Result<Varsel>? = handleSpanException { varselService.sendVarsel() }
 }

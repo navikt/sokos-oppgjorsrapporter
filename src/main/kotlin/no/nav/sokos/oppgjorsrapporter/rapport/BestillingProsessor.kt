@@ -15,6 +15,7 @@ import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
 import tools.jackson.module.kotlin.readValue
 
 class BestillingProsessor(
@@ -59,7 +60,7 @@ class BestillingProsessor(
     }
 
     @WithSpan
-    fun prosesserEnBestilling(): Result<Rapport>? =
+    fun prosesserEnBestilling(): Result<Rapport>? = handleSpanException {
         rapportService.prosesserBestilling { tx, bestilling ->
             val (ulagret: UlagretRapport, generator: (suspend (VariantFormat) -> ByteString?)) =
                 when (bestilling.genererSom) {
@@ -161,4 +162,5 @@ class BestillingProsessor(
                 varselService.registrerVarsel(tx, rapport)
             }
         }
+    }
 }

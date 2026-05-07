@@ -79,6 +79,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
 
 private val logger = KotlinLogging.logger {}
 
@@ -302,12 +303,14 @@ abstract class BakgrunnsJobb(private val applicationState: ApplicationState) {
 
     @WithSpan
     suspend fun whenEnabled(block: suspend () -> Unit) {
-        currentCoroutineContext().ensureActive()
-        if (applicationState.disabledBackgroundJobs.contains(this::class)) {
-            logger.trace { "${javaClass.simpleName}.run() disablet" }
-            delay(1.seconds)
-        } else {
-            block()
+        handleSpanException {
+            currentCoroutineContext().ensureActive()
+            if (applicationState.disabledBackgroundJobs.contains(this::class)) {
+                logger.trace { "${javaClass.simpleName}.run() disablet" }
+                delay(1.seconds)
+            } else {
+                block()
+            }
         }
     }
 }
