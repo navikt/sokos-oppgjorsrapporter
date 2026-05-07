@@ -40,7 +40,7 @@ enum class RapportType(
         fulltNavn = "Trekkhendelser - tilbakemelding fra Nav",
         gammelKode = "T12",
         gammelTittel = "NAV - Trekkhendelser til kreditor og namsmann (T12)", // Gjetning
-        infoSide = "https://www.nav.no/arbeidsgiver/rapporter",
+        infoSide = "https://www.nav.no/samarbeidspartner/manglende-trekk",
     ),
     @JsonNames("T14")
     `trekk-kred`(
