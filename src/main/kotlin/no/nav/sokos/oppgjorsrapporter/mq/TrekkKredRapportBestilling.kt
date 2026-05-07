@@ -55,7 +55,7 @@ data class TrekkKredRapportBestilling(
     data class VariableFelter(@get:JacksonXmlProperty(localName = "UR") val ur: UR)
 
     data class UR(
-        @JsonDeserialize(using = OrgnnrDeserializer::class) val orgnummer: OrgNr,
+        @JsonDeserialize(using = OrgnrDeserializer::class) val orgnummer: OrgNr,
         val kreditor: String,
         @JsonDeserialize(using = BankkontoDeserializer::class) val kontonummer: Bankkonto?,
         @get:JacksonXmlProperty(localName = "tssid") val tssId: String,
@@ -88,7 +88,7 @@ data class TrekkKredRapportBestilling(
 
     data class TrekkLinje(
         @get:JacksonXmlProperty(localName = "saksref") val saksreferanse: String,
-        @get:JacksonXmlProperty(localName = "arborgnr") @JsonDeserialize(using = OrgnnrDeserializer::class) val arbeidgiverOrgnr: OrgNr,
+        @get:JacksonXmlProperty(localName = "arborgnr") @JsonDeserialize(using = OrgnrDeserializer::class) val arbeidgiverOrgnr: OrgNr,
         val fnr: Fnr,
         val navn: String,
         @get:JacksonXmlProperty(localName = "trekkfom")
@@ -119,8 +119,23 @@ class TrimmingDeserializer : ValueDeserializer<String>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = p.string?.trimEnd()
 }
 
-class OrgnnrDeserializer : ValueDeserializer<OrgNr>() {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = p.string?.trim()?.trimStart('0')?.let { OrgNr(it) }
+class OrgnrDeserializer : ValueDeserializer<OrgNr>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext) =
+        p.string
+            ?.trim()
+            ?.let { trimmed ->
+                if (trimmed.all { it == '0' }) {
+                    ""
+                } else {
+                    val børKuttes = trimmed.length - 9
+                    if (børKuttes > 0 && trimmed.take(børKuttes).all { it == '0' }) {
+                        trimmed.drop(børKuttes)
+                    } else {
+                        trimmed
+                    }
+                }
+            }
+            ?.let { OrgNr(it) }
 }
 
 class BankkontoDeserializer : ValueDeserializer<Bankkonto?>() {
