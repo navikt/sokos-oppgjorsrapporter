@@ -145,7 +145,13 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                         requestTimeoutMillis = 60_000
                     }
                 }
-            RapportGenerator(baseUrl = config.restEndpoint.pdfGenBaseUrl, client = client, resolve(), resolve())
+            RapportGenerator(
+                pdfgenBaseUrl = config.restEndpoint.pdfgenBaseUrl,
+                pdfgenrsBaseUrl = config.restEndpoint.pdfgenrsBaseUrl,
+                client = client,
+                resolve(),
+                resolve(),
+            )
         }
 
         if (config.application.profile == PropertiesConfig.Profile.LOCAL) {
