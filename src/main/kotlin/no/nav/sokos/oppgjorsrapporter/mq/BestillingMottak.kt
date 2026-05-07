@@ -66,7 +66,8 @@ class BestillingMottak(
                             }
                     }
                     RapportType.`trekk-hend` -> {
-                        error("Vet ikke hvordan mottatte bestillinger for rapportType ${melding.rapportType} skal håndteres")
+                        val bestilling = TrekkHendBestilling.decode(melding.data)
+                        bestilling to with(bestilling.trekkhendelse) { (namsmannMelding?.size ?: 0) + (kreditorMelding?.size ?: 0) }
                     }
                 }
             logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }

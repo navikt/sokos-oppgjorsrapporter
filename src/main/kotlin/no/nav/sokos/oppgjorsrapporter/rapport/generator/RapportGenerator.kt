@@ -21,6 +21,7 @@ import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.RapportBestillingMsg
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.TrekkHendBestilling
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.tilCSV
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.TrekkKredPdfMapper.mapTilTrekkKredRapportPdfPayload
@@ -40,6 +41,7 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
             is TrekkKredRapportBestilling -> {
                 bestilling.toCsv()
             }
+            is TrekkHendBestilling -> TODO()
         }.encodeToByteString(Charsets.ISO_8859_1)
     }
 
@@ -67,6 +69,7 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
                             }
                         }
                 }
+                is TrekkHendBestilling -> TODO()
             }
         val response =
             client.post(pdfgenUrl) {
@@ -94,6 +97,7 @@ class RapportGenerator(private val baseUrl: URI, private val client: HttpClient,
         when (this) {
             is RefusjonsRapportBestilling -> baseUrl.resolve(REFUSJON_ARBG_PDFGEN_PATH).toURL()
             is TrekkKredRapportBestilling -> baseUrl.resolve(TREKK_KRED_PDFGEN_PATH).toURL()
+            is TrekkHendBestilling -> TODO()
         }
 }
 
