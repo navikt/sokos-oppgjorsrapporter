@@ -59,10 +59,16 @@ class RapportGenerator(
             when (bestilling) {
                 is RefusjonsRapportBestilling -> {
                     RefusjonsRapportPdfPayload(
-                        bestilling = bestilling,
-                        organisasjonsNavnOgAdresse = arbeidsgiverNavnOgAdresse,
-                        rapportSendt = LocalDate.now(clock),
-                    )
+                            bestilling = bestilling,
+                            organisasjonsNavnOgAdresse = arbeidsgiverNavnOgAdresse,
+                            rapportSendt = LocalDate.now(clock),
+                        )
+                        .also { payload ->
+                            logger.debug {
+                                val json = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
+                                logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgen: $json" }
+                            }
+                        }
                 }
                 is TrekkKredRapportBestilling -> {
                     bestilling
@@ -70,10 +76,10 @@ class RapportGenerator(
                             organisasjonsNavnOgAdresse = arbeidsgiverNavnOgAdresse,
                             rapportSendt = LocalDate.now(clock),
                         )
-                        .also {
-                            logger.info {
-                                val json = Json.encodeToString(TrekkKredRapportPdfPayload.serializer(), it)
-                                logger.info(TEAM_LOGS_MARKER) { "Sender json til pdfgen: $json" }
+                        .also { payload ->
+                            logger.debug {
+                                val json = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
+                                logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgen: $json" }
                             }
                         }
                 }
