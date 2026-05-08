@@ -8,7 +8,7 @@ import no.nav.sokos.oppgjorsrapporter.util.tilNorskFormat
 
 fun TrekkHendBestilling.toCsv(): String {
     val headerLinje =
-        listOf<String>(
+        listOf(
                 "H",
                 typeMottaker.name,
                 dato.tilNorskFormat(),
@@ -21,14 +21,14 @@ fun TrekkHendBestilling.toCsv(): String {
                 orgAdresse?.poststed ?: "",
                 orgAdresse?.land ?: "",
             )
-            .joinToString(";")
+            .let { kolonner: List<String> -> kolonner.joinToString(";") }
 
     val trekklinjer =
         with(trekkhendelse) {
             when (typeMottaker) {
                 TrekkHendBestilling.TypeMottaker.kreditor -> {
                     kreditorMelding!!.map { melding ->
-                        listOf<String>(
+                        listOf(
                             "T",
                             melding.namsmannsOrgNr.raw,
                             melding.namsmannsNavn,
@@ -43,7 +43,7 @@ fun TrekkHendBestilling.toCsv(): String {
 
                 TrekkHendBestilling.TypeMottaker.namsmann -> {
                     namsmannMelding!!.map { melding ->
-                        listOf<String>(
+                        listOf(
                             "T",
                             melding.kreditorsOrgNr.raw,
                             melding.kreditorsNavn,
@@ -55,7 +55,7 @@ fun TrekkHendBestilling.toCsv(): String {
                         )
                     }
                 }
-            }.map { it.joinToString(";") }
+            }.map { kolonner: List<String> -> kolonner.joinToString(";") }
         }
     return listOf(headerLinje, *trekklinjer.toTypedArray()).joinToString(LINJESKIFT, postfix = LINJESKIFT)
 }
