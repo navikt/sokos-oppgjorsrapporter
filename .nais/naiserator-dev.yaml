@@ -92,6 +92,7 @@ spec:
           namespace: arbeidsforhold
           cluster: dev-fss
         - application: pengeflyt-pdfgen
+        - application: pengeflyt-pdfgenrs
   envFrom:
     - secret: altinn-authorization-subscription
     - secret: sokos-oppgjorsrapporter-secrets

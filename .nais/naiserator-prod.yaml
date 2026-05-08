@@ -85,6 +85,7 @@ spec:
         - application: logging
           namespace: nais-system
         - application: pengeflyt-pdfgen
+        - application: pengeflyt-pdfgenrs
   envFrom:
     - secret: altinn-authorization-subscription
     - secret: sokos-oppgjorsrapporter-secrets
