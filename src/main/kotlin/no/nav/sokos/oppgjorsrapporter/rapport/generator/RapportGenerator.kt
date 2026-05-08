@@ -28,7 +28,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.TrekkKredPdfMapper.mapTi
 
 private const val REFUSJON_ARBG_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/refusjon-arbg-sortert-etter-ytelse"
 private const val TREKK_KRED_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/T14"
-private const val TREKK_HEND_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/trekk-kred"
+private const val TREKK_HEND_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/trekk-hend"
 
 class RapportGenerator(
     private val pdfgenBaseUrl: URI,
