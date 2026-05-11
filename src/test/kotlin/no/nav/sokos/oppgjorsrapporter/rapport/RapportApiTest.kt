@@ -830,6 +830,28 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
     }
 
     @Test
+    fun `GET _api_rapport_v1_$id (for trekk-hend id som finnes) svarer riktig - med null bankkonto`() {
+        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        val response = client().get("/api/rapport/v1/7").then().assertThat().statusCode(HttpStatusCode.OK.value).extract().response()!!
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                {
+                    "id": 7,
+                    "orgnr": "567890123",
+                    "orgNavn": "Test Organisasjon E",
+                    "type": "trekk-hend",
+                    "datoValutert": "2026-05-10",
+                    "bankkonto": null,
+                    "opprettet": "2026-05-09T22:13:54Z",
+                    "arkivert": false
+                }
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
     fun `GET _api_rapport_v1_$id_innhold (for id som ikke finnes) gir feilmelding`() {
         TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val NON_EXISTENT_ID = 4711
