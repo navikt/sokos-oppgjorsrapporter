@@ -56,7 +56,7 @@ class BestillingProsessorTest :
                 }
             }
 
-            test("oppretter rapport + varianter når det finnes en uprosessesert bestilling i databasen") {
+            test("oppretter rapport + varianter når det finnes en `ref-arbg`-bestilling i databasen") {
                 TestUtil.withFullApplication(
                     dbContainer = dbContainer,
                     dependencyOverrides = {
@@ -110,7 +110,7 @@ class BestillingProsessorTest :
                 }
             }
 
-            test("oppretter rapport + varianter når det finnes en uprosessesert trekk-kred bestilling i databasen") {
+            test("oppretter rapport + varianter når det finnes en uprosessesert `trekk-kred`-bestilling i databasen") {
                 TestUtil.withFullApplication(
                     dbContainer = dbContainer,
                     dependencyOverrides = {
@@ -150,6 +150,100 @@ class BestillingProsessorTest :
                     rapport.antallPersoner shouldBe 3
                     rapport.orgnr.raw shouldBe "921221967"
                     rapport.orgNavn?.raw shouldBe "Test Organisasjon"
+
+                    val varianter = rapportService.listVarianter(rapport.id)
+                    varianter.size shouldBe 2
+                    varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv, VariantFormat.Pdf)
+                }
+            }
+
+            test("oppretter rapport + varianter når det finnes en uprosessesert `trekk-hend`/kreditor-bestilling i databasen") {
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = {
+                        dependencies.provide<EregService> {
+                            mockk<EregService>(relaxed = true) {
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } answers
+                                    {
+                                        OrganisasjonsNavnOgAdresse(
+                                            navn = "Test Organisasjon",
+                                            adresse = "Testveien 1, 0123 Oslo",
+                                            organisasjonsnummer = firstArg(),
+                                        )
+                                    }
+                            }
+                        }
+                        dependencies.provide<RapportGenerator> {
+                            mockk<RapportGenerator>(relaxed = true) {
+                                coEvery { genererPdfInnhold(any(), any()) } returns ByteString("test pdf content".toByteArray())
+                            }
+                        }
+                    },
+                ) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+                    val rapportService: RapportService = application.dependencies.resolve()
+                    val _ =
+                        rapportService.lagreBestilling(
+                            "test",
+                            RapportType.`trekk-hend`,
+                            TestUtil.readFile("mq/trekk_hend_bestilling-kreditor.xml"),
+                        )
+
+                    val sut: BestillingProsessor = application.dependencies.resolve()
+
+                    val rapport = sut.prosesserEnBestilling()!!.getOrThrow()
+                    rapport.antallRader shouldBe 2
+                    rapport.antallUnderenheter shouldBe null
+                    rapport.antallPersoner shouldBe 2
+                    rapport.orgnr.raw shouldBe "859503241"
+                    rapport.orgNavn?.raw shouldBe "McDuck inkasso AS"
+
+                    val varianter = rapportService.listVarianter(rapport.id)
+                    varianter.size shouldBe 2
+                    varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv, VariantFormat.Pdf)
+                }
+            }
+
+            test("oppretter rapport + varianter når det finnes en uprosessesert `trekk-hend`/namsmann-bestilling i databasen") {
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    dependencyOverrides = {
+                        dependencies.provide<EregService> {
+                            mockk<EregService>(relaxed = true) {
+                                coEvery { hentOrganisasjonsNavnOgAdresse(any()) } answers
+                                    {
+                                        OrganisasjonsNavnOgAdresse(
+                                            navn = "Test Organisasjon",
+                                            adresse = "Testveien 1, 0123 Oslo",
+                                            organisasjonsnummer = firstArg(),
+                                        )
+                                    }
+                            }
+                        }
+                        dependencies.provide<RapportGenerator> {
+                            mockk<RapportGenerator>(relaxed = true) {
+                                coEvery { genererPdfInnhold(any(), any()) } returns ByteString("test pdf content".toByteArray())
+                            }
+                        }
+                    },
+                ) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+                    val rapportService: RapportService = application.dependencies.resolve()
+                    val _ =
+                        rapportService.lagreBestilling(
+                            "test",
+                            RapportType.`trekk-hend`,
+                            TestUtil.readFile("mq/trekk_hend_bestilling-namsmann.xml"),
+                        )
+
+                    val sut: BestillingProsessor = application.dependencies.resolve()
+
+                    val rapport = sut.prosesserEnBestilling()!!.getOrThrow()
+                    rapport.antallRader shouldBe 3
+                    rapport.antallUnderenheter shouldBe null
+                    rapport.antallPersoner shouldBe 3
+                    rapport.orgnr.raw shouldBe "087453421"
+                    rapport.orgNavn?.raw shouldBe "NAMSFOGDEN I ANDEBY"
 
                     val varianter = rapportService.listVarianter(rapport.id)
                     varianter.size shouldBe 2

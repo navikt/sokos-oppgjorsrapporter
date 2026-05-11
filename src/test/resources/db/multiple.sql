@@ -7,9 +7,9 @@ VALUES
     (3, '2023-11-01T11:57:20+0100', 'MQ', 'todo', 'ref-arbg', '2023-11-01T11:57:22+0100', NULL),
     (4, '2023-11-01T11:57:20+0100', 'MQ', 'todo', 'ref-arbg', '2023-11-01T11:57:22+0100', NULL),
     (5, '2023-12-31T23:58:26+0100', 'MQ', 'todo', 'ref-arbg', '2023-12-31T23:58:28+0100', NULL),
-    (6, '2024-01-01T00:13:53+0100', 'MQ', 'todo', 'ref-arbg', '2024-01-01T00:13:55+0100', NULL)
+    (6, '2024-01-01T00:13:53+0100', 'MQ', 'todo', 'ref-arbg', '2024-01-01T00:13:55+0100', NULL),
+    (7, '2026-05-10T00:13:53+0200', 'MQ', 'todo', 'trekk-hend', '2026-05-10T00:13:55+0200', NULL)
 ;
-
 
 INSERT INTO rapport (id, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert)
 VALUES
@@ -18,7 +18,8 @@ VALUES
     (3, 3, '234567890', 'Test Organisasjon B', 'ref-arbg', '2023-11-01', '23456789012', 1, 1, 1, '2023-11-01T11:57:21+0100', null),
     (4, 4, '345678901', 'Test Organisasjon C', 'ref-arbg', '2023-11-01', '34567890123', 1, 1, 1, '2023-11-01T11:57:21+0100', '2023-11-15T08:14:41+0100'),
     (5, 5, '456789012', 'Test Organisasjon D', 'ref-arbg', '2023-12-31', '45678901234', 1, 1, 1, '2023-12-31T23:58:27+0100', null),
-    (6, 6, '456789012', 'Test Organisasjon D', 'ref-arbg', '2024-01-01', '45678901234', 1, 1, 1, '2024-01-01T00:13:54+0100', null)
+    (6, 6, '456789012', 'Test Organisasjon D', 'ref-arbg', '2024-01-01', '45678901234', 1, 1, 1, '2024-01-01T00:13:54+0100', null),
+    (7, 7, '567890123', 'Test Organisasjon E', 'trekk-hend', '2026-05-10', NULL, 1, 1, 1, '2026-05-10T00:13:54+0200', null)
 ;
 
 INSERT INTO rapport_variant (id, rapport_id, format, filnavn, innhold)
@@ -34,5 +35,7 @@ VALUES
     (9, 5, 'application/pdf', '456789012_ref-arbg_2023-12-31.pdf', 'PDF\0005'),
     (10, 5, 'text/csv', '456789012_ref-arbg_2023-12-31.csv', 'CSV\0005'),
     (11, 6, 'application/pdf', '456789012_ref-arbg_2024-11-01.pdf', 'PDF\0006'),
-    (12, 6, 'text/csv', '456789012_ref-arbg_2024-11-01.csv', 'CSV\0006')
+    (12, 6, 'text/csv', '456789012_ref-arbg_2024-11-01.csv', 'CSV\0006'),
+    (13, 7, 'application/pdf', '567890123_trekk-hend_2026-05-10.pdf', 'PDF\0007'),
+    (14, 7, 'text/csv', '567890123_trekk-hend_2026-05-10.csv', 'CSV\0007')
 ;

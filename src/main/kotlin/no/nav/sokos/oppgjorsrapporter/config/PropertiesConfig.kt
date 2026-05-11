@@ -91,10 +91,14 @@ object PropertiesConfig {
         )
     }
 
-    data class RestEndpointProperties(val eregBaseUrl: URI, val pdfGenBaseUrl: URI) {
+    data class RestEndpointProperties(val eregBaseUrl: URI, val pdfgenBaseUrl: URI, val pdfgenrsBaseUrl: URI) {
         constructor(
             source: ConfigSource
-        ) : this(eregBaseUrl = URI.create(source.get("ereg.base_url")), pdfGenBaseUrl = URI.create(source.get("pdfgen.base_url")))
+        ) : this(
+            eregBaseUrl = URI.create(source.get("ereg.base_url")),
+            pdfgenBaseUrl = URI.create(source.get("pdfgen.base_url")),
+            pdfgenrsBaseUrl = URI.create(source.get("pdfgen.rs_base_url")),
+        )
     }
 
     data class PostgresProperties(val adminJdbcUrl: String, val queryJdbcUrl: String, val databaseName: String) {

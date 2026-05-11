@@ -12,9 +12,11 @@ import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.mq.TrekkHendBestilling
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
 import tools.jackson.module.kotlin.readValue
 
 class BestillingProsessor(
@@ -59,7 +61,7 @@ class BestillingProsessor(
     }
 
     @WithSpan
-    fun prosesserEnBestilling(): Result<Rapport>? =
+    fun prosesserEnBestilling(): Result<Rapport>? = handleSpanException {
         rapportService.prosesserBestilling { tx, bestilling ->
             val (ulagret: UlagretRapport, generator: (suspend (VariantFormat) -> ByteString?)) =
                 when (bestilling.genererSom) {
@@ -126,7 +128,34 @@ class BestillingProsessor(
                     }
 
                     RapportType.`trekk-hend` -> {
-                        error("Vet ikke hvordan bestilling av type ${bestilling.genererSom} skal prosesseres ennå")
+                        val trekkHendRapportBestilling = TrekkHendBestilling.decode(bestilling.dokument)
+                        val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(trekkHendRapportBestilling.orgNr)
+                        Pair(
+                            UlagretRapport(
+                                bestillingId = bestilling.id,
+                                orgnr = trekkHendRapportBestilling.orgNr,
+                                orgNavn = trekkHendRapportBestilling.orgNavn?.let { OrgNavn(it) },
+                                type = bestilling.genererSom,
+                                datoValutert = trekkHendRapportBestilling.dato,
+                                antallRader =
+                                    with(trekkHendRapportBestilling.trekkhendelse) { kreditorMelding?.size ?: namsmannMelding?.size ?: 0 },
+                                bankkonto = null,
+                                antallUnderenheter = null,
+                                antallPersoner =
+                                    with(trekkHendRapportBestilling.trekkhendelse) {
+                                        (kreditorMelding?.map { it.debitorsFnr } ?: namsmannMelding?.map { it.debitorsFnr } ?: emptyList())
+                                            .distinct()
+                                            .size
+                                    },
+                            ),
+                            suspend { variant: VariantFormat ->
+                                when (variant) {
+                                    VariantFormat.Pdf ->
+                                        rapportGenerator.genererPdfInnhold(trekkHendRapportBestilling, organisasjonsNavnOgAdresse)
+                                    VariantFormat.Csv -> rapportGenerator.genererCsvInnhold(trekkHendRapportBestilling)
+                                }
+                            },
+                        )
                     }
                 }
             rapportService.lagreRapport(tx, ulagret).also { rapport ->
@@ -161,4 +190,5 @@ class BestillingProsessor(
                 varselService.registrerVarsel(tx, rapport)
             }
         }
+    }
 }

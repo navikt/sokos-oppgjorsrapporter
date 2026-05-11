@@ -39,7 +39,7 @@ class BestillingMottakTest :
                     }
                 }
 
-            test("BestillingMottak klarer å hente meldinger fra MQ") {
+            test("BestillingMottak klarer å hente en gyldig 'ref-arbg'-melding fra MQ") {
                 val rapportService: RapportService = mockk(relaxed = true)
                 val eregService: EregService = mockk()
                 coEvery { eregService.hentNoekkelInfo(any()) } answers { Organisasjon(firstArg(), Navn("Et navn")) }
@@ -68,7 +68,7 @@ class BestillingMottakTest :
                 }
             }
 
-            test("BestillingMottak klarer å hente trekk kred meldinger fra MQ") {
+            test("BestillingMottak klarer å hente en gyldig 'trekk-kred'-melding fra MQ") {
                 val service: RapportService = mockk(relaxed = true)
                 TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
                     val config = application.config()
@@ -77,6 +77,44 @@ class BestillingMottakTest :
                     val applicationState: ApplicationState = application.dependencies.resolve()
                     applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
                         sendMelding(config.mq.queues.find { it.rapportType == RapportType.`trekk-kred` }?.queueName!!, dokument, config.mq)
+
+                        eventually(5.seconds) {
+                            verify(exactly = 1) {
+                                val _ = service.lagreBestilling(any(), any(), any())
+                            }
+                        }
+                    }
+                }
+            }
+
+            test("BestillingMottak klarer å hente en gyldig 'trekk-hend'-melding (til kreditor) fra MQ") {
+                val service: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
+                    val config = application.config()
+                    val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-kreditor.xml")?.readText()!!
+
+                    val applicationState: ApplicationState = application.dependencies.resolve()
+                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!, dokument, config.mq)
+
+                        eventually(5.seconds) {
+                            verify(exactly = 1) {
+                                val _ = service.lagreBestilling(any(), any(), any())
+                            }
+                        }
+                    }
+                }
+            }
+
+            test("BestillingMottak klarer å hente en gyldig 'trekk-hend'-melding (til namsmann) fra MQ") {
+                val service: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
+                    val config = application.config()
+                    val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-namsmann.xml")?.readText()!!
+
+                    val applicationState: ApplicationState = application.dependencies.resolve()
+                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!, dokument, config.mq)
 
                         eventually(5.seconds) {
                             verify(exactly = 1) {
