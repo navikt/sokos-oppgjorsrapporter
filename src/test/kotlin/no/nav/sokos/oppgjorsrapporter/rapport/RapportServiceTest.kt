@@ -407,7 +407,7 @@ class RapportServiceTest :
 
                     val auditLog = sut.hentAuditLog(RapportAuditKriterier(rapportId)).single()
                     auditLog.rapportId shouldBe rapportId
-                    auditLog.variantId shouldBe Variant.Id(7)
+                    auditLog.format shouldBe VariantFormat.Pdf
                     auditLog.hendelse shouldBe RapportAudit.Hendelse.VARIANT_NEDLASTET
                     auditLog.brukernavn shouldBe "entraid:NAVident=navIdent"
                 }
@@ -448,7 +448,7 @@ class RapportServiceTest :
 
                     val auditLog = sut.hentAuditLog(RapportAuditKriterier(rapportId)).single()
                     auditLog.rapportId shouldBe rapportId
-                    auditLog.variantId shouldBe Variant.Id(7)
+                    auditLog.format shouldBe VariantFormat.Pdf
                     auditLog.hendelse shouldBe RapportAudit.Hendelse.VARIANT_NEDLASTET
                     auditLog.brukernavn shouldBe "systembruker:system=systemId userOrg=123456789 id=userId"
                 }
