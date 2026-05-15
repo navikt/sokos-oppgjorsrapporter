@@ -2,11 +2,13 @@
 
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.get
+import io.ktor.server.util.getValue
 import java.time.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -23,7 +25,18 @@ object FrontendApi {
 
     fun Route.rapportApi() {
         val varselService: VarselService by application.dependencies
+        val rapportService: RapportService by application.dependencies
 
         get("/api/rapport/frontend/oppgitt-varsling") { call.respond(varselService.finnOppgitte().map(::VarselOppgittDTO)) }
+
+        get("/api/rapport/frontend/{id}/audit") {
+            val id: Long by call.request.pathVariables
+            val events = rapportService.hentAuditLog(RapportAuditKriterier(Rapport.Id(id), null, null))
+            if (events.isNotEmpty()) {
+                call.respond(events)
+            } else {
+                call.respond(HttpStatusCode.NotFound)
+            }
+        }
     }
 }

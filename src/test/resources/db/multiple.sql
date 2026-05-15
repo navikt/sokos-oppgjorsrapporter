@@ -39,3 +39,14 @@ VALUES
     (13, 7, 'application/pdf', '567890123_trekk-hend_2026-05-10.pdf', 'PDF\0007'),
     (14, 7, 'text/csv', '567890123_trekk-hend_2026-05-10.csv', 'CSV\0007')
 ;
+
+INSERT INTO rapport_audit (rapport_id, variant_id, tidspunkt, hendelse, brukernavn, tekst)
+VALUES
+    (2, NULL, '2026-04-27T18:37:52Z', 'RAPPORT_BESTILLING_MOTTATT', 'system', NULL),
+    (2, NULL, '2026-04-27T18:38:12Z', 'RAPPORT_OPPRETTET', 'system', NULL),
+    (2, 4, '2026-04-27T18:38:12Z', 'VARIANT_OPPRETTET', 'system', NULL),
+    (2, 3, '2026-04-27T18:38:14Z', 'VARIANT_OPPRETTET', 'system', NULL),
+    (2, NULL, '2026-04-27T18:41:37Z', 'RAPPORT_VARSEL_SENDT', 'system', 'Opprettet dialog med id 53ef33ca-4e23-11f1-b333-26e50d98e038'),
+    (2, 4, '2026-04-27T18:43:02Z', 'VARIANT_NEDLASTET', 'systembruker:system=registrert-system userOrg=123456789 id=6db27da6-4e25-11f1-81c5-26e50d98e038', NULL),
+    (2, 3, '2026-04-28T08:10:11Z', 'VARIANT_NEDLASTET', 'entraid:NAVident=X735284', NULL)
+;

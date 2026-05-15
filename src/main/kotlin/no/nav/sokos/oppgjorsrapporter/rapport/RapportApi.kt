@@ -8,7 +8,6 @@ import io.ktor.server.plugins.di.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.application
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -331,19 +330,3 @@ fun Route.rapportApi() {
         PropertiesConfig.Profile.PROD -> {}
     }
 }
-
-private suspend fun RoutingContext.autentisertBruker(): AutentisertBruker =
-    tokenValidationContext().let { ctx ->
-        ctx.getBruker().getOrElse {
-            call.respond(HttpStatusCode.Unauthorized)
-            // "Hemmeligheter som access tokens skal aldri logges", i følge [etterlevelseskrav
-            // K267.1](https://etterlevelse.ansatt.nav.no/krav/267/1) - men for å kunne debugge hvorfor vi ikke klarer
-            // å finne ut av hvilken bruker det er snakk om her, selv om den har kommet gjennom authenticate(...)-oppsettet i
-            // routingConfig, må vi nesten logge *claimene* i de tokenene som er validert.
-            // Kun token-claims (men uten signatur etc.) skal ikke være nok til at noen med logg-tilgang kan late som om de er den
-            // aktuelle brukeren.
-            val claims = ctx.issuers.associateWith { ctx.getClaims(it) }
-            logger.warn(TEAM_LOGS_MARKER) { "Bruker skal være autentisert, men klarer ikke å finne AutentisertBruker for $claims" }
-            throw IllegalStateException("Klarer ikke å finne AutentisertBruker")
-        }
-    }

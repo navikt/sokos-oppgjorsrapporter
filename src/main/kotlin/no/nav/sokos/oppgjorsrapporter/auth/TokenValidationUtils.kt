@@ -5,11 +5,15 @@ import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 import kotlin.collections.get
+import mu.KotlinLogging
 import no.nav.security.token.support.core.context.TokenValidationContext
 import no.nav.security.token.support.core.jwt.JwtTokenClaims
 import no.nav.security.token.support.v3.TokenValidationContextPrincipal
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
+import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.utils.OrgNr
+
+private val logger = KotlinLogging.logger {}
 
 suspend fun RoutingContext.tokenValidationContext(): TokenValidationContext {
     val principal = call.principal<TokenValidationContextPrincipal>()
@@ -105,3 +109,19 @@ data class TokenX(val pid: String, val acr: String) : AutentisertBruker, HasAuth
         override val authType = "tokenx"
     }
 }
+
+suspend fun RoutingContext.autentisertBruker(): AutentisertBruker =
+    tokenValidationContext().let { ctx ->
+        ctx.getBruker().getOrElse {
+            call.respond(HttpStatusCode.Unauthorized)
+            // "Hemmeligheter som access tokens skal aldri logges", i følge [etterlevelseskrav
+            // K267.1](https://etterlevelse.ansatt.nav.no/krav/267/1) - men for å kunne debugge hvorfor vi ikke klarer
+            // å finne ut av hvilken bruker det er snakk om her, selv om den har kommet gjennom authenticate(...)-oppsettet i
+            // routingConfig, må vi nesten logge *claimene* i de tokenene som er validert.
+            // Kun token-claims (men uten signatur etc.) skal ikke være nok til at noen med logg-tilgang kan late som om de er den
+            // aktuelle brukeren.
+            val claims = ctx.issuers.associateWith { ctx.getClaims(it) }
+            logger.warn(TEAM_LOGS_MARKER) { "Bruker skal være autentisert, men klarer ikke å finne AutentisertBruker for $claims" }
+            throw IllegalStateException("Klarer ikke å finne AutentisertBruker")
+        }
+    }

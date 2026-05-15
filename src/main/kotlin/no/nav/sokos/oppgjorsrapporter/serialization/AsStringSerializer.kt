@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import no.nav.sokos.oppgjorsrapporter.rapport.VariantFormat
 
 abstract class AsStringSerializer<T : Any>(serialName: String, private val parse: (String) -> T) : KSerializer<T> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
@@ -54,4 +55,16 @@ object LocalDateAsStringSerializer :
 object LocalDateAsNullableStringSerializer : AsNullableStringSerializer<LocalDate>(LocalDateAsStringSerializer)
 
 object InstantAsStringSerializer :
-    AsStringSerializer<Instant>(serialName = "utbetaling.pengeflyt.kotlinx.LocalDateAsStringSerializer", parse = Instant::parse)
+    AsStringSerializer<Instant>(serialName = "utbetaling.pengeflyt.kotlinx.InstantAsStringSerializer", parse = Instant::parse)
+
+object VariantFormatSerializer :
+    AsStringSerializer<VariantFormat>(
+        serialName = "utbetaling.pengeflyt.kotlinx.VariantFormatSerializer",
+        parse = { format: String ->
+            VariantFormat.entries.find { it.contentType == format } ?: throw IllegalArgumentException("Ukjent variantformat: $format")
+        },
+    ) {
+    override fun serialize(encoder: Encoder, value: VariantFormat) {
+        encoder.encodeString(value.contentType)
+    }
+}

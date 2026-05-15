@@ -8,6 +8,7 @@ import java.time.Instant
 import javax.sql.DataSource
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.bytestring.ByteString
+import kotlinx.serialization.Serializable
 import kotliquery.TransactionalSession
 import kotliquery.sessionOf
 import kotliquery.using
@@ -19,6 +20,8 @@ import no.nav.sokos.oppgjorsrapporter.auth.TokenX
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
+import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
+import no.nav.sokos.oppgjorsrapporter.serialization.VariantFormatSerializer
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.Interval
@@ -198,6 +201,7 @@ class RapportService(
                                     .withTags("rapporttype", rapport.type.name, "format", variant.format.contentType)
                                     .record(Duration.between(rapport.opprettet, Instant.now(clock)).toSeconds().toDouble())
                             }
+
                         is EntraId -> {}
                     }
                     repository.audit(
@@ -217,7 +221,10 @@ class RapportService(
             }
     }
 
-    fun hentAuditLog(kriterier: RapportAuditKriterier): List<RapportAudit> = withTransaction { repository.hentAuditlog(it, kriterier) }
+    fun hentAuditLog(kriterier: RapportAuditKriterier): List<AuditEvent> = withTransaction { tx ->
+        val varianter = repository.listVarianter(tx, kriterier.rapportId).associate { it.id to it.format }
+        repository.hentAuditlog(tx, kriterier).map { AuditEvent(it, varianter) }
+    }
 
     private fun brukernavn(bruker: AutentisertBruker) =
         listOf(
@@ -274,3 +281,18 @@ data class SpesifikkeIderKriterier(
 ) : RapportKriterier
 
 data class RapportAuditKriterier(val rapportId: Rapport.Id, val variantId: Variant.Id? = null, val periode: Interval? = null)
+
+@Serializable
+data class AuditEvent(
+    val rapportId: Rapport.Id,
+    @Serializable(with = InstantAsStringSerializer::class) val tidspunkt: Instant,
+    val hendelse: RapportAudit.Hendelse,
+    @Serializable(with = VariantFormatSerializer::class) val format: VariantFormat?,
+    val brukernavn: String,
+    val tekst: String?,
+) {
+    constructor(
+        e: RapportAudit,
+        varianter: Map<Variant.Id, VariantFormat>,
+    ) : this(e.rapportId, e.tidspunkt, e.hendelse, e.variantId?.let { varianter[it] }, e.brukernavn, e.tekst)
+}

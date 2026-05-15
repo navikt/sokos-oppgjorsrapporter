@@ -182,5 +182,135 @@ class FrontendApiTest :
                     }
                 }
             }
+
+            context("for å hente en rapports audit-trail") {
+                test("gir feilmelding uten autentisering") {
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer) {
+                            val response = client.get("/api/rapport/frontend/1/audit")
+                            response.status shouldBe HttpStatusCode.Unauthorized
+                        }
+                    }
+                }
+
+                test("gir feilmelding uten EntraID-autentisering") {
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer) {
+                            val respSystembruker =
+                                client.get("/api/rapport/frontend/1/audit") {
+                                    bearerAuth(this@withMockOAuth2Server.gyldigSystembrukerAuthToken(OrgNr.genererGyldig().somUvalidert()))
+                                }
+                            respSystembruker.status shouldBe HttpStatusCode.Unauthorized
+
+                            val respTokenx =
+                                client.get("/api/rapport/frontend/1/audit") {
+                                    bearerAuth(
+                                        this@withMockOAuth2Server.gyldigTokenXAuthToken(Fnr.genererGyldig().somUvalidert(), "Level3")
+                                    )
+                                }
+                            respTokenx.status shouldBe HttpStatusCode.Unauthorized
+                        }
+                    }
+                }
+
+                test("gir feilmelding dersom den angitte rapport-IDen ikke finnes") {
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer) {
+                            TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+                            val NON_EXISTENT_ID = 4711
+                            val response =
+                                client.get("/api/rapport/frontend/$NON_EXISTENT_ID/audit") {
+                                    bearerAuth(
+                                        this@withMockOAuth2Server.tokenFromDefaultProvider(
+                                            mapOf("NAVident" to "user", "groups" to listOf("group"))
+                                        )
+                                    )
+                                }
+                            response.status shouldBe HttpStatusCode.NotFound
+                        }
+                    }
+                }
+
+                test("svarer med en kronologisk sortert liste med audit-events") {
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer) {
+                            TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+                            val response =
+                                client.get("/api/rapport/frontend/2/audit") {
+                                    bearerAuth(
+                                        this@withMockOAuth2Server.tokenFromDefaultProvider(
+                                            mapOf("NAVident" to "user", "groups" to listOf("group"))
+                                        )
+                                    )
+                                }
+                            response.status shouldBe HttpStatusCode.OK
+                            assertThatJson(response.bodyAsText())
+                                .isEqualTo(
+                                    """
+                                    [
+                                        {
+                                            "rapportId": 2,
+                                            "tidspunkt": "2026-04-27T18:37:52Z",
+                                            "hendelse": "RAPPORT_BESTILLING_MOTTATT",
+                                            "format": null,
+                                            "brukernavn": "system",
+                                            "tekst": null
+                                        },
+                                        {
+                                            "rapportId": 2,
+                                            "tidspunkt": "2026-04-27T18:38:12Z",
+                                            "hendelse": "RAPPORT_OPPRETTET",
+                                            "format": null,
+                                            "brukernavn": "system",
+                                            "tekst": null
+                                        },
+                                        {
+                                            "rapportId": 2,
+                                            "tidspunkt": "2026-04-27T18:38:12Z",
+                                            "hendelse": "VARIANT_OPPRETTET",
+                                            "format": "text/csv",
+                                            "brukernavn": "system",
+                                            "tekst": null
+                                        },
+                                        {
+                                            "rapportId": 2,
+                                            "tidspunkt": "2026-04-27T18:38:14Z",
+                                            "hendelse": "VARIANT_OPPRETTET",
+                                            "format": "application/pdf",
+                                            "brukernavn": "system",
+                                            "tekst": null
+                                        },
+                                        {
+                                            "rapportId": 2,
+                                            "tidspunkt": "2026-04-27T18:41:37Z",
+                                            "hendelse": "RAPPORT_VARSEL_SENDT",
+                                            "format": null,
+                                            "brukernavn": "system",
+                                            "tekst": "Opprettet dialog med id 53ef33ca-4e23-11f1-b333-26e50d98e038"
+                                        },
+                                        {
+                                            "rapportId": 2,
+                                            "tidspunkt": "2026-04-27T18:43:02Z",
+                                            "hendelse": "VARIANT_NEDLASTET",
+                                            "format": "text/csv",
+                                            "brukernavn": "systembruker:system=registrert-system userOrg=123456789 id=6db27da6-4e25-11f1-81c5-26e50d98e038",
+                                            "tekst": null
+                                        },
+                                        {
+                                            "rapportId": 2,
+                                            "tidspunkt": "2026-04-28T08:10:11Z",
+                                            "hendelse": "VARIANT_NEDLASTET",
+                                            "format": "application/pdf",
+                                            "brukernavn": "entraid:NAVident=X735284",
+                                            "tekst": null
+                                        }
+                                    ]
+                                    """
+                                        .trimIndent()
+                                )
+                        }
+                    }
+                }
+            }
         }
     })
