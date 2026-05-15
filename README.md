@@ -176,6 +176,26 @@ Den siden kommer forhåpentligvis å bli lettere å finne i Altinn-GUIet etterhv
 
 # 6. Drift og støtte
 
+### Generere og injisere testdata
+
+Når leverandører av sluttbrukersystemer skal teste at de klarer å snakke med APIet vårt, må det finnes noen test-oppgjørsrapporter de kan søke etter/laste ned.
+Enkleste måte å få generert `ref-arbg` test-data med er:
+
+1. Åpne `BestillingApiTest`, og finn testen "POST _api_bestilling_v1 (med rapportType=ref-arbg og riktig body) svarer riktig"
+2. Kommenter inn "println()"-statementet
+3. Juster orgnr/underenhet/fnr/etc. til å matche det leverandøren ønsker
+4. Kjør testen
+5. Hent token for å kunne snakke manuelt med APIet [herfra](https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp:oppgjorsrapporter:sokos-oppgjorsrapporter)
+6. Klipp ut token, les det inn til en shell-variabel med: `pbpaste | sed 's/"//g' | read token`
+7. Klipp ut generert `ref-arbg`-JSON som ble skrevet ut under test-kjøringen
+8. Send `ref-arbg`-bestillingen til APIet med:
+    ```
+    pbpaste | \
+      curl -i --json @- \
+        -H "Authorization: Bearer $token" \
+        'https://sokos-oppgjorsrapporter.intern.dev.nav.no/api/bestilling/v1?rapportType=ref-arbg'
+    ```
+
 ### Logging
 
 Feilmeldinger og infomeldinger som ikke innheholder sensitive data logges til [Grafana Loki](https://docs.nais.io/observability/logging/#grafana-loki).
