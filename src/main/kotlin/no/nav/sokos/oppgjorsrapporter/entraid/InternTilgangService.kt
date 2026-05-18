@@ -26,7 +26,7 @@ class EntraIdTilgangService(private val securityProperties: PropertiesConfig.Sec
         val gruppeUuid =
             when (rapportType) {
                 RapportType.`ref-arbg` -> securityProperties.azureAd.refArbgGroupUuid
-                RapportType.`trekk-hend` -> securityProperties.azureAd.trekHendGroupUuid
+                RapportType.`trekk-hend` -> securityProperties.azureAd.trekkHendGroupUuid
                 RapportType.`trekk-kred` -> securityProperties.azureAd.trekkKredGroupUuid
             }
         val result = bruker.groups.contains(gruppeUuid)

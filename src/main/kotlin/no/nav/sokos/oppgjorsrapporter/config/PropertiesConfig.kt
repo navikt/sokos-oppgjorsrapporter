@@ -171,7 +171,7 @@ object PropertiesConfig {
         val wellKnownUrl: String,
         val adminGroupUuid: String,
         val refArbgGroupUuid: String,
-        val trekHendGroupUuid: String,
+        val trekkHendGroupUuid: String,
         val trekkKredGroupUuid: String,
     ) {
         constructor(
@@ -181,7 +181,7 @@ object PropertiesConfig {
             wellKnownUrl = source.get("auth.entra_id.well_known_url"),
             adminGroupUuid = source.get("auth.entra_id.admin_group_uuid"),
             refArbgGroupUuid = source.get("auth.entra_id.ref_arbg_group_uuid"),
-            trekHendGroupUuid = source.get("auth.entra_id.trekk_hend_group_uuid"),
+            trekkHendGroupUuid = source.get("auth.entra_id.trekk_hend_group_uuid"),
             trekkKredGroupUuid = source.get("auth.entra_id.trekk_kred_group_uuid"),
         )
     }

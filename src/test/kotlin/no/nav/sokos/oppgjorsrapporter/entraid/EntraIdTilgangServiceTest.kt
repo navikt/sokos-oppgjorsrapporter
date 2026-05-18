@@ -19,7 +19,7 @@ class EntraIdTilgangServiceTest {
         mockk<PropertiesConfig.SecurityProperties> {
             every { azureAd.adminGroupUuid } returns "admin-uuid"
             every { azureAd.refArbgGroupUuid } returns "ref-arbg-uuid"
-            every { azureAd.trekHendGroupUuid } returns "trekk-hend-uuid"
+            every { azureAd.trekkHendGroupUuid } returns "trekk-hend-uuid"
             every { azureAd.trekkKredGroupUuid } returns "trekk-kred-uuid"
         }
 
