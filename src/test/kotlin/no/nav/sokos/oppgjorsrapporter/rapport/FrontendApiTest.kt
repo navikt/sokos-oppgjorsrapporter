@@ -6,7 +6,10 @@ import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
 import io.ktor.server.plugins.di.dependencies
+import io.mockk.every
+import io.mockk.mockk
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -17,9 +20,11 @@ import net.javacrumbs.jsonunit.assertj.assertThatJson
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
+import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigSystembrukerAuthToken
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigTokenXAuthToken
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
+import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.toDataSource
@@ -305,6 +310,101 @@ class FrontendApiTest :
                                             "tekst": null
                                         }
                                     ]
+                                    """
+                                        .trimIndent()
+                                )
+                        }
+                    }
+                }
+            }
+
+            context("for å hente rapporttyper en intern bruker har tilgang til") {
+                val mockedInternTilgangService =
+                    mockk<InternTilgangService> {
+                        every { rapportTyperBrukerHarTilgangTil(bruker = any()) } returns emptySet()
+                        every {
+                            rapportTyperBrukerHarTilgangTil(bruker = EntraId(groups = listOf("admin-uuid-group"), navIdent = "user"))
+                        } returns RapportType.entries.toSet()
+                        every {
+                            rapportTyperBrukerHarTilgangTil(
+                                bruker = EntraId(groups = listOf("ref-arbg-uuid-group", "trekk-hend-uuid-group"), navIdent = "user")
+                            )
+                        } returns setOf(RapportType.`ref-arbg`, RapportType.`trekk-hend`)
+                    }
+
+                val dependencyOverrides: Application.() -> Unit = {
+                    dependencies.provide<InternTilgangService> { mockedInternTilgangService }
+                }
+
+                test("gir feilmelding uten autentisering") {
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer) {
+                            val response = client.get("/api/rapport/frontend/tilgang")
+                            response.status shouldBe HttpStatusCode.Unauthorized
+                        }
+                    }
+                }
+                test("gir feilmelding uten EntraID-autentisering") {
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer) {
+                            val respSystembruker =
+                                client.get("/api/rapport/frontend/tilgang") {
+                                    bearerAuth(this@withMockOAuth2Server.gyldigSystembrukerAuthToken(OrgNr.genererGyldig().somUvalidert()))
+                                }
+                            respSystembruker.status shouldBe HttpStatusCode.Unauthorized
+
+                            val respTokenx =
+                                client.get("/api/rapport/frontend/tilgang") {
+                                    bearerAuth(
+                                        this@withMockOAuth2Server.gyldigTokenXAuthToken(Fnr.genererGyldig().somUvalidert(), "Level3")
+                                    )
+                                }
+                            respTokenx.status shouldBe HttpStatusCode.Unauthorized
+                        }
+                    }
+                }
+                test("svarer med en liste av alle rapporttyper når intern bruker har admin tilgang") {
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
+                            val respForBrukerMedAdminTilgang =
+                                client.get("/api/rapport/frontend/tilgang") {
+                                    bearerAuth(
+                                        this@withMockOAuth2Server.tokenFromDefaultProvider(
+                                            claims = mapOf("NAVident" to "user", "groups" to listOf("admin-uuid-group"))
+                                        )
+                                    )
+                                }
+                            respForBrukerMedAdminTilgang.status shouldBe HttpStatusCode.OK
+                            assertThatJson(respForBrukerMedAdminTilgang.bodyAsText())
+                                .isEqualTo(
+                                    """
+                                    ["ref-arbg", "trekk-hend", "trekk-kred"]
+                                    """
+                                        .trimIndent()
+                                )
+                        }
+                    }
+                }
+                test("svarer med rapporttyper intern bruker har tilgang til") {
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
+                            val respForBrukerMedRefArbgTilgang =
+                                client.get("/api/rapport/frontend/tilgang") {
+                                    bearerAuth(
+                                        this@withMockOAuth2Server.tokenFromDefaultProvider(
+                                            claims =
+                                                mapOf(
+                                                    "NAVident" to "user",
+                                                    "groups" to listOf("ref-arbg-uuid-group", "trekk-hend-uuid-group"),
+                                                )
+                                        )
+                                    )
+                                }
+                            respForBrukerMedRefArbgTilgang.status shouldBe HttpStatusCode.OK
+                            assertThatJson(respForBrukerMedRefArbgTilgang.bodyAsText())
+                                .isEqualTo(
+                                    """
+                                    ["ref-arbg", "trekk-hend"]
                                     """
                                         .trimIndent()
                                 )

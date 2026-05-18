@@ -12,6 +12,8 @@ import io.ktor.server.util.getValue
 import java.time.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import no.nav.sokos.oppgjorsrapporter.auth.autentisertBruker
+import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.rapport.Api.RapportDTO
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.Varsel
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
@@ -26,6 +28,7 @@ object FrontendApi {
     fun Route.rapportApi() {
         val varselService: VarselService by application.dependencies
         val rapportService: RapportService by application.dependencies
+        val internTilgangService: InternTilgangService by application.dependencies
 
         get("/api/rapport/frontend/oppgitt-varsling") { call.respond(varselService.finnOppgitte().map(::VarselOppgittDTO)) }
 
@@ -37,6 +40,10 @@ object FrontendApi {
             } else {
                 call.respond(HttpStatusCode.NotFound)
             }
+        }
+
+        get("/api/rapport/frontend/tilgang") {
+            autentisertBruker().let { bruker -> call.respond(internTilgangService.rapportTyperBrukerHarTilgangTil(bruker)) }
         }
     }
 }
