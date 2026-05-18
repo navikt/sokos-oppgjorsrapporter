@@ -46,6 +46,10 @@ spec:
       claims:
         groups:
           - id: "2abbcfe4-98c8-4b30-8bac-5ea1e0c6d0e1" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER
+          - id: "4eb9d678-f951-4498-962b-a7e8209425fa" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER-ADMIN
+          - id: "d9bff4e3-f13e-47af-8818-6ba401239447" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER-REF-ARBG
+          - id: "67eae973-b4b5-4351-9faf-677b2e22414d" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER-TREKK-HEND
+          - id: "bef40404-b41e-4b91-9566-0208f0ee4d6e" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER-TREKK-KRED
   maskinporten:
     enabled: true
     scopes:
@@ -120,3 +124,11 @@ spec:
       value: https://sokos-oppgjorsrapporter.nav.no/
     - name: ALTINN_BASE_URL
       value: https://platform.altinn.no
+    - name: OPPGJORSRAPPORTER_ADMIN_GROUP_UUID
+      value: 4eb9d678-f951-4498-962b-a7e8209425fa
+    - name: OPPGJORSRAPPORTER_REF_ARBG_UUID
+      value: d9bff4e3-f13e-47af-8818-6ba401239447
+    - name: OPPGJORSRAPPORTER_TREKK_HEND_UUID
+      value: 67eae973-b4b5-4351-9faf-677b2e22414d
+    - name: OPPGJORSRAPPORTER_TREKK_KRED_UUID
+      value: bef40404-b41e-4b91-9566-0208f0ee4d6e

@@ -166,10 +166,24 @@ object PropertiesConfig {
         )
     }
 
-    class AzureAdProperties(val clientId: String, val wellKnownUrl: String) {
+    class AzureAdProperties(
+        val clientId: String,
+        val wellKnownUrl: String,
+        val adminGroupUuid: String,
+        val refArbgGroupUuid: String,
+        val trekHendGroupUuid: String,
+        val trekkKredGroupUuid: String,
+    ) {
         constructor(
             source: ConfigSource
-        ) : this(clientId = source.get("auth.entra_id.client_id"), wellKnownUrl = source.get("auth.entra_id.well_known_url"))
+        ) : this(
+            clientId = source.get("auth.entra_id.client_id"),
+            wellKnownUrl = source.get("auth.entra_id.well_known_url"),
+            adminGroupUuid = source.get("auth.entra_id.admin_group_uuid"),
+            refArbgGroupUuid = source.get("auth.entra_id.ref_arbg_group_uuid"),
+            trekHendGroupUuid = source.get("auth.entra_id.trekk_hend_group_uuid"),
+            trekkKredGroupUuid = source.get("auth.entra_id.trekk_kred_group_uuid"),
+        )
     }
 
     class TokenXProperties(val clientId: String, val wellKnownUrl: String) {

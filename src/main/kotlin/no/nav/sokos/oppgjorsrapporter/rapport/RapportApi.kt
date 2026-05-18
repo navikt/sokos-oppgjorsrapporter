@@ -27,6 +27,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.*
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
+import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.Melding
@@ -112,6 +113,7 @@ fun Route.rapportApi() {
     val config: PropertiesConfig.Configuration by application.dependencies
     val metrics: Metrics by application.dependencies
     val pdpService: PdpService by application.dependencies
+    val internTilgangService: InternTilgangService by application.dependencies
     val rapportService: RapportService by application.dependencies
     val varselService: VarselService by application.dependencies
 
@@ -128,8 +130,12 @@ fun Route.rapportApi() {
             }
 
             is EntraId -> {
-                // Enn så lenge har vi bare en gruppe definert i `azure:`-delen av nais-specen, så ytterligere autorisasjons-sjekker
-                // er ikke nødvendig
+                if (!internTilgangService.harTilgang(bruker, rapportType)) {
+                    logger.info(TEAM_LOGS_MARKER) {
+                        "Internbruker $bruker har forsøkt å aksessere rapport $rapportType, men hadde ikke riktig tilgang"
+                    }
+                    return false
+                }
             }
 
             is TokenX -> {
