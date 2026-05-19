@@ -18,6 +18,8 @@ import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.CompositeApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
+import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.genererGyldig
 import org.testcontainers.postgresql.PostgreSQLContainer
 
 private val logger = KotlinLogging.logger {}
@@ -197,6 +199,11 @@ object TestUtil {
         val TREKK_HEND: UUID = UUID.fromString("8fe5adf8-4ec5-11f1-8294-16a7572e12ed")
         val TREKK_KRED: UUID = UUID.fromString("81b31662-4ec5-11f1-b02e-16a7572e12ed")
         val RANDOM_GROUP: UUID = UUID.fromString("eeacaf1a-52cd-11f1-b2c8-16a7572e12ed")
+    }
+
+    object Orgnrs {
+        val NAV_ORGNR: OrgNr = OrgNr.genererGyldig().somUvalidert()
+        val IKKE_NAV_ORGNR: OrgNr = OrgNr.genererGyldig().somUvalidert()
     }
 }
 

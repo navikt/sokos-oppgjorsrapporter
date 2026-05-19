@@ -164,7 +164,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         } else {
             provide<AuthClient> { DefaultAuthClient(config.security.tokenEndpoint, config.security.altinn.baseUrl) }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
-            provide<InternTilgangService> { EntraIdTilgangService(config.security) }
+            provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
         }
         val authClient: AuthClient by this
 

@@ -5,32 +5,37 @@ import io.mockk.every
 import io.mockk.mockk
 import java.util.*
 import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
+import no.nav.sokos.oppgjorsrapporter.TestUtil.Orgnrs.IKKE_NAV_ORGNR
+import no.nav.sokos.oppgjorsrapporter.TestUtil.Orgnrs.NAV_ORGNR
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.utils.OrgNr
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 
 class EntraIdTilgangServiceTest {
-    private val props =
-        mockk<PropertiesConfig.SecurityProperties> {
-            every { azureAd.adminGroup } returns EntraIdGroup.ADMIN
-            every { azureAd.refArbgGroup } returns EntraIdGroup.REF_ARBG
-            every { azureAd.trekkHendGroup } returns EntraIdGroup.TREKK_HEND
-            every { azureAd.trekkKredGroup } returns EntraIdGroup.TREKK_KRED
+    private val azureAdProperties =
+        mockk<PropertiesConfig.AzureAdProperties> {
+            every { adminGroup } returns EntraIdGroup.ADMIN
+            every { refArbgGroup } returns EntraIdGroup.REF_ARBG
+            every { trekkHendGroup } returns EntraIdGroup.TREKK_HEND
+            every { trekkKredGroup } returns EntraIdGroup.TREKK_KRED
         }
+    private val applicationProperties = mockk<PropertiesConfig.ApplicationProperties> { every { navOrgs } returns listOf(NAV_ORGNR) }
 
-    private val entraIdTilgangService = EntraIdTilgangService(props)
+    private val entraIdTilgangService = EntraIdTilgangService(azureAdProperties, applicationProperties)
 
     @ParameterizedTest
     @MethodSource("tilgangTestCases")
-    fun `intern bruker har kun tilgang til rapporttyper som gruppen gir rett til`(
+    fun `intern bruker har kun tilgang til resursser bruker har tilgang til`(
         gruppe: UUID,
         rapportType: RapportType,
+        orgnr: OrgNr,
         forventetTilgang: Boolean,
     ) {
-        entraIdTilgangService.harTilgang(EntraId("user", listOf(gruppe)), rapportType) shouldBe forventetTilgang
+        entraIdTilgangService.harTilgangTilRessurs(EntraId("user", listOf(gruppe)), orgnr, rapportType) shouldBe forventetTilgang
     }
 
     @ParameterizedTest
@@ -46,19 +51,36 @@ class EntraIdTilgangServiceTest {
         @JvmStatic
         fun tilgangTestCases() =
             listOf(
-                Arguments.of(EntraIdGroup.ADMIN, RapportType.`ref-arbg`, true),
-                Arguments.of(EntraIdGroup.ADMIN, RapportType.`trekk-hend`, true),
-                Arguments.of(EntraIdGroup.ADMIN, RapportType.`trekk-kred`, true),
-                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`ref-arbg`, true),
-                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`trekk-hend`, false),
-                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`trekk-kred`, false),
-                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`ref-arbg`, false),
-                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`trekk-hend`, true),
-                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`trekk-kred`, false),
-                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`ref-arbg`, false),
-                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`trekk-hend`, false),
-                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`trekk-kred`, true),
-                Arguments.of(EntraIdGroup.RANDOM_GROUP, RapportType.`trekk-kred`, false),
+                // OrgNr er en @JvmInline value class, så i bytecoden erstattes den med den underliggende typen String.
+                // JUnit leser test-metoden via reflection på bytecoden og forventer derfor String som parameter — ikke OrgNr.
+                // Når factory-metoden sender et OrgNr-objekt, blir det en type mismatch. Ved å sende .raw sender vi String direkte, som
+                // matcher det JUnit forventer i test-metoden.
+                Arguments.of(EntraIdGroup.ADMIN, RapportType.`ref-arbg`, NAV_ORGNR.raw, true),
+                Arguments.of(EntraIdGroup.ADMIN, RapportType.`ref-arbg`, IKKE_NAV_ORGNR.raw, true),
+                Arguments.of(EntraIdGroup.ADMIN, RapportType.`trekk-hend`, NAV_ORGNR.raw, true),
+                Arguments.of(EntraIdGroup.ADMIN, RapportType.`trekk-hend`, IKKE_NAV_ORGNR.raw, true),
+                Arguments.of(EntraIdGroup.ADMIN, RapportType.`trekk-kred`, NAV_ORGNR.raw, true),
+                Arguments.of(EntraIdGroup.ADMIN, RapportType.`trekk-kred`, IKKE_NAV_ORGNR.raw, true),
+                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`ref-arbg`, NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`ref-arbg`, IKKE_NAV_ORGNR.raw, true),
+                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`trekk-hend`, NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`trekk-hend`, IKKE_NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`trekk-kred`, NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`trekk-kred`, IKKE_NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`ref-arbg`, NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`ref-arbg`, IKKE_NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`trekk-hend`, NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`trekk-hend`, IKKE_NAV_ORGNR.raw, true),
+                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`trekk-kred`, NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`trekk-kred`, IKKE_NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`ref-arbg`, NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`ref-arbg`, IKKE_NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`trekk-hend`, NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`trekk-hend`, IKKE_NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`trekk-kred`, NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`trekk-kred`, IKKE_NAV_ORGNR.raw, true),
+                Arguments.of(EntraIdGroup.RANDOM_GROUP, RapportType.`trekk-kred`, NAV_ORGNR.raw, false),
+                Arguments.of(EntraIdGroup.RANDOM_GROUP, RapportType.`trekk-kred`, IKKE_NAV_ORGNR.raw, false),
             )
 
         @JvmStatic

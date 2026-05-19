@@ -130,7 +130,7 @@ fun Route.rapportApi() {
             }
 
             is EntraId -> {
-                if (!internTilgangService.harTilgang(bruker, rapportType)) {
+                if (!internTilgangService.harTilgangTilRessurs(bruker, orgnr, rapportType)) {
                     logger.info(TEAM_LOGS_MARKER) {
                         "Internbruker $bruker har forsøkt å aksessere rapport $rapportType, men hadde ikke riktig tilgang"
                     }
