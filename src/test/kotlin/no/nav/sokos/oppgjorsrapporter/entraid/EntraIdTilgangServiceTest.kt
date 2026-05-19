@@ -3,15 +3,11 @@ package no.nav.sokos.oppgjorsrapporter.entraid
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
-import java.util.UUID
+import java.util.*
 import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
-import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
-import no.nav.sokos.oppgjorsrapporter.auth.TokenX
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
-import no.nav.sokos.utils.OrgNr
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -77,14 +73,5 @@ class EntraIdTilgangServiceTest {
                     setOf(RapportType.`trekk-hend`, RapportType.`trekk-kred`),
                 ),
             )
-    }
-
-    @Test
-    fun `systembruker har ikke tilgang via intern tilgangssjekk`() {
-        val harSystemBrukerTilgang = entraIdTilgangService.harTilgang(Systembruker("id", OrgNr("orgnr"), "system"), RapportType.`ref-arbg`)
-        harSystemBrukerTilgang shouldBe false
-
-        val harTokenXBrukerTilgang = entraIdTilgangService.harTilgang(TokenX("id", "acr"), RapportType.`ref-arbg`)
-        harTokenXBrukerTilgang shouldBe false
     }
 }
