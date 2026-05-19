@@ -21,13 +21,13 @@ class EntraIdTilgangService(private val securityProperties: PropertiesConfig.Sec
             logger.warn(TEAM_LOGS_MARKER) { "Tilgangsjekk av en IKKE EntraId bruker: $bruker for rapport type: $rapportType" }
             return false
         }
-        if (bruker.groups.contains(securityProperties.azureAd.adminGroupUuid)) return true
+        if (bruker.groups.contains(securityProperties.azureAd.adminGroup)) return true
 
         val gruppeUuid =
             when (rapportType) {
-                RapportType.`ref-arbg` -> securityProperties.azureAd.refArbgGroupUuid
-                RapportType.`trekk-hend` -> securityProperties.azureAd.trekkHendGroupUuid
-                RapportType.`trekk-kred` -> securityProperties.azureAd.trekkKredGroupUuid
+                RapportType.`ref-arbg` -> securityProperties.azureAd.refArbgGroup
+                RapportType.`trekk-hend` -> securityProperties.azureAd.trekkHendGroup
+                RapportType.`trekk-kred` -> securityProperties.azureAd.trekkKredGroup
             }
         val result = bruker.groups.contains(gruppeUuid)
         logger.debug(TEAM_LOGS_MARKER) {

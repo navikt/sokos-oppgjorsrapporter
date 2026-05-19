@@ -3,6 +3,7 @@ package no.nav.sokos.oppgjorsrapporter.config
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.config.ApplicationConfigValue
 import java.net.URI
+import java.util.UUID
 import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
@@ -169,20 +170,20 @@ object PropertiesConfig {
     class AzureAdProperties(
         val clientId: String,
         val wellKnownUrl: String,
-        val adminGroupUuid: String,
-        val refArbgGroupUuid: String,
-        val trekkHendGroupUuid: String,
-        val trekkKredGroupUuid: String,
+        val adminGroup: UUID,
+        val refArbgGroup: UUID,
+        val trekkHendGroup: UUID,
+        val trekkKredGroup: UUID,
     ) {
         constructor(
             source: ConfigSource
         ) : this(
             clientId = source.get("auth.entra_id.client_id"),
             wellKnownUrl = source.get("auth.entra_id.well_known_url"),
-            adminGroupUuid = source.get("auth.entra_id.admin_group_uuid"),
-            refArbgGroupUuid = source.get("auth.entra_id.ref_arbg_group_uuid"),
-            trekkHendGroupUuid = source.get("auth.entra_id.trekk_hend_group_uuid"),
-            trekkKredGroupUuid = source.get("auth.entra_id.trekk_kred_group_uuid"),
+            adminGroup = UUID.fromString(source.get("auth.entra_id.admin_group_uuid")),
+            refArbgGroup = UUID.fromString(source.get("auth.entra_id.ref_arbg_group_uuid")),
+            trekkHendGroup = UUID.fromString(source.get("auth.entra_id.trekk_hend_group_uuid")),
+            trekkKredGroup = UUID.fromString(source.get("auth.entra_id.trekk_kred_group_uuid")),
         )
     }
 

@@ -31,6 +31,7 @@ import kotliquery.using
 import no.nav.sokos.oppgjorsrapporter.MultiGaugeUtils.extract
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
+import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
@@ -264,7 +265,7 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
-                    val bruker = EntraId("enBruker", listOf("group"))
+                    val bruker = EntraId("enBruker", listOf(EntraIdGroup.RANDOM_GROUP))
                     val rapportId = Rapport.Id(1)
 
                     val arkivert = sut.markerRapportArkivert(bruker, rapportId, { true }, true).shouldNotBeNull()
@@ -290,7 +291,7 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
-                    val bruker = EntraId("navIdent", listOf("group"))
+                    val bruker = EntraId("navIdent", listOf(EntraIdGroup.RANDOM_GROUP))
                     val rapportId = Rapport.Id(1)
 
                     val dearkivert = sut.markerRapportArkivert(bruker, rapportId, { true }, false).shouldNotBeNull()
@@ -386,7 +387,7 @@ class RapportServiceTest :
                     val rapportId = Rapport.Id(4)
                     val innhold =
                         sut.hentInnhold(
-                            bruker = EntraId("navIdent", listOf("group")),
+                            bruker = EntraId("navIdent", listOf(EntraIdGroup.RANDOM_GROUP)),
                             rapportId = rapportId,
                             format = VariantFormat.Pdf,
                             harTilgang = { true },
@@ -463,7 +464,7 @@ class RapportServiceTest :
 
                     val _ =
                         sut.hentInnhold(
-                            bruker = EntraId("navIdent", listOf("group")),
+                            bruker = EntraId("navIdent", listOf(EntraIdGroup.RANDOM_GROUP)),
                             rapportId = Rapport.Id(4),
                             format = VariantFormat.Pdf,
                             harTilgang = { false },

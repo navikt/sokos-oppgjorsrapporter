@@ -23,6 +23,7 @@ import kotlinx.io.bytestring.encodeToByteString
 import no.nav.helsearbeidsgiver.utils.json.fromJson
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
+import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
 import no.nav.sokos.oppgjorsrapporter.configureTestApplicationEnvironment
 import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.module
@@ -114,26 +115,14 @@ abstract class ApiTest {
         every { mockedInternTilgangService.harTilgang(bruker = any(), rapportType = any()) } returns false
         every {
             mockedInternTilgangService.harTilgang(
-                bruker = EntraId(groups = listOf("admin-uuid-group"), navIdent = "user"),
+                bruker = EntraId(groups = listOf(EntraIdGroup.ADMIN), navIdent = "user"),
                 rapportType = any(),
             )
         } returns true
         every {
             mockedInternTilgangService.harTilgang(
-                bruker = EntraId(groups = listOf("ref-arbg-uuid-group"), navIdent = "user"),
+                bruker = EntraId(groups = listOf(EntraIdGroup.REF_ARBG), navIdent = "user"),
                 rapportType = RapportType.`ref-arbg`,
-            )
-        } returns true
-        every {
-            mockedInternTilgangService.harTilgang(
-                bruker = EntraId(groups = listOf("trekk-hend-uuid-group"), navIdent = "user"),
-                rapportType = RapportType.`trekk-hend`,
-            )
-        } returns true
-        every {
-            mockedInternTilgangService.harTilgang(
-                bruker = EntraId(groups = listOf("trekk-kred-uuid-group"), navIdent = "user"),
-                rapportType = RapportType.`trekk-kred`,
             )
         } returns true
     }
@@ -349,7 +338,7 @@ class HentApiAuthTest : ApiTest() {
             val respons =
                 client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
                     bearerAuth(
-                        mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf("admin-uuid-group")))
+                        mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.ADMIN)))
                     )
                 }
 
@@ -369,7 +358,7 @@ class HentApiAuthTest : ApiTest() {
         val respons =
             client.get(urlString = "/api/rapport/v1/${refArbgRapportDto.id.raw}") {
                 bearerAuth(
-                    mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf("ref-arbg-uuid-group")))
+                    mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG)))
                 )
             }
 
@@ -388,7 +377,7 @@ class HentApiAuthTest : ApiTest() {
         val respons =
             client.get(urlString = "/api/rapport/v1/${trekkKredRapportDto.id.raw}") {
                 bearerAuth(
-                    mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf("ref-arbg-uuid-group")))
+                    mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG)))
                 )
             }
 

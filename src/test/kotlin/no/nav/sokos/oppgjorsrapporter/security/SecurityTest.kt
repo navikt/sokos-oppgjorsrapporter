@@ -9,6 +9,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
+import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
 import no.nav.sokos.oppgjorsrapporter.rapport.Api
 import no.nav.sokos.oppgjorsrapporter.withTestApplication
@@ -48,7 +49,7 @@ class SecurityTest :
                             client.post("/api/rapport/v1") {
                                 header(
                                     "Authorization",
-                                    "Bearer ${mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf("group")))}",
+                                    "Bearer ${mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.RANDOM_GROUP)))}",
                                 )
                                 contentType(ContentType.Application.Json)
                                 setBody(Api.RapportListeRequest(orgnr = OrgNr("987654321")))

@@ -23,6 +23,7 @@ import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
+import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
 import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigSystembrukerAuthToken
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
@@ -73,7 +74,7 @@ abstract class FullTestServer(protected val testClock: Clock) {
 }
 
 class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T12:00:00Z"), ZoneOffset.UTC)) {
-    protected override val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf("group"))
+    protected override val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.RANDOM_GROUP))
 
     val openApiValidationFilter = OpenApiValidationFilter("openapi/rapport-v1.yaml")
 

@@ -3,6 +3,8 @@ package no.nav.sokos.oppgjorsrapporter.entraid
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import java.util.UUID
+import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.auth.TokenX
@@ -17,10 +19,10 @@ import org.junit.jupiter.params.provider.MethodSource
 class EntraIdTilgangServiceTest {
     private val props =
         mockk<PropertiesConfig.SecurityProperties> {
-            every { azureAd.adminGroupUuid } returns "admin-uuid"
-            every { azureAd.refArbgGroupUuid } returns "ref-arbg-uuid"
-            every { azureAd.trekkHendGroupUuid } returns "trekk-hend-uuid"
-            every { azureAd.trekkKredGroupUuid } returns "trekk-kred-uuid"
+            every { azureAd.adminGroup } returns EntraIdGroup.ADMIN
+            every { azureAd.refArbgGroup } returns EntraIdGroup.REF_ARBG
+            every { azureAd.trekkHendGroup } returns EntraIdGroup.TREKK_HEND
+            every { azureAd.trekkKredGroup } returns EntraIdGroup.TREKK_KRED
         }
 
     private val entraIdTilgangService = EntraIdTilgangService(props)
@@ -28,7 +30,7 @@ class EntraIdTilgangServiceTest {
     @ParameterizedTest
     @MethodSource("tilgangTestCases")
     fun `intern bruker har kun tilgang til rapporttyper som gruppen gir rett til`(
-        gruppe: String,
+        gruppe: UUID,
         rapportType: RapportType,
         forventetTilgang: Boolean,
     ) {
@@ -38,7 +40,7 @@ class EntraIdTilgangServiceTest {
     @ParameterizedTest
     @MethodSource("rapportTyperBrukerHarTilgangTilCases")
     fun `rapportTyperBrukerHarTilgangTil returnerer rapporttyper som svarer til gruppen intern bruker hører til`(
-        grupper: List<String>,
+        grupper: List<UUID>,
         rapportTyperBrukerHarTilgangTilCases: Set<RapportType>,
     ) {
         entraIdTilgangService.rapportTyperBrukerHarTilgangTil(EntraId("user", grupper)) shouldBe rapportTyperBrukerHarTilgangTilCases
@@ -48,29 +50,32 @@ class EntraIdTilgangServiceTest {
         @JvmStatic
         fun tilgangTestCases() =
             listOf(
-                Arguments.of("admin-uuid", RapportType.`ref-arbg`, true),
-                Arguments.of("admin-uuid", RapportType.`trekk-hend`, true),
-                Arguments.of("admin-uuid", RapportType.`trekk-kred`, true),
-                Arguments.of("ref-arbg-uuid", RapportType.`ref-arbg`, true),
-                Arguments.of("ref-arbg-uuid", RapportType.`trekk-hend`, false),
-                Arguments.of("ref-arbg-uuid", RapportType.`trekk-kred`, false),
-                Arguments.of("trekk-hend-uuid", RapportType.`ref-arbg`, false),
-                Arguments.of("trekk-hend-uuid", RapportType.`trekk-hend`, true),
-                Arguments.of("trekk-hend-uuid", RapportType.`trekk-kred`, false),
-                Arguments.of("trekk-kred-uuid", RapportType.`ref-arbg`, false),
-                Arguments.of("trekk-kred-uuid", RapportType.`trekk-hend`, false),
-                Arguments.of("trekk-kred-uuid", RapportType.`trekk-kred`, true),
-                Arguments.of("ukjent-uuid", RapportType.`trekk-kred`, false),
+                Arguments.of(EntraIdGroup.ADMIN, RapportType.`ref-arbg`, true),
+                Arguments.of(EntraIdGroup.ADMIN, RapportType.`trekk-hend`, true),
+                Arguments.of(EntraIdGroup.ADMIN, RapportType.`trekk-kred`, true),
+                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`ref-arbg`, true),
+                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`trekk-hend`, false),
+                Arguments.of(EntraIdGroup.REF_ARBG, RapportType.`trekk-kred`, false),
+                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`ref-arbg`, false),
+                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`trekk-hend`, true),
+                Arguments.of(EntraIdGroup.TREKK_HEND, RapportType.`trekk-kred`, false),
+                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`ref-arbg`, false),
+                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`trekk-hend`, false),
+                Arguments.of(EntraIdGroup.TREKK_KRED, RapportType.`trekk-kred`, true),
+                Arguments.of(EntraIdGroup.RANDOM_GROUP, RapportType.`trekk-kred`, false),
             )
 
         @JvmStatic
         fun rapportTyperBrukerHarTilgangTilCases() =
             listOf(
-                Arguments.of(listOf("admin-uuid"), setOf(RapportType.`ref-arbg`, RapportType.`trekk-hend`, RapportType.`trekk-kred`)),
-                Arguments.of(listOf("ref-arbg-uuid"), setOf(RapportType.`ref-arbg`)),
-                Arguments.of(listOf("trekk-hend-uuid"), setOf(RapportType.`trekk-hend`)),
-                Arguments.of(listOf("trekk-kred-uuid"), setOf(RapportType.`trekk-kred`)),
-                Arguments.of(listOf("trekk-hend-uuid", "trekk-kred-uuid"), setOf(RapportType.`trekk-hend`, RapportType.`trekk-kred`)),
+                Arguments.of(listOf(EntraIdGroup.ADMIN), setOf(RapportType.`ref-arbg`, RapportType.`trekk-hend`, RapportType.`trekk-kred`)),
+                Arguments.of(listOf(EntraIdGroup.REF_ARBG), setOf(RapportType.`ref-arbg`)),
+                Arguments.of(listOf(EntraIdGroup.TREKK_HEND), setOf(RapportType.`trekk-hend`)),
+                Arguments.of(listOf(EntraIdGroup.TREKK_KRED), setOf(RapportType.`trekk-kred`)),
+                Arguments.of(
+                    listOf(EntraIdGroup.TREKK_HEND, EntraIdGroup.TREKK_KRED),
+                    setOf(RapportType.`trekk-hend`, RapportType.`trekk-kred`),
+                ),
             )
     }
 

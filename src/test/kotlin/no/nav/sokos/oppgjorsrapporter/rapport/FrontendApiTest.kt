@@ -20,6 +20,7 @@ import net.javacrumbs.jsonunit.assertj.assertThatJson
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil
+import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigSystembrukerAuthToken
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigTokenXAuthToken
@@ -79,7 +80,7 @@ class FrontendApiTest :
                                 client.get("/api/rapport/frontend/oppgitt-varsling") {
                                     bearerAuth(
                                         this@withMockOAuth2Server.tokenFromDefaultProvider(
-                                            mapOf("NAVident" to "user", "groups" to listOf("group"))
+                                            mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.RANDOM_GROUP))
                                         )
                                     )
                                 }
@@ -128,7 +129,7 @@ class FrontendApiTest :
                                 client.get("/api/rapport/frontend/oppgitt-varsling") {
                                     bearerAuth(
                                         this@withMockOAuth2Server.tokenFromDefaultProvider(
-                                            mapOf("NAVident" to "user", "groups" to listOf("group"))
+                                            mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.RANDOM_GROUP))
                                         )
                                     )
                                 }
@@ -227,7 +228,7 @@ class FrontendApiTest :
                                 client.get("/api/rapport/frontend/$NON_EXISTENT_ID/audit") {
                                     bearerAuth(
                                         this@withMockOAuth2Server.tokenFromDefaultProvider(
-                                            mapOf("NAVident" to "user", "groups" to listOf("group"))
+                                            mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.RANDOM_GROUP))
                                         )
                                     )
                                 }
@@ -244,7 +245,7 @@ class FrontendApiTest :
                                 client.get("/api/rapport/frontend/2/audit") {
                                     bearerAuth(
                                         this@withMockOAuth2Server.tokenFromDefaultProvider(
-                                            mapOf("NAVident" to "user", "groups" to listOf("group"))
+                                            mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.RANDOM_GROUP))
                                         )
                                     )
                                 }
@@ -323,11 +324,11 @@ class FrontendApiTest :
                     mockk<InternTilgangService> {
                         every { rapportTyperBrukerHarTilgangTil(bruker = any()) } returns emptySet()
                         every {
-                            rapportTyperBrukerHarTilgangTil(bruker = EntraId(groups = listOf("admin-uuid-group"), navIdent = "user"))
+                            rapportTyperBrukerHarTilgangTil(bruker = EntraId(groups = listOf(EntraIdGroup.ADMIN), navIdent = "user"))
                         } returns RapportType.entries.toSet()
                         every {
                             rapportTyperBrukerHarTilgangTil(
-                                bruker = EntraId(groups = listOf("ref-arbg-uuid-group", "trekk-hend-uuid-group"), navIdent = "user")
+                                bruker = EntraId(groups = listOf(EntraIdGroup.REF_ARBG, EntraIdGroup.TREKK_HEND), navIdent = "user")
                             )
                         } returns setOf(RapportType.`ref-arbg`, RapportType.`trekk-hend`)
                     }
@@ -370,7 +371,7 @@ class FrontendApiTest :
                                 client.get("/api/rapport/frontend/tilgang") {
                                     bearerAuth(
                                         this@withMockOAuth2Server.tokenFromDefaultProvider(
-                                            claims = mapOf("NAVident" to "user", "groups" to listOf("admin-uuid-group"))
+                                            claims = mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.ADMIN))
                                         )
                                     )
                                 }
@@ -395,7 +396,7 @@ class FrontendApiTest :
                                             claims =
                                                 mapOf(
                                                     "NAVident" to "user",
-                                                    "groups" to listOf("ref-arbg-uuid-group", "trekk-hend-uuid-group"),
+                                                    "groups" to listOf(EntraIdGroup.REF_ARBG, EntraIdGroup.TREKK_HEND),
                                                 )
                                         )
                                     )

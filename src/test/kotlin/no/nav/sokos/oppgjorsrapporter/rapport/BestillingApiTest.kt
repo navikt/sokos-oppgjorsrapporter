@@ -7,7 +7,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import kotlin.random.Random
-import no.nav.sokos.oppgjorsrapporter.TestUtil
+import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
+import no.nav.sokos.oppgjorsrapporter.TestUtil.loadDataSet
 import no.nav.sokos.oppgjorsrapporter.mq.Data
 import no.nav.sokos.oppgjorsrapporter.mq.Header
 import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
@@ -19,7 +20,7 @@ import org.junit.jupiter.api.Test
 import org.threeten.extra.MutableClock
 
 class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T12:00:00Z"), ZoneOffset.UTC)) {
-    protected override val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf("group"))
+    protected override val defaultClaims: Map<String, Any> = mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.RANDOM_GROUP))
 
     fun client(authToken: String = tokenFromDefaultProvider()): RequestSpecification =
         RestAssured.given()
@@ -74,7 +75,7 @@ class BestillingApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-
 
     @Test
     fun `POST _api_bestilling_v1 (med rapportType=ref-arbg og riktig body) svarer riktig`() {
-        TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+        loadDataSet("db/multiple.sql", dbContainer.toDataSource())
 
         val hovedOrgnr =
             // Et tilfeldig hoved-orgnr:
