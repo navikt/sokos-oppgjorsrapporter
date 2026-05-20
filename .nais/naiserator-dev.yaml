@@ -46,6 +46,10 @@ spec:
       claims:
         groups:
           - id: "9c5b24f2-5e01-4966-adaf-bc9fb6410a32" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER
+          - id: "f5073e28-eb3d-49f0-af1e-32066f422936" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER-ADMIN
+          - id: "ad006b47-99b5-465d-91da-a02a216e6b4c" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER-REF-ARBG
+          - id: "c7e60dc9-8ad9-405e-94b2-5fab77a3b6a4" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER-TREKK-HEND
+          - id: "8494d744-e7ad-4737-b785-f7754e0fa7a5" # 0000-CA-SOKOS-MF-OPPGJORSRAPPORTER-TREKK-KRED
   maskinporten:
     enabled: true
     scopes:
@@ -125,3 +129,33 @@ spec:
       value: https://www.ekstern.dev.nav.no/oppgjorsrapporter/
     - name: OPPGJORSRAPPORT_API_URL
       value: https://sokos-oppgjorsrapporter.ekstern.dev.nav.no/
+    - name: OPPGJORSRAPPORTER_ADMIN_GROUP_UUID
+      value: f5073e28-eb3d-49f0-af1e-32066f422936
+    - name: OPPGJORSRAPPORTER_REF_ARBG_UUID
+      value: ad006b47-99b5-465d-91da-a02a216e6b4c
+    - name: OPPGJORSRAPPORTER_TREKK_HEND_UUID
+      value: c7e60dc9-8ad9-405e-94b2-5fab77a3b6a4
+    - name: OPPGJORSRAPPORTER_TREKK_KRED_UUID
+      value: 8494d744-e7ad-4737-b785-f7754e0fa7a5
+    - name: NAV_ORGNRS # Hentet fra https://confluence.adeo.no/spaces/TOB/pages/791029635/TOB-6273+-+Orgnr+som+skal+v%C3%A6re+med+i+pilot-produksjon
+      value: >-
+        874652202,
+        889640782,
+        891046642,
+        974237059,
+        974239965,
+        974241730,
+        974242931,
+        974652269,
+        974652277,
+        974652285,
+        974652293,
+        974652358,
+        974789310,
+        975605779,
+        991013628,
+        991076573,
+        991078045,
+        993110469,
+        995277670,
+        999263550,

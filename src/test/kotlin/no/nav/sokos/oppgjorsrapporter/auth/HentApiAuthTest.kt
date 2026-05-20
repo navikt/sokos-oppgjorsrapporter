@@ -23,16 +23,21 @@ import kotlinx.io.bytestring.encodeToByteString
 import no.nav.helsearbeidsgiver.utils.json.fromJson
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.sokos.oppgjorsrapporter.TestContainer
+import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
+import no.nav.sokos.oppgjorsrapporter.TestUtil.Orgnrs
 import no.nav.sokos.oppgjorsrapporter.configureTestApplicationEnvironment
+import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.module
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.Api
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.rapport.Variant
 import no.nav.sokos.oppgjorsrapporter.rapport.VariantFormat
 import no.nav.sokos.oppgjorsrapporter.rapport.medId
 import no.nav.sokos.oppgjorsrapporter.rapport.medOrgNr
+import no.nav.sokos.oppgjorsrapporter.rapport.medType
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
@@ -53,6 +58,7 @@ abstract class ApiTest {
 
     val mockedRapportRepository = mockk<RapportRepository>()
     val mockedPdpService = mockk<PdpService>()
+    val mockedInternTilgangService = mockk<InternTilgangService>()
 
     val mockOAuth2Server: MockOAuth2Server = MockOAuth2Server().apply { start() }
     val dbContainer = TestContainer.postgres
@@ -62,6 +68,7 @@ abstract class ApiTest {
         application {
             dependencies.provide<RapportRepository> { mockedRapportRepository }
             dependencies.provide<PdpService> { mockedPdpService }
+            dependencies.provide<InternTilgangService> { mockedInternTilgangService }
             module()
         }
     }
@@ -101,6 +108,32 @@ abstract class ApiTest {
             )
         } returns true
     }
+
+    fun mockedInternTilganger() {
+        every { mockedInternTilgangService.harTilgangTilRessurs(bruker = any(), Orgnrs.NAV_ORGNR, rapportType = any()) } returns false
+        every { mockedInternTilgangService.harTilgangTilRessurs(bruker = any(), Orgnrs.IKKE_NAV_ORGNR, rapportType = any()) } returns false
+        every {
+            mockedInternTilgangService.harTilgangTilRessurs(
+                bruker = EntraId(groups = listOf(EntraIdGroup.ADMIN), navIdent = "user"),
+                orgnr = any(),
+                rapportType = any(),
+            )
+        } returns true
+        every {
+            mockedInternTilgangService.harTilgangTilRessurs(
+                bruker = EntraId(groups = listOf(EntraIdGroup.REF_ARBG), navIdent = "user"),
+                orgnr = Orgnrs.NAV_ORGNR,
+                rapportType = RapportType.`ref-arbg`,
+            )
+        } returns false
+        every {
+            mockedInternTilgangService.harTilgangTilRessurs(
+                bruker = EntraId(groups = listOf(EntraIdGroup.REF_ARBG), navIdent = "user"),
+                orgnr = Orgnrs.IKKE_NAV_ORGNR,
+                rapportType = RapportType.`ref-arbg`,
+            )
+        } returns true
+    }
 }
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -108,6 +141,7 @@ class HentApiAuthTest : ApiTest() {
     @BeforeEach
     fun setup() {
         mockPdpTilganger()
+        mockedInternTilganger()
     }
 
     @AfterAll
@@ -115,7 +149,7 @@ class HentApiAuthTest : ApiTest() {
         unmockkAll()
     }
 
-    fun mockRapport(id: Long, orgnr: OrgNr): Rapport = TestData.rapportMock.medId(id).medOrgNr(orgnr)
+    fun mockRapport(id: Long, orgnr: OrgNr, type: RapportType): Rapport = TestData.rapportMock.medId(id).medOrgNr(orgnr).medType(type)
 
     fun mockHentingAvEnkelRapport(resultat: Rapport) {
         every { mockedRapportRepository.finnRapport(any(), resultat.id) } returns resultat
@@ -130,8 +164,8 @@ class HentApiAuthTest : ApiTest() {
 
     @Test
     fun `gir 200 OK ved henting av metainfo om en spesifikk rapport som systembruker har tilgang til`() = runTest {
-        val rapportHovedenhet = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
-        val rapportUnderenhet = mockRapport(id = 234, orgnr = underenhetOrgnrMedPdpTilgang)
+        val rapportHovedenhet = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang, type = RapportType.`ref-arbg`)
+        val rapportUnderenhet = mockRapport(id = 234, orgnr = underenhetOrgnrMedPdpTilgang, type = RapportType.`ref-arbg`)
 
         mockHentingAvEnkelRapport(rapportHovedenhet)
         mockHentingAvEnkelRapport(rapportUnderenhet)
@@ -157,8 +191,8 @@ class HentApiAuthTest : ApiTest() {
 
     @Test
     fun `gir 200 OK ved henting av innhold i en spesifikk rapport som systembruker har tilgang til`() = runTest {
-        val rapportHovedenhet = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
-        val rapportUnderenhet = mockRapport(id = 234, orgnr = underenhetOrgnrMedPdpTilgang)
+        val rapportHovedenhet = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang, type = RapportType.`ref-arbg`)
+        val rapportUnderenhet = mockRapport(id = 234, orgnr = underenhetOrgnrMedPdpTilgang, type = RapportType.`ref-arbg`)
 
         mockHentingAvEnkelRapport(rapportHovedenhet)
         mockHentingAvEnkelRapport(rapportUnderenhet)
@@ -185,8 +219,8 @@ class HentApiAuthTest : ApiTest() {
 
     @Test
     fun `gir 404 Not Found ved henting av metainfo om en spesifikk rapport som systembruker ikke har tilgang til`() = runTest {
-        val rapportMedTilgang = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
-        val rapportUtenTilgang = mockRapport(id = 321, orgnr = orgnrUtenPdpTilgang)
+        val rapportMedTilgang = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang, type = RapportType.`ref-arbg`)
+        val rapportUtenTilgang = mockRapport(id = 321, orgnr = orgnrUtenPdpTilgang, type = RapportType.`ref-arbg`)
 
         mockHentingAvEnkelRapport(rapportMedTilgang)
         mockHentingAvEnkelRapport(rapportUtenTilgang)
@@ -210,8 +244,8 @@ class HentApiAuthTest : ApiTest() {
 
     @Test
     fun `gir 404 Not Found ved henting av innhold i en spesifikk rapport som systembruker ikke har tilgang til`() = runTest {
-        val rapportMedTilgang = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
-        val rapportUtenTilgang = mockRapport(id = 321, orgnr = orgnrUtenPdpTilgang)
+        val rapportMedTilgang = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang, type = RapportType.`ref-arbg`)
+        val rapportUtenTilgang = mockRapport(id = 321, orgnr = orgnrUtenPdpTilgang, type = RapportType.`ref-arbg`)
 
         mockHentingAvEnkelRapport(rapportMedTilgang)
         mockHentingAvEnkelRapport(rapportUtenTilgang)
@@ -236,7 +270,7 @@ class HentApiAuthTest : ApiTest() {
 
     @Test
     fun `gir 200 OK ved henting av innhold i en spesifikk rapport som tokenX bruker har tilgang til`() = runTest {
-        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang, type = RapportType.`ref-arbg`)
 
         mockHentingAvEnkelRapport(rapport)
 
@@ -252,7 +286,7 @@ class HentApiAuthTest : ApiTest() {
 
     @Test
     fun `gir 404 OK ved henting av innhold i en spesifikk rapport som tokenX bruker har tilgang til`() = runTest {
-        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang, type = RapportType.`ref-arbg`)
 
         mockHentingAvEnkelRapport(rapport)
 
@@ -267,7 +301,7 @@ class HentApiAuthTest : ApiTest() {
 
     @Test
     fun `gir 200 OK ved henting av metainfo om en spesifikk rapport som tokenX bruker har tilgang til`() = runTest {
-        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang, type = RapportType.`ref-arbg`)
 
         mockHentingAvEnkelRapport(rapport)
 
@@ -282,13 +316,97 @@ class HentApiAuthTest : ApiTest() {
 
     @Test
     fun `gir 404 Not Found ved henting av metainfo om en spesifikk rapport som tokenX bruker ikke har tilgang til`() = runTest {
-        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang)
+        val rapport = mockRapport(id = 123, orgnr = hovedenhetOrgnrMedPdpTilgang, type = RapportType.`ref-arbg`)
 
         mockHentingAvEnkelRapport(rapport)
 
         val respons =
             client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
                 bearerAuth(mockOAuth2Server.gyldigTokenXAuthToken(pid = pidUtenPdpTilgang, acr = "Level3"))
+            }
+
+        respons.status shouldBe HttpStatusCode.NotFound
+    }
+
+    @Test
+    fun `gir 200 OK ved henting av metainfo om en spesifikk rapport for alle rapporttyper når intern bruker er admin`() = runTest {
+        val rapporter =
+            listOf(
+                mockRapport(id = 123, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`ref-arbg`),
+                mockRapport(id = 234, orgnr = Orgnrs.IKKE_NAV_ORGNR, type = RapportType.`ref-arbg`),
+                mockRapport(id = 456, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`trekk-hend`),
+                mockRapport(id = 678, orgnr = Orgnrs.IKKE_NAV_ORGNR, type = RapportType.`trekk-hend`),
+                mockRapport(id = 789, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`trekk-kred`),
+                mockRapport(id = 890, orgnr = Orgnrs.IKKE_NAV_ORGNR, type = RapportType.`trekk-kred`),
+            )
+        rapporter.forEach { mockHentingAvEnkelRapport(it) }
+        rapporter
+            .map { Api.RapportDTO(it) }
+            .forEach { rapport ->
+                val respons =
+                    client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
+                        bearerAuth(
+                            mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.ADMIN)))
+                        )
+                    }
+
+                respons.status shouldBe HttpStatusCode.OK
+                respons.bodyAsText().fromJson(Api.RapportDTO.serializer()) shouldBe rapport
+            }
+    }
+
+    @Test
+    fun `gir 200 OK ved henting av metainfo om en spesifikk rapport som ikke hører Nav til når intern bruker kun har rapporttype spesifikk tilgang`() =
+        runTest {
+            val refArbgRapportIkkeNav = mockRapport(id = 123, orgnr = Orgnrs.IKKE_NAV_ORGNR, type = RapportType.`ref-arbg`)
+
+            mockHentingAvEnkelRapport(refArbgRapportIkkeNav)
+
+            val refArbgRapportDtoIkkeNav = Api.RapportDTO(refArbgRapportIkkeNav)
+
+            val responsIkkeNav =
+                client.get(urlString = "/api/rapport/v1/${refArbgRapportDtoIkkeNav.id.raw}") {
+                    bearerAuth(
+                        mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG)))
+                    )
+                }
+
+            responsIkkeNav.status shouldBe HttpStatusCode.OK
+            responsIkkeNav.bodyAsText().fromJson(Api.RapportDTO.serializer()) shouldBe refArbgRapportDtoIkkeNav
+        }
+
+    @Test
+    fun `gir 404 NOT FOUND ved henting av metainfo om en spesifikk rapport for Nav selv om intern bruker har rapporttype spesifikk tilgang`() =
+        runTest {
+            val refArbgRapportNav = mockRapport(id = 123, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`ref-arbg`)
+
+            mockHentingAvEnkelRapport(refArbgRapportNav)
+
+            val refArbgRapportDtoNav = Api.RapportDTO(refArbgRapportNav)
+
+            val responsNav =
+                client.get(urlString = "/api/rapport/v1/${refArbgRapportDtoNav.id.raw}") {
+                    bearerAuth(
+                        mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG)))
+                    )
+                }
+
+            responsNav.status shouldBe HttpStatusCode.NotFound
+        }
+
+    @Test
+    fun `gir 404 NOT FOUND ved henting av metainfo om en spesifikk rapport når intern bruker mangler riktig tilgang`() = runTest {
+        val trekkKredRapport = mockRapport(id = 789, orgnr = Orgnrs.IKKE_NAV_ORGNR, type = RapportType.`trekk-kred`)
+
+        mockHentingAvEnkelRapport(trekkKredRapport)
+
+        val trekkKredRapportDto = Api.RapportDTO(trekkKredRapport)
+
+        val respons =
+            client.get(urlString = "/api/rapport/v1/${trekkKredRapportDto.id.raw}") {
+                bearerAuth(
+                    mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG)))
+                )
             }
 
         respons.status shouldBe HttpStatusCode.NotFound

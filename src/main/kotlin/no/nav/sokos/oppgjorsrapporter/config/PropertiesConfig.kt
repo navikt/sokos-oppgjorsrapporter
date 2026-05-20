@@ -3,6 +3,7 @@ package no.nav.sokos.oppgjorsrapporter.config
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.config.ApplicationConfigValue
 import java.net.URI
+import java.util.UUID
 import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
@@ -60,6 +61,7 @@ object PropertiesConfig {
         val profile: Profile,
         val disableBackgroundJobs: Boolean,
         val pilotProdOrgs: List<OrgNr>,
+        val navOrgs: List<OrgNr>,
     ) {
         constructor(
             source: ConfigSource
@@ -69,25 +71,8 @@ object PropertiesConfig {
             guiBaseUri = URI.create(source.get("application.gui_base_uri")),
             profile = Profile.valueOf(source.get("application.profile")),
             disableBackgroundJobs = source.get("application.disable_background_jobs").toBoolean(),
-            pilotProdOrgs =
-                source
-                    .get("application.pilot_prod_orgnrs")
-                    .split("\\s*,\\s*".toRegex())
-                    .map { it.trim() }
-                    .filterNot { it.isEmpty() }
-                    .map(::OrgNr)
-                    .also { pilotOrgs ->
-                        pilotOrgs
-                            .map { OrgNr.Validert.valider(it.raw) }
-                            .mapNotNull { it.exceptionOrNull()?.message }
-                            .sorted()
-                            .takeIf { it.isNotEmpty() }
-                            ?.also { feil ->
-                                logger.warn {
-                                    "Listen av pilot-prod-orgnr inneholder ugyldige elementer: ${feil.joinToString("\n  ", prefix = "\n  ")}"
-                                }
-                            }
-                    },
+            pilotProdOrgs = source.get("application.pilot_prod_orgnrs").tilOrgnrs("pilot_prod_orgnrs"),
+            navOrgs = source.get("application.nav_orgnrs").tilOrgnrs("nav_orgnrs"),
         )
     }
 
@@ -166,10 +151,24 @@ object PropertiesConfig {
         )
     }
 
-    class AzureAdProperties(val clientId: String, val wellKnownUrl: String) {
+    class AzureAdProperties(
+        val clientId: String,
+        val wellKnownUrl: String,
+        val adminGroup: UUID,
+        val refArbgGroup: UUID,
+        val trekkHendGroup: UUID,
+        val trekkKredGroup: UUID,
+    ) {
         constructor(
             source: ConfigSource
-        ) : this(clientId = source.get("auth.entra_id.client_id"), wellKnownUrl = source.get("auth.entra_id.well_known_url"))
+        ) : this(
+            clientId = source.get("auth.entra_id.client_id"),
+            wellKnownUrl = source.get("auth.entra_id.well_known_url"),
+            adminGroup = UUID.fromString(source.get("auth.entra_id.admin_group_uuid")),
+            refArbgGroup = UUID.fromString(source.get("auth.entra_id.ref_arbg_group_uuid")),
+            trekkHendGroup = UUID.fromString(source.get("auth.entra_id.trekk_hend_group_uuid")),
+            trekkKredGroup = UUID.fromString(source.get("auth.entra_id.trekk_kred_group_uuid")),
+        )
     }
 
     class TokenXProperties(val clientId: String, val wellKnownUrl: String) {
@@ -202,5 +201,25 @@ object PropertiesConfig {
         LOCAL,
         DEV,
         PROD,
+    }
+
+    private fun String.tilOrgnrs(variableName: String): List<OrgNr> {
+        return this.split("\\s*,\\s*".toRegex())
+            .map { it.trim() }
+            .filterNot { it.isEmpty() }
+            .map(::OrgNr)
+            .also { pilotOrgs ->
+                pilotOrgs
+                    .map { OrgNr.Validert.valider(it.raw) }
+                    .mapNotNull { it.exceptionOrNull()?.message }
+                    .sorted()
+                    .takeIf { it.isNotEmpty() }
+                    ?.also { feil ->
+                        val errorMessage =
+                            "Listen av $variableName inneholder ugyldige elementer: ${feil.joinToString("\n  ", prefix = "\n  ")}"
+                        logger.error { errorMessage }
+                        throw IllegalStateException(errorMessage)
+                    }
+            }
     }
 }

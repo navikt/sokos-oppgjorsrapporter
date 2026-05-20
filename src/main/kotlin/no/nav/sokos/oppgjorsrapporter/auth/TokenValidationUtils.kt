@@ -4,6 +4,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
+import java.util.UUID
 import kotlin.collections.get
 import mu.KotlinLogging
 import no.nav.security.token.support.core.context.TokenValidationContext
@@ -61,7 +62,7 @@ fun TokenValidationContext.getEntraId(): Result<EntraId> = runCatching {
     val claims = this.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)
     val navIdent = (claims.get("NAVident") as? String) ?: throw BrukerIkkeFunnet()
     val groups = (claims.get("groups") as? List<*>)?.filterIsInstance<String>() ?: throw BrukerIkkeFunnet()
-    EntraId(navIdent, groups)
+    EntraId(navIdent, groups.map { UUID.fromString(it) })
 }
 
 fun TokenValidationContext.getTokenX(): Result<TokenX> = runCatching {
@@ -98,7 +99,7 @@ data class Systembruker(val userId: String, val userOrg: OrgNr, val systemId: St
     }
 }
 
-data class EntraId(val navIdent: String, val groups: List<String>) : AutentisertBruker, HasAuthType by Companion {
+data class EntraId(val navIdent: String, val groups: List<UUID>) : AutentisertBruker, HasAuthType by Companion {
     companion object : HasAuthType {
         override val authType = "entraid"
     }

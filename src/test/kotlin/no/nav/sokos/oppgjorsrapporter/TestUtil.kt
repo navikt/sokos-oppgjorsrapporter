@@ -8,6 +8,7 @@ import io.ktor.server.testing.TestApplicationBuilder
 import io.ktor.server.testing.testApplication
 import java.sql.Connection.TRANSACTION_SERIALIZABLE
 import java.sql.DatabaseMetaData
+import java.util.UUID
 import javax.sql.DataSource
 import kotlinx.coroutines.test.TestResult
 import mu.KotlinLogging
@@ -17,6 +18,8 @@ import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.ApplicationState
 import no.nav.sokos.oppgjorsrapporter.config.CompositeApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.config.DatabaseConfig
+import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.genererGyldig
 import org.testcontainers.postgresql.PostgreSQLContainer
 
 private val logger = KotlinLogging.logger {}
@@ -189,6 +192,19 @@ object TestUtil {
                 }
             }
         }
+
+    object EntraIdGroup {
+        val ADMIN: UUID = UUID.fromString("cc40e92e-4eb7-11f1-9366-16a7572e12ed")
+        val REF_ARBG: UUID = UUID.fromString("38952d94-4ec5-11f1-813f-16a7572e12ed")
+        val TREKK_HEND: UUID = UUID.fromString("8fe5adf8-4ec5-11f1-8294-16a7572e12ed")
+        val TREKK_KRED: UUID = UUID.fromString("81b31662-4ec5-11f1-b02e-16a7572e12ed")
+        val RANDOM_GROUP: UUID = UUID.fromString("eeacaf1a-52cd-11f1-b2c8-16a7572e12ed")
+    }
+
+    object Orgnrs {
+        val NAV_ORGNR: OrgNr = OrgNr.genererGyldig().somUvalidert()
+        val IKKE_NAV_ORGNR: OrgNr = OrgNr.genererGyldig().somUvalidert()
+    }
 }
 
 fun MockOAuth2Server.authConfigOverrides() =
