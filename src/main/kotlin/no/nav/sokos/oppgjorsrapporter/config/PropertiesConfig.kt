@@ -71,8 +71,8 @@ object PropertiesConfig {
             guiBaseUri = URI.create(source.get("application.gui_base_uri")),
             profile = Profile.valueOf(source.get("application.profile")),
             disableBackgroundJobs = source.get("application.disable_background_jobs").toBoolean(),
-            pilotProdOrgs = source.get("application.pilot_prod_orgnrs").tilOrgnrs("pilot-prod-orgnr"),
-            navOrgs = source.get("application.nav_orgnrs").tilOrgnrs("nav-orgnr"),
+            pilotProdOrgs = source.get("application.pilot_prod_orgnrs").tilOrgnrs("pilot_prod_orgnrs"),
+            navOrgs = source.get("application.nav_orgnrs").tilOrgnrs("nav_orgnrs"),
         )
     }
 
@@ -215,9 +215,10 @@ object PropertiesConfig {
                     .sorted()
                     .takeIf { it.isNotEmpty() }
                     ?.also { feil ->
-                        logger.warn {
+                        val errorMessage =
                             "Listen av $variableName inneholder ugyldige elementer: ${feil.joinToString("\n  ", prefix = "\n  ")}"
-                        }
+                        logger.error { errorMessage }
+                        throw IllegalStateException(errorMessage)
                     }
             }
     }

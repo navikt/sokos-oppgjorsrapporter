@@ -115,14 +115,7 @@ abstract class ApiTest {
         every {
             mockedInternTilgangService.harTilgangTilRessurs(
                 bruker = EntraId(groups = listOf(EntraIdGroup.ADMIN), navIdent = "user"),
-                orgnr = Orgnrs.NAV_ORGNR,
-                rapportType = any(),
-            )
-        } returns true
-        every {
-            mockedInternTilgangService.harTilgangTilRessurs(
-                bruker = EntraId(groups = listOf(EntraIdGroup.ADMIN), navIdent = "user"),
-                orgnr = Orgnrs.IKKE_NAV_ORGNR,
+                orgnr = any(),
                 rapportType = any(),
             )
         } returns true
@@ -337,35 +330,18 @@ class HentApiAuthTest : ApiTest() {
 
     @Test
     fun `gir 200 OK ved henting av metainfo om en spesifikk rapport for alle rapporttyper når intern bruker er admin`() = runTest {
-        val refArbgRapportNav = mockRapport(id = 123, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`ref-arbg`)
-        val refArbgRapportIkkeNav = mockRapport(id = 123, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`ref-arbg`)
-        val trekkHendRapportNav = mockRapport(id = 456, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`trekk-hend`)
-        val trekkHendRapportIkkeNav = mockRapport(id = 456, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`trekk-hend`)
-        val trekkKredRapportNav = mockRapport(id = 789, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`trekk-kred`)
-        val trekkKredRapportIkkeNav = mockRapport(id = 789, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`trekk-kred`)
-
-        mockHentingAvEnkelRapport(refArbgRapportNav)
-        mockHentingAvEnkelRapport(refArbgRapportIkkeNav)
-        mockHentingAvEnkelRapport(trekkHendRapportNav)
-        mockHentingAvEnkelRapport(trekkHendRapportIkkeNav)
-        mockHentingAvEnkelRapport(trekkKredRapportNav)
-        mockHentingAvEnkelRapport(trekkKredRapportIkkeNav)
-
-        val refArbgRapportDtoNav = Api.RapportDTO(refArbgRapportNav)
-        val refArbgRapportDtoIkkeNav = Api.RapportDTO(refArbgRapportIkkeNav)
-        val trekkHendRapportDtoNav = Api.RapportDTO(trekkHendRapportNav)
-        val trekkHendRapportDtoIkkeNav = Api.RapportDTO(trekkHendRapportIkkeNav)
-        val trekkKredRapportDtoNav = Api.RapportDTO(trekkKredRapportNav)
-        val trekkKredRapportDtoIkkeNav = Api.RapportDTO(trekkKredRapportIkkeNav)
-
-        listOf(
-                refArbgRapportDtoNav,
-                refArbgRapportDtoIkkeNav,
-                trekkHendRapportDtoNav,
-                trekkHendRapportDtoIkkeNav,
-                trekkKredRapportDtoNav,
-                trekkKredRapportDtoIkkeNav,
+        val rapporter =
+            listOf(
+                mockRapport(id = 123, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`ref-arbg`),
+                mockRapport(id = 234, orgnr = Orgnrs.IKKE_NAV_ORGNR, type = RapportType.`ref-arbg`),
+                mockRapport(id = 456, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`trekk-hend`),
+                mockRapport(id = 678, orgnr = Orgnrs.IKKE_NAV_ORGNR, type = RapportType.`trekk-hend`),
+                mockRapport(id = 789, orgnr = Orgnrs.NAV_ORGNR, type = RapportType.`trekk-kred`),
+                mockRapport(id = 890, orgnr = Orgnrs.IKKE_NAV_ORGNR, type = RapportType.`trekk-kred`),
             )
+        rapporter.forEach { mockHentingAvEnkelRapport(it) }
+        rapporter
+            .map { Api.RapportDTO(it) }
             .forEach { rapport ->
                 val respons =
                     client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
