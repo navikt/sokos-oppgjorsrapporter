@@ -41,8 +41,10 @@ import no.nav.sokos.oppgjorsrapporter.toDataSource
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 import no.nav.sokos.utils.genererGyldig
+import org.threeten.extra.LocalDateRange
 
 class RapportServiceTest :
     FunSpec({
@@ -257,6 +259,46 @@ class RapportServiceTest :
                     rapporter[1].id shouldBe Rapport.Id(2)
                     rapporter[1].orgnr shouldBe orgnr
                     rapporter[1].type shouldBe RapportType.`trekk-kred`
+                }
+            }
+            test("kan hente en liste med rapporter som nevner et fnr") {
+                TestUtil.withFullApplication(dbContainer) {
+                    TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+
+                    val sut: RapportService = application.dependencies.resolve()
+                    val fnr = Fnr("12345678901")
+                    val rapporter =
+                        sut.rapportSoek(
+                            fnr,
+                            LocalDateRange.ofClosed(LocalDate.of(2023, 1, 1), LocalDate.of(2026, 1, 1)),
+                            true,
+                            RapportType.`ref-arbg`,
+                        )
+                    rapporter.size shouldBe 2
+
+                    rapporter[0].id shouldBe Rapport.Id(5)
+                    rapporter[0].orgnr shouldBe OrgNr("456789012")
+                    rapporter[0].type shouldBe RapportType.`ref-arbg`
+
+                    rapporter[1].id shouldBe Rapport.Id(6)
+                    rapporter[1].orgnr shouldBe OrgNr("456789012")
+                    rapporter[1].type shouldBe RapportType.`ref-arbg`
+                }
+            }
+            test("gir tom liste ved søk på ukjent fnr") {
+                TestUtil.withFullApplication(dbContainer) {
+                    TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
+
+                    val sut: RapportService = application.dependencies.resolve()
+                    val fnr = Fnr("11234567890")
+                    val rapporter =
+                        sut.rapportSoek(
+                            fnr,
+                            LocalDateRange.ofClosed(LocalDate.of(2023, 1, 1), LocalDate.of(2026, 1, 1)),
+                            true,
+                            RapportType.`ref-arbg`,
+                        )
+                    rapporter.size shouldBe 0
                 }
             }
 
