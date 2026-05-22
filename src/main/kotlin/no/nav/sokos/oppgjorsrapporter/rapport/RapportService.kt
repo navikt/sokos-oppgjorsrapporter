@@ -23,6 +23,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.VariantFormatSerializer
 import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.Interval
 import org.threeten.extra.LocalDateRange
@@ -236,6 +237,8 @@ class RapportService(
                 },
             )
             .joinToString(":")
+
+    fun rapportSoek(fnr: Fnr, periode: LocalDateRange, inkluderArkiverte: Boolean, rapportType: RapportType): List<Rapport> = TODO()
 }
 
 sealed interface RapportKriterier {
