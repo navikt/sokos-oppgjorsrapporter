@@ -11,15 +11,15 @@ VALUES
     (7, '2026-05-10T00:13:53+0200', 'MQ', 'todo', 'trekk-hend', '2026-05-10T00:13:55+0200', NULL)
 ;
 
-INSERT INTO rapport (id, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert)
+INSERT INTO rapport (id, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, nevnt_info)
 VALUES
-    (1, 1, '123456789', 'Test Organisasjon A', 'ref-arbg', '2023-01-01', '12345678901', 1, 1, 1, '2023-01-01T00:45:15+0100', null),
-    (2, 2, '123456789', 'Test Organisasjon A', 'trekk-kred', '2023-01-01', '12345678901', 1, 1, 1, '2023-01-01T09:37:52+0100', null),
-    (3, 3, '234567890', 'Test Organisasjon B', 'ref-arbg', '2023-11-01', '23456789012', 1, 1, 1, '2023-11-01T11:57:21+0100', null),
-    (4, 4, '345678901', 'Test Organisasjon C', 'ref-arbg', '2023-11-01', '34567890123', 1, 1, 1, '2023-11-01T11:57:21+0100', '2023-11-15T08:14:41+0100'),
-    (5, 5, '456789012', 'Test Organisasjon D', 'ref-arbg', '2023-12-31', '45678901234', 1, 1, 1, '2023-12-31T23:58:27+0100', null),
-    (6, 6, '456789012', 'Test Organisasjon D', 'ref-arbg', '2024-01-01', '45678901234', 1, 1, 1, '2024-01-01T00:13:54+0100', null),
-    (7, 7, '567890123', 'Test Organisasjon E', 'trekk-hend', '2026-05-10', NULL, 1, 1, 1, '2026-05-10T00:13:54+0200', null)
+    (1, 1, '123456789', 'Test Organisasjon A', 'ref-arbg', '2023-01-01', '12345678901', 1, 1, 1, '2023-01-01T00:45:15+0100', null, NULL),
+    (2, 2, '123456789', 'Test Organisasjon A', 'trekk-kred', '2023-01-01', '12345678901', 1, 1, 1, '2023-01-01T09:37:52+0100', null, NULL),
+    (3, 3, '234567890', 'Test Organisasjon B', 'ref-arbg', '2023-11-01', '23456789012', 1, 1, 1, '2023-11-01T11:57:21+0100', null, NULL),
+    (4, 4, '345678901', 'Test Organisasjon C', 'ref-arbg', '2023-11-01', '34567890123', 1, 1, 1, '2023-11-01T11:57:21+0100', '2023-11-15T08:14:41+0100', NULL),
+    (5, 5, '456789012', 'Test Organisasjon D', 'ref-arbg', '2023-12-31', '45678901234', 2, 1, 2, '2023-12-31T23:58:27+0100', null, '[{"fnr": "12345678901"}, {"fnr": "23456789011"}, {"underenhet": "234567890"}]'),
+    (6, 6, '456789012', 'Test Organisasjon D', 'ref-arbg', '2024-01-01', '45678901234', 2, 1, 2, '2024-01-01T00:13:54+0100', null, '[{"fnr": "12345678901"}, {"fnr": "23456789011"}, {"underenhet": "234567890"}]'),
+    (7, 7, '567890123', 'Test Organisasjon E', 'trekk-hend', '2026-05-10', NULL, 1, 1, 1, '2026-05-10T00:13:54+0200', null, NULL)
 ;
 
 INSERT INTO rapport_variant (id, rapport_id, format, filnavn, innhold)

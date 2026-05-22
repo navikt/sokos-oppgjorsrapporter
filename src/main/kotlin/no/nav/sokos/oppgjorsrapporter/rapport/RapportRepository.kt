@@ -9,6 +9,8 @@ import kotlinx.io.bytestring.ByteString
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.utils.Fnr
+import org.threeten.extra.LocalDateRange
 
 class RapportRepository(private val clock: Clock) {
     fun lagreBestilling(tx: TransactionalSession, bestilling: UlagretRapportBestilling): RapportBestilling =
@@ -451,6 +453,37 @@ class RapportRepository(private val clock: Clock) {
                     it.long("antall_rapporter"),
                 )
             }
+            .asList
+            .let { tx.run(it) }
+
+    fun rapportSoek(
+        tx: TransactionalSession,
+        fnr: Fnr,
+        periode: LocalDateRange,
+        inkluderArkiverte: Boolean,
+        rapportType: RapportType,
+    ): List<Rapport> =
+        queryOf(
+                """
+                SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
+                       antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
+                FROM rapport.rapport
+                WHERE type = CAST(:rapportType AS rapport.rapport_type)
+                  AND (arkivert IS NULL OR :inkluderArkiverte)
+                  AND dato_valutert BETWEEN :fraDato AND :tilDato
+                  AND nevnt_info @> jsonb_build_array(jsonb_build_object('fnr', :fnr))
+                ORDER BY id ASC
+                """
+                    .trimIndent(),
+                mapOf(
+                    "fnr" to fnr.raw,
+                    "inkluderArkiverte" to inkluderArkiverte,
+                    "fraDato" to periode.start,
+                    "tilDato" to periode.endInclusive,
+                    "rapportType" to rapportType.name,
+                ),
+            )
+            .map { row -> Rapport(row) }
             .asList
             .let { tx.run(it) }
 }

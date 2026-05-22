@@ -106,7 +106,6 @@ object FrontendApi {
                                         logger.info { "Bruker $bruker har ikke tilgang til rapporttype ${reqBody.rapportType}" }
                                         return@post call.respond(HttpStatusCode.Forbidden)
                                     }
-                                    // TODO sjekk tilgangsmaskinen for adressebekyttelse osv
                                     with(reqBody) { rapportService.rapportSoek(fnr, datoRange(), inkluderArkiverte, rapportType) }
                                 }
                                 is RapportUnderenhetSoek -> TODO()
