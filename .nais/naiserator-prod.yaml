@@ -127,8 +127,7 @@ spec:
     # Setter alle AD-gruppene til å ha samme UUID som grunn tilgang(0000-CA-SOKOS-MF-OPPGJORSRAPPORTER)
     # siden disse tilgangene ikke klare til å tildeles i omada ennå.
     - name: OPPGJORSRAPPORTER_ADMIN_GROUP_UUID
-      value: 2abbcfe4-98c8-4b30-8bac-5ea1e0c6d0e1
-#      value: 4eb9d678-f951-4498-962b-a7e8209425fa
+      value: 4eb9d678-f951-4498-962b-a7e8209425fa
     - name: OPPGJORSRAPPORTER_REF_ARBG_UUID
       value: 2abbcfe4-98c8-4b30-8bac-5ea1e0c6d0e1
 #      value: d9bff4e3-f13e-47af-8818-6ba401239447
