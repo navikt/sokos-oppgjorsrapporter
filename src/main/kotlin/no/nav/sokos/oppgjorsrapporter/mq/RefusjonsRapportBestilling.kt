@@ -9,6 +9,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
+import no.nav.sokos.oppgjorsrapporter.rapport.UlagretRapport
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.Belop
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
@@ -73,6 +74,10 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
                 )
             }
     }
+
+    override fun nevntInfo(): List<UlagretRapport.NevntInfo> =
+        listOf(UlagretRapport.NevntVersjon(1)) +
+            datarec.flatMap { listOf(UlagretRapport.NevntFnr(it.fnr), UlagretRapport.NevntUnderenhet(it.bedriftsnummer)) }.distinct()
 
     companion object {
         val json = Json { explicitNulls = false }

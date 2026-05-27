@@ -10,6 +10,7 @@ import kotliquery.TransactionalSession
 import kotliquery.queryOf
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.LocalDateRange
 
 class RapportRepository(private val clock: Clock) {
@@ -88,9 +89,10 @@ class RapportRepository(private val clock: Clock) {
         queryOf(
                 """
                 INSERT INTO rapport.rapport(bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
-                                            antall_rader, antall_underenheter, antall_personer)
+                                            antall_rader, antall_underenheter, antall_personer, nevnt_info)
                 VALUES (:bestilling_id, :orgnr, :org_navn, CAST(:type AS rapport.rapport_type), :dato_valutert, :bankkonto,
-                        :antall_rader, :antall_underenheter, :antall_personer)
+                        :antall_rader, :antall_underenheter, :antall_personer,
+                        CAST(:nevnt_info AS jsonb))
                 RETURNING id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
                           antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
                 """
@@ -105,6 +107,7 @@ class RapportRepository(private val clock: Clock) {
                     "antall_rader" to rapport.antallRader,
                     "antall_underenheter" to rapport.antallUnderenheter,
                     "antall_personer" to rapport.antallPersoner,
+                    "nevnt_info" to UlagretRapport.NevntInfo.jsonConfig.encodeToString(rapport.nevntInfo),
                 ),
             )
             .map { row -> Rapport(row) }
@@ -462,7 +465,33 @@ class RapportRepository(private val clock: Clock) {
         periode: LocalDateRange,
         inkluderArkiverte: Boolean,
         rapportType: RapportType,
-    ): List<Rapport> =
+    ): List<Rapport> = rapportSoekHjelper(tx, rapportSoekParams("fnr", fnr.raw, periode, inkluderArkiverte, rapportType))
+
+    fun rapportSoek(
+        tx: TransactionalSession,
+        underenhet: OrgNr,
+        periode: LocalDateRange,
+        inkluderArkiverte: Boolean,
+        rapportType: RapportType,
+    ): List<Rapport> = rapportSoekHjelper(tx, rapportSoekParams("underenhet", underenhet.raw, periode, inkluderArkiverte, rapportType))
+
+    private fun rapportSoekParams(
+        jsonKey: String,
+        jsonValue: String,
+        periode: LocalDateRange,
+        inkluderArkiverte: Boolean,
+        rapportType: RapportType,
+    ) =
+        mapOf(
+            "jsonKey" to jsonKey,
+            "jsonValue" to jsonValue,
+            "inkluderArkiverte" to inkluderArkiverte,
+            "fraDato" to periode.start,
+            "tilDato" to periode.endInclusive,
+            "rapportType" to rapportType.name,
+        )
+
+    private fun rapportSoekHjelper(tx: TransactionalSession, params: Map<String, Any?>) =
         queryOf(
                 """
                 SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
@@ -471,17 +500,11 @@ class RapportRepository(private val clock: Clock) {
                 WHERE type = CAST(:rapportType AS rapport.rapport_type)
                   AND (arkivert IS NULL OR :inkluderArkiverte)
                   AND dato_valutert BETWEEN :fraDato AND :tilDato
-                  AND nevnt_info @> jsonb_build_array(jsonb_build_object('fnr', :fnr))
+                  AND nevnt_info @> jsonb_build_array(jsonb_build_object(:jsonKey, :jsonValue))
                 ORDER BY id ASC
                 """
                     .trimIndent(),
-                mapOf(
-                    "fnr" to fnr.raw,
-                    "inkluderArkiverte" to inkluderArkiverte,
-                    "fraDato" to periode.start,
-                    "tilDato" to periode.endInclusive,
-                    "rapportType" to rapportType.name,
-                ),
+                params,
             )
             .map { row -> Rapport(row) }
             .asList
