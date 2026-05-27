@@ -1,3 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter.mq
 
-sealed class RapportBestillingMsg
+import no.nav.sokos.oppgjorsrapporter.rapport.UlagretRapport
+
+sealed class RapportBestillingMsg {
+    abstract fun nevntInfo(): List<UlagretRapport.NevntInfo>
+}

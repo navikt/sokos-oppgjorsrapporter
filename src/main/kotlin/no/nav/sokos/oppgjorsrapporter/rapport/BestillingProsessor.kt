@@ -80,6 +80,7 @@ class BestillingProsessor(
                                 antallRader = refusjonsRapportBestilling.datarec.size,
                                 antallUnderenheter = refusjonsRapportBestilling.datarec.distinctBy { it.bedriftsnummer }.size,
                                 antallPersoner = refusjonsRapportBestilling.datarec.distinctBy { it.fnr }.size,
+                                nevntInfo = refusjonsRapportBestilling.nevntInfo(),
                             ),
                             suspend { variant: VariantFormat ->
                                 when (variant) {
@@ -116,6 +117,7 @@ class BestillingProsessor(
                                         .map { it.fnr }
                                         .distinct()
                                         .size,
+                                nevntInfo = trekkKredRapportBestilling.nevntInfo(),
                             ),
                             suspend { variant: VariantFormat ->
                                 when (variant) {
@@ -147,6 +149,7 @@ class BestillingProsessor(
                                             .distinct()
                                             .size
                                     },
+                                nevntInfo = trekkHendRapportBestilling.nevntInfo(),
                             ),
                             suspend { variant: VariantFormat ->
                                 when (variant) {

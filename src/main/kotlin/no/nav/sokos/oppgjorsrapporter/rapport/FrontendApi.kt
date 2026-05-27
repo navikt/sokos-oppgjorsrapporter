@@ -99,16 +99,16 @@ object FrontendApi {
             autentisertBruker().let { bruker ->
                 when (bruker) {
                     is EntraId -> {
+                        if (!internTilgangService.rapportTyperBrukerHarTilgangTil(bruker).contains(reqBody.rapportType)) {
+                            logger.info { "Bruker $bruker har ikke tilgang til rapporttype ${reqBody.rapportType}" }
+                            return@post call.respond(HttpStatusCode.Forbidden)
+                        }
                         val rapporter =
                             when (reqBody) {
-                                is RapportFnrSoek -> {
-                                    if (!internTilgangService.rapportTyperBrukerHarTilgangTil(bruker).contains(reqBody.rapportType)) {
-                                        logger.info { "Bruker $bruker har ikke tilgang til rapporttype ${reqBody.rapportType}" }
-                                        return@post call.respond(HttpStatusCode.Forbidden)
-                                    }
+                                is RapportFnrSoek ->
                                     with(reqBody) { rapportService.rapportSoek(fnr, datoRange(), inkluderArkiverte, rapportType) }
-                                }
-                                is RapportUnderenhetSoek -> TODO()
+                                is RapportUnderenhetSoek ->
+                                    with(reqBody) { rapportService.rapportSoek(underenhet, datoRange(), inkluderArkiverte, rapportType) }
                             }
                         call.respond(
                             rapporter.filter { internTilgangService.harTilgangTilRessurs(bruker, it.orgnr, it.type) }.map(::RapportDTO)
