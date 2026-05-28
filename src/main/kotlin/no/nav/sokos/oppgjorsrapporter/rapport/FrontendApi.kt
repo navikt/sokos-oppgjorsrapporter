@@ -13,8 +13,12 @@ import io.ktor.server.routing.post
 import io.ktor.server.util.getValue
 import java.time.Instant
 import java.time.LocalDate
+import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.json.JsonContentPolymorphicSerializer
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.autentisertBruker
@@ -32,7 +36,7 @@ import org.threeten.extra.LocalDateRange
 object FrontendApi {
     private val logger = KotlinLogging.logger {}
 
-    @Serializable
+    @Serializable(with = RapportSoek.Serializer::class)
     sealed interface RapportSoek {
         val fraDato: LocalDate
         val tilDato: LocalDate
@@ -40,6 +44,17 @@ object FrontendApi {
         val inkluderArkiverte: Boolean
 
         fun datoRange(): LocalDateRange = LocalDateRange.ofClosed(fraDato, tilDato)
+
+        class Serializer : JsonContentPolymorphicSerializer<RapportSoek>(RapportSoek::class) {
+            override fun selectDeserializer(element: JsonElement): DeserializationStrategy<RapportSoek> {
+                val jsonObject = element.jsonObject
+                return when {
+                    "fnr" in jsonObject -> RapportFnrSoek.serializer()
+                    "underenhet" in jsonObject -> RapportUnderenhetSoek.serializer()
+                    else -> error("Ukjent feil ved deserialisering")
+                }
+            }
+        }
     }
 
     @Serializable
@@ -51,6 +66,7 @@ object FrontendApi {
         override val inkluderArkiverte: Boolean = true,
     ) : RapportSoek
 
+    @Serializable
     data class RapportUnderenhetSoek(
         val underenhet: OrgNr,
         override val fraDato: LocalDate,

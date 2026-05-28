@@ -422,6 +422,7 @@ class FrontendApiTest :
                     }
                 }
             }
+
             context("for å søke etter rapporter der fnr eller underenhet er nevnt") {
                 val nevntFnr = Fnr.genererGyldig().somUvalidert()
                 val ukjentFnr = Fnr.genererGyldig().somUvalidert()
@@ -449,11 +450,20 @@ class FrontendApiTest :
                     mockk<RapportService> {
                         every { rapportSoek(nevntFnr, any(), any(), RapportType.`ref-arbg`) } returns listOf(mockRapport)
                         every { rapportSoek(ukjentFnr, any(), any(), RapportType.`ref-arbg`) } returns emptyList()
+                        every { rapportSoek(nevntUnderenhet, any(), any(), RapportType.`ref-arbg`) } returns listOf(mockRapport)
+                        every { rapportSoek(ukjentUnderenhet, any(), any(), RapportType.`ref-arbg`) } returns emptyList()
                     }
 
                 val dependencyOverrides: Application.() -> Unit = {
                     dependencies.provide<RapportService> { mockedRapportService }
                     dependencies.provide<InternTilgangService> { mockedInternTilgangService }
+                }
+
+                val clientJsonConfig = Json {
+                    prettyPrint = true
+                    ignoreUnknownKeys = true
+                    encodeDefaults = true
+                    explicitNulls = false
                 }
 
                 test("gir feilmelding uten autentisering") {
@@ -464,6 +474,7 @@ class FrontendApiTest :
                         }
                     }
                 }
+
                 test("gir feilmelding uten EntraID-autentisering") {
                     withMockOAuth2Server {
                         withTestApplication(dbContainer) {
@@ -483,21 +494,11 @@ class FrontendApiTest :
                         }
                     }
                 }
+
                 test("svarer med en liste av matchende rapporter når det søkes på et fnr") {
                     withMockOAuth2Server {
                         withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
-                            val client = createClient {
-                                install(ContentNegotiation) {
-                                    json(
-                                        Json {
-                                            prettyPrint = true
-                                            ignoreUnknownKeys = true
-                                            encodeDefaults = true
-                                            explicitNulls = false
-                                        }
-                                    )
-                                }
-                            }
+                            val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
 
                             val response =
                                 client.post("/api/rapport/frontend/nevnt-sok") {
@@ -513,7 +514,7 @@ class FrontendApiTest :
                                             LocalDate.now().minusDays(1),
                                             LocalDate.now(),
                                             RapportType.`ref-arbg`,
-                                        ) as FrontendApi.RapportSoek
+                                        )
                                     )
                                 }
                             response.status shouldBe HttpStatusCode.OK
@@ -538,21 +539,56 @@ class FrontendApiTest :
                         }
                     }
                 }
+
+                test("svarer med en liste av matchende rapporter når det søkes på en underenhet") {
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
+                            val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
+
+                            val response =
+                                client.post("/api/rapport/frontend/nevnt-sok") {
+                                    bearerAuth(
+                                        this@withMockOAuth2Server.tokenFromDefaultProvider(
+                                            claims = mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG))
+                                        )
+                                    )
+                                    contentType(ContentType.Application.Json)
+                                    setBody(
+                                        FrontendApi.RapportUnderenhetSoek(
+                                            nevntUnderenhet,
+                                            LocalDate.now().minusDays(1),
+                                            LocalDate.now(),
+                                            RapportType.`ref-arbg`,
+                                        )
+                                    )
+                                }
+                            response.status shouldBe HttpStatusCode.OK
+                            assertThatJson(response.bodyAsText())
+                                .isEqualTo(
+                                    """
+                                    [
+                                      {
+                                        "id": 123,
+                                        "orgnr": "810007982",
+                                        "orgNavn": "Test Bedrift AS",
+                                        "type": "ref-arbg",
+                                        "datoValutert": "2024-11-01",
+                                        "bankkonto": "12345678901",
+                                        "opprettet": "2024-11-01T12:15:02Z",
+                                        "arkivert": false
+                                      }
+                                    ]
+                                    """
+                                        .trimIndent()
+                                )
+                        }
+                    }
+                }
+
                 test("gir feilmelding når bruker ikke har tilgang til rapporttype") {
                     withMockOAuth2Server {
                         withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
-                            val client = createClient {
-                                install(ContentNegotiation) {
-                                    json(
-                                        Json {
-                                            prettyPrint = true
-                                            ignoreUnknownKeys = true
-                                            encodeDefaults = true
-                                            explicitNulls = false
-                                        }
-                                    )
-                                }
-                            }
+                            val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
 
                             val response =
                                 client.post("/api/rapport/frontend/nevnt-sok") {
@@ -568,28 +604,18 @@ class FrontendApiTest :
                                             LocalDate.now().minusDays(1),
                                             LocalDate.now(),
                                             RapportType.`ref-arbg`,
-                                        ) as FrontendApi.RapportSoek
+                                        )
                                     )
                                 }
                             response.status shouldBe HttpStatusCode.Forbidden
                         }
                     }
                 }
+
                 test("svarer med en tom liste når det søkes på et ukjent fnr") {
                     withMockOAuth2Server {
                         withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
-                            val client = createClient {
-                                install(ContentNegotiation) {
-                                    json(
-                                        Json {
-                                            prettyPrint = true
-                                            ignoreUnknownKeys = true
-                                            encodeDefaults = true
-                                            explicitNulls = false
-                                        }
-                                    )
-                                }
-                            }
+                            val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
 
                             val response =
                                 client.post("/api/rapport/frontend/nevnt-sok") {
@@ -605,7 +631,35 @@ class FrontendApiTest :
                                             LocalDate.now().minusDays(1),
                                             LocalDate.now(),
                                             RapportType.`ref-arbg`,
-                                        ) as FrontendApi.RapportSoek
+                                        )
+                                    )
+                                }
+                            response.status shouldBe HttpStatusCode.OK
+                            assertThatJson(response.bodyAsText()).isEqualTo("[]")
+                        }
+                    }
+                }
+
+                test("svarer med en tom liste når det søkes på en ukjent underenhet") {
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
+                            val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
+
+                            val response =
+                                client.post("/api/rapport/frontend/nevnt-sok") {
+                                    bearerAuth(
+                                        this@withMockOAuth2Server.tokenFromDefaultProvider(
+                                            claims = mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG))
+                                        )
+                                    )
+                                    contentType(ContentType.Application.Json)
+                                    setBody(
+                                        FrontendApi.RapportUnderenhetSoek(
+                                            ukjentUnderenhet,
+                                            LocalDate.now().minusDays(1),
+                                            LocalDate.now(),
+                                            RapportType.`ref-arbg`,
+                                        )
                                     )
                                 }
                             response.status shouldBe HttpStatusCode.OK
