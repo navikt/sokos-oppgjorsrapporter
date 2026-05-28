@@ -1,22 +1,18 @@
-package serialization
+package no.nav.sokos.oppgjorsrapporter.mq
 
 import java.math.BigDecimal
 import java.time.LocalDate
-import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
+import net.javacrumbs.jsonunit.assertj.JsonAssertions
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
-import no.nav.sokos.oppgjorsrapporter.mq.Data
-import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.tilCSV
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RefusjonsRapportPdfPayload
 import no.nav.sokos.oppgjorsrapporter.utils.Ansatt
-import no.nav.sokos.oppgjorsrapporter.utils.TestData.createDataRec
-import no.nav.sokos.oppgjorsrapporter.utils.TestData.createRefusjonsRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 import no.nav.sokos.utils.genererGyldig
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class RefusjonsRapportBestillingSerializationTest {
@@ -44,9 +40,9 @@ class RefusjonsRapportBestillingSerializationTest {
                 .trimIndent()
 
         val data = json.decodeFromString<Data>(input)
-        assertNull(data.maxDato)
-        assertThat(data.fraDato).isEqualTo("2024-01-01")
-        assertThat(data.tilDato).isEqualTo("2024-12-31")
+        Assertions.assertNull(data.maxDato)
+        org.assertj.core.api.Assertions.assertThat(data.fraDato).isEqualTo("2024-01-01")
+        org.assertj.core.api.Assertions.assertThat(data.tilDato).isEqualTo("2024-12-31")
     }
 
     @Test
@@ -66,7 +62,7 @@ class RefusjonsRapportBestillingSerializationTest {
             )
         val output = json.encodeToString(data)
         // Should not contain a non-empty string for maxdato
-        assertThatJson(output)
+        JsonAssertions.assertThatJson(output)
             .isEqualTo(
                 """
                 {
@@ -90,28 +86,30 @@ class RefusjonsRapportBestillingSerializationTest {
         val underenhet = OrgNr.genererGyldig()
 
         // maxDato (8 siffer) - Maks dato på format ÅÅÅÅMMDD. Settes til "00000000" hvis feltet mangler
-        val dataRecordUtenMaxDato = createDataRec(bedriftsnummer = underenhet, fnr = fnr, maxDato = null)
-        val dataRecordMedMaxDato = createDataRec(bedriftsnummer = underenhet, fnr = fnr, maxDato = LocalDate.parse("2026-07-31"))
+        val dataRecordUtenMaxDato = TestData.createDataRec(bedriftsnummer = underenhet, fnr = fnr, maxDato = null)
+        val dataRecordMedMaxDato = TestData.createDataRec(bedriftsnummer = underenhet, fnr = fnr, maxDato = LocalDate.parse("2026-07-31"))
 
         // navn (25 tegn) - Navn på person, padding med mellomrom til høyre hvis kortere. Semikolon, quote og linjeskift erstattes med
         // mellomrom dersom det ikke forekommer i starten eller slutten.
-        val dataRecordMedNavnKortereEnn25Tegn = createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Kort navn")
+        val dataRecordMedNavnKortereEnn25Tegn = TestData.createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Kort navn")
         val dataRecordMedNavnLengereEnn25Tegn =
-            createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Dette navnet er definitivt lengre enn tjuefem tegn")
-        val dataRecordMedNavnMedSemikolon = createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Navn;med;semikolon")
+            TestData.createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Dette navnet er definitivt lengre enn tjuefem tegn")
+        val dataRecordMedNavnMedSemikolon = TestData.createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Navn;med;semikolon")
         val dataRecordMedNavnMedEksakt25Tegn =
-            createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Navn med nøyaktig tjuefem") // 25 tegn
-        val dataRecordMedNavnMedLinjeskift = createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Navn\r\n\r\nmed\nlinjeskift")
+            TestData.createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Navn med nøyaktig tjuefem") // 25 tegn
+        val dataRecordMedNavnMedLinjeskift =
+            TestData.createDataRec(bedriftsnummer = underenhet, fnr = fnr, navn = "Navn\r\n\r\nmed\nlinjeskift")
 
         // belop (11 tegn) - Beløp i ører (10 siffer + fortegn). Kreditbeløp (negative) får '-' på slutten, debetbeløp får ' ' (mellomrom)
         // på slutten
-        val dataRecordMedKreditBeløp = createDataRec(bedriftsnummer = underenhet, fnr = fnr, belop = BigDecimal("-9905.00"))
-        val dataRecordMedDebitBeløp = createDataRec(bedriftsnummer = underenhet, fnr = fnr, belop = BigDecimal("9905.00"))
-        val dataRecordMedMerSeksDesimaler = createDataRec(bedriftsnummer = underenhet, fnr = fnr, belop = BigDecimal("9905.126789"))
+        val dataRecordMedKreditBeløp = TestData.createDataRec(bedriftsnummer = underenhet, fnr = fnr, belop = BigDecimal("-9905.00"))
+        val dataRecordMedDebitBeløp = TestData.createDataRec(bedriftsnummer = underenhet, fnr = fnr, belop = BigDecimal("9905.00"))
+        val dataRecordMedMerSeksDesimaler =
+            TestData.createDataRec(bedriftsnummer = underenhet, fnr = fnr, belop = BigDecimal("9905.126789"))
 
         val kontonr = Bankkonto.genererGyldig()
         val refusjonsRapportBestilling =
-            createRefusjonsRapportBestilling(
+            TestData.createRefusjonsRapportBestilling(
                 headerOrgnr = orgnr,
                 headerBankkonto = kontonr,
                 datarec =
@@ -145,7 +143,7 @@ class RefusjonsRapportBestillingSerializationTest {
 
         val faktiskCsvInnhold = refusjonsRapportBestilling.tilCSV()
 
-        assertThat(faktiskCsvInnhold).isEqualTo(forventetCsvInnhold)
+        org.assertj.core.api.Assertions.assertThat(faktiskCsvInnhold).isEqualTo(forventetCsvInnhold)
     }
 
     @Test
@@ -159,7 +157,7 @@ class RefusjonsRapportBestillingSerializationTest {
         val ytelse2 = "Sykepenger"
 
         val ytelse1Underenhet1Person1 =
-            createDataRec(
+            TestData.createDataRec(
                 bedriftsnummer = underenhet1,
                 fnr = person1.fnr,
                 navn = person1.navn,
@@ -169,7 +167,7 @@ class RefusjonsRapportBestillingSerializationTest {
                 tilDato = LocalDate.parse("2025-01-31"),
             )
         val ytelse2Underenhet1Person1 =
-            createDataRec(
+            TestData.createDataRec(
                 bedriftsnummer = underenhet1,
                 fnr = person1.fnr,
                 navn = person1.navn,
@@ -181,7 +179,7 @@ class RefusjonsRapportBestillingSerializationTest {
             )
 
         val ytelse1Underenhet2Person2 =
-            createDataRec(
+            TestData.createDataRec(
                 bedriftsnummer = underenhet2,
                 fnr = person2.fnr,
                 navn = person2.navn,
@@ -191,7 +189,7 @@ class RefusjonsRapportBestillingSerializationTest {
                 tilDato = LocalDate.parse("2025-01-31"),
             )
         val ytelse2Underenhet2Person2 =
-            createDataRec(
+            TestData.createDataRec(
                 bedriftsnummer = underenhet2,
                 fnr = person2.fnr,
                 navn = person2.navn,
@@ -213,7 +211,7 @@ class RefusjonsRapportBestillingSerializationTest {
         val totalsum = posteringer.sumOf { it.belop }
 
         val refusjonsRapportBestilling =
-            createRefusjonsRapportBestilling(
+            TestData.createRefusjonsRapportBestilling(
                 headerOrgnr = OrgNr.Validert("974600013"),
                 headerBankkonto = Bankkonto.Validert("02470305404"),
                 headerSumBelop = totalsum,
@@ -229,7 +227,7 @@ class RefusjonsRapportBestillingSerializationTest {
         val pdfPayload = RefusjonsRapportPdfPayload(refusjonsRapportBestilling, organisasjonsNavnOgAdresse, now)
         val actualJson = json.encodeToString(RefusjonsRapportPdfPayload.serializer(), pdfPayload)
 
-        assertThatJson(actualJson)
+        JsonAssertions.assertThatJson(actualJson)
             .isEqualTo(
                 """
                 {

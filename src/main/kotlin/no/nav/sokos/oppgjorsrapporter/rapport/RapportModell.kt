@@ -9,6 +9,7 @@ import java.util.UUID
 import kotlinx.io.bytestring.ByteString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.ClassDiscriminatorMode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNames
 import kotliquery.Row
@@ -121,7 +122,9 @@ data class UlagretRapport(
     @Serializable
     sealed interface NevntInfo {
         companion object {
-            val jsonConfig: Json = commonJsonConfig
+            private val jsonConfig: Json = Json(commonJsonConfig) { classDiscriminatorMode = ClassDiscriminatorMode.NONE }
+
+            fun serialize(nevntInfo: List<NevntInfo>): String = jsonConfig.encodeToString(nevntInfo)
         }
     }
 

@@ -75,6 +75,7 @@ import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.LocalhostPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportBackFiller
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.PdfgenHttpClientSetup
@@ -231,6 +232,14 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         provide(BestillingProsessor::class)
         provideJob<BestillingProsessor>(
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
+        )
+
+        if (config.application.disableBackgroundJobs) {
+            applicationState.disabledBackgroundJobs += RapportBackFiller::class
+        }
+        provide(RapportBackFiller::class)
+        provideJob<RapportBackFiller>(
+            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<RapportBackFiller>().run() } }
         )
 
         if (config.application.disableBackgroundJobs) {
