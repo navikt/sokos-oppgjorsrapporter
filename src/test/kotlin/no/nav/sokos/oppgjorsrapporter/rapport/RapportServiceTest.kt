@@ -697,11 +697,233 @@ class RapportServiceTest :
                 }
             }
 
-            test("kan oppdatere nevnt_info for rapporter som har en eldre versjon av dette") { TODO() }
+            test("kan oppdatere nevnt_info for rapporter som har en eldre versjon av dette") {
+                TestUtil.withFullApplication(dbContainer = dbContainer, dependencyOverrides = eregDependencyOverride) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
-            test("vil ikke oppdatere nevnt_info hvis det finnes fra før med samme versjon") { TODO() }
+                    val sut: RapportService = application.dependencies.resolve()
+                    val rapport = sut.finnRapport(Rapport.Id(1))!!
 
-            test("vil ikke oppdatere nevnt_info hvis det finnes fra før med nyere versjon") { TODO() }
+                    val nevnteFnrV1 =
+                        buildSet {
+                                while (size < 2) {
+                                    add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
+                                }
+                            }
+                            .toList()
+                    val nevntUnderenhet = UlagretRapport.NevntUnderenhet(OrgNr.genererGyldig().somUvalidert())
+
+                    using(sessionOf(application.dependencies.resolve<DataSource>())) {
+                        it.transaction { tx ->
+                            val oppdatert =
+                                sut.settNevntInfo(tx, rapport.id, listOf(UlagretRapport.NevntVersjon(1)) + nevnteFnrV1 + nevntUnderenhet)
+                            oppdatert shouldBe 1
+                        }
+                    }
+
+                    nevnteFnrV1.forAll { nevnt ->
+                        val treff =
+                            sut.rapportSoek(
+                                nevnt.fnr,
+                                periode = LocalDateRange.ofClosed(rapport.datoValutert, rapport.datoValutert),
+                                inkluderArkiverte = true,
+                                rapportType = rapport.type,
+                            )
+                        treff.single() shouldBe rapport
+                    }
+
+                    val nevnteFnrV2 =
+                        buildSet {
+                                while (size < 3) {
+                                    val nevnt = UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert())
+                                    if (!nevnteFnrV1.contains(nevnt)) {
+                                        add(nevnt)
+                                    }
+                                }
+                            }
+                            .toList()
+
+                    using(sessionOf(application.dependencies.resolve<DataSource>())) {
+                        it.transaction { tx ->
+                            val oppdatert =
+                                sut.settNevntInfo(tx, rapport.id, listOf(UlagretRapport.NevntVersjon(2)) + nevnteFnrV2 + nevntUnderenhet)
+                            oppdatert shouldBe 1
+                        }
+                    }
+
+                    nevnteFnrV1.forAll { nevnt ->
+                        sut.rapportSoek(
+                            nevnt.fnr,
+                            periode = LocalDateRange.ofClosed(rapport.datoValutert, rapport.datoValutert),
+                            inkluderArkiverte = true,
+                            rapportType = rapport.type,
+                        ) should beEmpty()
+                    }
+
+                    nevnteFnrV2.forAll { nevnt ->
+                        val treff =
+                            sut.rapportSoek(
+                                nevnt.fnr,
+                                periode = LocalDateRange.ofClosed(rapport.datoValutert, rapport.datoValutert),
+                                inkluderArkiverte = true,
+                                rapportType = rapport.type,
+                            )
+                        treff.single() shouldBe rapport
+                    }
+                }
+            }
+
+            test("vil ikke oppdatere nevnt_info hvis det finnes fra før med samme versjon") {
+                TestUtil.withFullApplication(dbContainer = dbContainer, dependencyOverrides = eregDependencyOverride) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+
+                    val sut: RapportService = application.dependencies.resolve()
+                    val rapport = sut.finnRapport(Rapport.Id(1))!!
+
+                    val nevnteFnrA =
+                        buildSet {
+                                while (size < 2) {
+                                    add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
+                                }
+                            }
+                            .toList()
+                    val nevntUnderenhet = UlagretRapport.NevntUnderenhet(OrgNr.genererGyldig().somUvalidert())
+
+                    using(sessionOf(application.dependencies.resolve<DataSource>())) {
+                        it.transaction { tx ->
+                            val oppdatert =
+                                sut.settNevntInfo(tx, rapport.id, listOf(UlagretRapport.NevntVersjon(1)) + nevnteFnrA + nevntUnderenhet)
+                            oppdatert shouldBe 1
+                        }
+                    }
+
+                    nevnteFnrA.forAll { nevnt ->
+                        val treff =
+                            sut.rapportSoek(
+                                nevnt.fnr,
+                                periode = LocalDateRange.ofClosed(rapport.datoValutert, rapport.datoValutert),
+                                inkluderArkiverte = true,
+                                rapportType = rapport.type,
+                            )
+                        treff.single() shouldBe rapport
+                    }
+
+                    val nevnteFnrB =
+                        buildSet {
+                                while (size < 3) {
+                                    val nevnt = UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert())
+                                    if (!nevnteFnrA.contains(nevnt)) {
+                                        add(nevnt)
+                                    }
+                                }
+                            }
+                            .toList()
+
+                    using(sessionOf(application.dependencies.resolve<DataSource>())) {
+                        it.transaction { tx ->
+                            val oppdatert =
+                                sut.settNevntInfo(tx, rapport.id, listOf(UlagretRapport.NevntVersjon(1)) + nevnteFnrB + nevntUnderenhet)
+                            oppdatert shouldBe 0
+                        }
+                    }
+
+                    nevnteFnrA.forAll { nevnt ->
+                        val treff =
+                            sut.rapportSoek(
+                                nevnt.fnr,
+                                periode = LocalDateRange.ofClosed(rapport.datoValutert, rapport.datoValutert),
+                                inkluderArkiverte = true,
+                                rapportType = rapport.type,
+                            )
+                        treff.single() shouldBe rapport
+                    }
+
+                    nevnteFnrB.forAll { nevnt ->
+                        sut.rapportSoek(
+                            nevnt.fnr,
+                            periode = LocalDateRange.ofClosed(rapport.datoValutert, rapport.datoValutert),
+                            inkluderArkiverte = true,
+                            rapportType = rapport.type,
+                        ) should beEmpty()
+                    }
+                }
+            }
+
+            test("vil ikke oppdatere nevnt_info hvis det finnes fra før med nyere versjon") {
+                TestUtil.withFullApplication(dbContainer = dbContainer, dependencyOverrides = eregDependencyOverride) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+
+                    val sut: RapportService = application.dependencies.resolve()
+                    val rapport = sut.finnRapport(Rapport.Id(1))!!
+
+                    val nevnteFnrV2 =
+                        buildSet {
+                                while (size < 2) {
+                                    add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
+                                }
+                            }
+                            .toList()
+                    val nevntUnderenhet = UlagretRapport.NevntUnderenhet(OrgNr.genererGyldig().somUvalidert())
+
+                    using(sessionOf(application.dependencies.resolve<DataSource>())) {
+                        it.transaction { tx ->
+                            val oppdatert =
+                                sut.settNevntInfo(tx, rapport.id, listOf(UlagretRapport.NevntVersjon(2)) + nevnteFnrV2 + nevntUnderenhet)
+                            oppdatert shouldBe 1
+                        }
+                    }
+
+                    nevnteFnrV2.forAll { nevnt ->
+                        val treff =
+                            sut.rapportSoek(
+                                nevnt.fnr,
+                                periode = LocalDateRange.ofClosed(rapport.datoValutert, rapport.datoValutert),
+                                inkluderArkiverte = true,
+                                rapportType = rapport.type,
+                            )
+                        treff.single() shouldBe rapport
+                    }
+
+                    val nevnteFnrV1 =
+                        buildSet {
+                                while (size < 3) {
+                                    val nevnt = UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert())
+                                    if (!nevnteFnrV2.contains(nevnt)) {
+                                        add(nevnt)
+                                    }
+                                }
+                            }
+                            .toList()
+
+                    using(sessionOf(application.dependencies.resolve<DataSource>())) {
+                        it.transaction { tx ->
+                            val oppdatert =
+                                sut.settNevntInfo(tx, rapport.id, listOf(UlagretRapport.NevntVersjon(1)) + nevnteFnrV1 + nevntUnderenhet)
+                            oppdatert shouldBe 0
+                        }
+                    }
+
+                    nevnteFnrV2.forAll { nevnt ->
+                        val treff =
+                            sut.rapportSoek(
+                                nevnt.fnr,
+                                periode = LocalDateRange.ofClosed(rapport.datoValutert, rapport.datoValutert),
+                                inkluderArkiverte = true,
+                                rapportType = rapport.type,
+                            )
+                        treff.single() shouldBe rapport
+                    }
+
+                    nevnteFnrV1.forAll { nevnt ->
+                        sut.rapportSoek(
+                            nevnt.fnr,
+                            periode = LocalDateRange.ofClosed(rapport.datoValutert, rapport.datoValutert),
+                            inkluderArkiverte = true,
+                            rapportType = rapport.type,
+                        ) should beEmpty()
+                    }
+                }
+            }
         }
     })
 
