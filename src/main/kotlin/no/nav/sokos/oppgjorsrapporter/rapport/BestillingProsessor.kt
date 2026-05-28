@@ -17,7 +17,6 @@ import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
-import tools.jackson.module.kotlin.readValue
 
 class BestillingProsessor(
     private val metrics: Metrics,
@@ -66,8 +65,7 @@ class BestillingProsessor(
             val (ulagret: UlagretRapport, generator: (suspend (VariantFormat) -> ByteString?)) =
                 when (bestilling.genererSom) {
                     RapportType.`ref-arbg` -> {
-                        val refusjonsRapportBestilling =
-                            RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
+                        val refusjonsRapportBestilling = RefusjonsRapportBestilling.decode(bestilling.dokument)
                         val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(refusjonsRapportBestilling.header.orgnr)
                         Pair(
                             UlagretRapport(
@@ -93,8 +91,7 @@ class BestillingProsessor(
                     }
 
                     RapportType.`trekk-kred` -> {
-                        val trekkKredRapportBestilling =
-                            TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(bestilling.dokument)
+                        val trekkKredRapportBestilling = TrekkKredRapportBestilling.decode(bestilling.dokument)
                         val urData = trekkKredRapportBestilling.brukerData.brevinfo.variableFelter.ur
                         val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(urData.orgnummer)
                         Pair(

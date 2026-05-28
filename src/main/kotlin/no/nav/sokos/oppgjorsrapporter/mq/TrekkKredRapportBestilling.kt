@@ -18,6 +18,7 @@ import tools.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import tools.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import tools.jackson.module.kotlin.KotlinFeature
 import tools.jackson.module.kotlin.KotlinModule
+import tools.jackson.module.kotlin.readValue
 
 @JsonRootName(value = "rundata")
 data class TrekkKredRapportBestilling(
@@ -40,6 +41,8 @@ data class TrekkKredRapportBestilling(
                 .addModule(SimpleModule().apply { addDeserializer(String::class.java, TrimmingDeserializer()) })
                 .addModule(kotlinModule)
                 .build()
+
+        fun decode(dokument: String): TrekkKredRapportBestilling = xmlMapper.readValue<TrekkKredRapportBestilling>(dokument)
     }
 
     data class Brukerdata(val mottaker: Mottaker, val brevinfo: BrevInfo)
