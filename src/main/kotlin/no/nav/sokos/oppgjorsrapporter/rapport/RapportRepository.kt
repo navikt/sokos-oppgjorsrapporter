@@ -137,10 +137,27 @@ class RapportRepository(private val clock: Clock) {
                 UPDATE rapport.rapport
                 SET nevnt_info = CAST(:nevnt_info AS jsonb)
                 WHERE id = :id
-                  AND nevnt_info IS NULL
+                  AND (nevnt_info IS NULL OR
+                       NOT EXISTS (SELECT 'x' FROM jsonb_array_elements(nevnt_info) AS elem
+                                   WHERE elem ?? 'versjon'
+                                     AND (elem->'versjon')::integer >= :versjon
+                                  )
+                      )
                 """
                     .trimIndent(),
-                mapOf("id" to rapportId.raw, "nevnt_info" to UlagretRapport.NevntInfo.jsonConfig.encodeToString(nevntInfo)),
+                mapOf(
+                    "id" to rapportId.raw,
+                    "nevnt_info" to UlagretRapport.NevntInfo.jsonConfig.encodeToString(nevntInfo),
+                    "versjon" to
+                        nevntInfo
+                            .mapNotNull {
+                                when (it) {
+                                    is UlagretRapport.NevntVersjon -> it.versjon
+                                    else -> null
+                                }
+                            }
+                            .single(),
+                ),
             )
             .asUpdate
             .let { tx.run(it) }
