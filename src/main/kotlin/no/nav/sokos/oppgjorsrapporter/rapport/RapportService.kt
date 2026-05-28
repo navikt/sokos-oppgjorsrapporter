@@ -125,6 +125,9 @@ class RapportService(
             repository.audit(tx, rapportEvent)
         }
 
+    fun settNevntInfo(tx: TransactionalSession, rapportId: Rapport.Id, nevntInfo: List<UlagretRapport.NevntInfo>) =
+        repository.settNevntInfo(tx, rapportId, nevntInfo)
+
     fun finnRapport(id: Rapport.Id): Rapport? = withTransaction { repository.finnRapport(it, id) }
 
     fun listRapporter(kriterier: RapportKriterier): List<Rapport> = withTransaction { repository.listRapporter(it, kriterier) }
@@ -247,6 +250,17 @@ class RapportService(
     fun rapportSoek(underenhet: OrgNr, periode: LocalDateRange, inkluderArkiverte: Boolean, rapportType: RapportType): List<Rapport> =
         withTransaction { tx ->
             repository.rapportSoek(tx, underenhet, periode, inkluderArkiverte, rapportType)
+        }
+
+    fun <T> prosesserManglendeNevntInfo(process: suspend (TransactionalSession, Rapport, RapportBestilling) -> T): Result<T>? =
+        withTransaction { tx ->
+            repository.finnRapportSomManglerNevntInfo(tx)?.let { rapport ->
+                runCatching {
+                        val bestilling = repository.finnBestilling(tx, rapport.bestillingId)!!
+                        process(tx, rapport, bestilling)
+                    }
+                    .onFailure { e -> logger.error(TEAM_LOGS_MARKER, e) { "Feil under backfilling av nevnt_info for $rapport: $e" } }
+            }
         }
 }
 

@@ -114,6 +114,37 @@ class RapportRepository(private val clock: Clock) {
             .asSingle
             .let { tx.run(it)!! }
 
+    fun finnRapportSomManglerNevntInfo(tx: TransactionalSession) =
+        queryOf(
+                """
+                SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
+                       antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
+                FROM rapport.rapport
+                WHERE nevnt_info IS NULL
+                ORDER BY id DESC
+                LIMIT 1
+                FOR NO KEY UPDATE SKIP LOCKED
+                """
+                    .trimIndent()
+            )
+            .map { Rapport(it) }
+            .asSingle
+            .let { tx.run(it) }
+
+    fun settNevntInfo(tx: TransactionalSession, rapportId: Rapport.Id, nevntInfo: List<UlagretRapport.NevntInfo>) =
+        queryOf(
+                """
+                UPDATE rapport.rapport
+                SET nevnt_info = CAST(:nevnt_info AS jsonb)
+                WHERE id = :id
+                  AND nevnt_info IS NULL
+                """
+                    .trimIndent(),
+                mapOf("id" to rapportId.raw, "nevnt_info" to UlagretRapport.NevntInfo.jsonConfig.encodeToString(nevntInfo)),
+            )
+            .asUpdate
+            .let { tx.run(it) }
+
     fun finnRapport(tx: TransactionalSession, id: Rapport.Id): Rapport? =
         queryOf(
                 """
