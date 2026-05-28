@@ -1,13 +1,9 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
 import io.opentelemetry.instrumentation.annotations.WithSpan
-import java.time.Duration
-import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.io.bytestring.ByteString
 import mu.KLogger
 import mu.KotlinLogging
@@ -33,11 +29,7 @@ class BestillingProsessor(
     private val logger: KLogger = KotlinLogging.logger {}
 
     override suspend fun run() {
-        logger.trace { "BestillingProsessor.run()" }
-        val nevntInfoMangler = rapportService.prosesserManglendeNevntInfo { _, _, _ -> }
-        if (nevntInfoMangler != null) {
-            coroutineScope { launch { fyllInnNevntInfo() } }
-        }
+        logger.trace { "${javaClass.simpleName}.run()" }
         val baseDelay = 1.seconds
         val maxDelay = 5.minutes
         var t = baseDelay
@@ -63,38 +55,6 @@ class BestillingProsessor(
                     // Vi fant en bestilling å prosessere; resett eksponensiell backoff.
                     t = baseDelay
                 }
-            }
-        }
-    }
-
-    suspend fun fyllInnNevntInfo() {
-        var done = false
-        while (!done) {
-            val start = Instant.now()
-            whenEnabled {
-                val res =
-                    rapportService.prosesserManglendeNevntInfo { tx, rapport, bestilling ->
-                        val nevntInfo =
-                            when (bestilling.genererSom) {
-                                RapportType.`ref-arbg` -> RefusjonsRapportBestilling.decode(bestilling.dokument)
-                                RapportType.`trekk-hend` -> TrekkHendBestilling.decode(bestilling.dokument)
-                                RapportType.`trekk-kred` -> TrekkKredRapportBestilling.decode(bestilling.dokument)
-                            }.nevntInfo()
-                        val oppdatert = rapportService.settNevntInfo(tx, rapport.id, nevntInfo)
-                        if (oppdatert != 0) {
-                            logger.debug {
-                                "Har fylt inn nevnt_info for rapport #${rapport.id.raw}/type=${rapport.type}: endret $oppdatert rad, lagt inn ${nevntInfo.size} info-elementer"
-                            }
-                        }
-                    }
-                if (res == null) {
-                    logger.info("Fant ikke flere rapporter å fylle inn nevnt_info på, avslutter denne sub-jobben")
-                    done = true
-                }
-            }
-            if (!done) {
-                val end = Instant.now()
-                delay(timeMillis = maxOf(200, Duration.between(start, end).toMillis() * 2))
             }
         }
     }

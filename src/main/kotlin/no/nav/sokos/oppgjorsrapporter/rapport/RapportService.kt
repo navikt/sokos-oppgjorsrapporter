@@ -254,12 +254,21 @@ class RapportService(
 
     fun <T> prosesserManglendeNevntInfo(process: suspend (TransactionalSession, Rapport, RapportBestilling) -> T): Result<T>? =
         withTransaction { tx ->
+            val savepoint = tx.connection.underlying.setSavepoint()
             repository.finnRapportSomManglerNevntInfo(tx)?.let { rapport ->
                 runCatching {
                         val bestilling = repository.finnBestilling(tx, rapport.bestillingId)!!
                         process(tx, rapport, bestilling)
                     }
-                    .onFailure { e -> logger.error(TEAM_LOGS_MARKER, e) { "Feil under backfilling av nevnt_info for $rapport: $e" } }
+                    .onFailure { e ->
+                        logger.error { "Feil under backfilling av nevnt_info for $rapport" }
+                        logger.error(TEAM_LOGS_MARKER, e) { "Feil under backfilling av nevnt_info for $rapport: $e" }
+
+                        // Rull tilbake evt. database-endringer som ble gjort av `process` før ting feilet
+                        tx.connection.underlying.rollback(savepoint)
+
+                        repository.markerBestillingProsesseringFeilet(tx, rapport.bestillingId)
+                    }
             }
         }
 }

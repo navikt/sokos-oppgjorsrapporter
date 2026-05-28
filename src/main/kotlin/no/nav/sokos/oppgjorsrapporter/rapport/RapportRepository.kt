@@ -107,7 +107,7 @@ class RapportRepository(private val clock: Clock) {
                     "antall_rader" to rapport.antallRader,
                     "antall_underenheter" to rapport.antallUnderenheter,
                     "antall_personer" to rapport.antallPersoner,
-                    "nevnt_info" to UlagretRapport.NevntInfo.jsonConfig.encodeToString(rapport.nevntInfo),
+                    "nevnt_info" to UlagretRapport.NevntInfo.serialize(rapport.nevntInfo),
                 ),
             )
             .map { row -> Rapport(row) }
@@ -117,11 +117,14 @@ class RapportRepository(private val clock: Clock) {
     fun finnRapportSomManglerNevntInfo(tx: TransactionalSession) =
         queryOf(
                 """
-                SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
-                       antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
-                FROM rapport.rapport
-                WHERE nevnt_info IS NULL
-                ORDER BY id DESC
+                SELECT r.id, r.uuid, r.bestilling_id, r.orgnr, r.org_navn, r.type, r.dato_valutert, r.bankkonto,
+                       r.antall_rader, r.antall_underenheter, r.antall_personer, r.opprettet, r.arkivert, r.dialogporten_uuid
+                FROM rapport.rapport r
+                JOIN rapport.rapport_bestilling b ON b.id = r.bestilling_id
+                WHERE r.nevnt_info IS NULL
+                  AND ( b.prosessering_feilet IS NULL OR
+                        b.prosessering_feilet + '10 minutes'::interval <= now() )
+                ORDER BY b.prosessering_feilet NULLS FIRST, id DESC
                 LIMIT 1
                 FOR NO KEY UPDATE SKIP LOCKED
                 """
@@ -147,7 +150,7 @@ class RapportRepository(private val clock: Clock) {
                     .trimIndent(),
                 mapOf(
                     "id" to rapportId.raw,
-                    "nevnt_info" to UlagretRapport.NevntInfo.jsonConfig.encodeToString(nevntInfo),
+                    "nevnt_info" to UlagretRapport.NevntInfo.serialize(nevntInfo),
                     "versjon" to
                         nevntInfo
                             .mapNotNull {
