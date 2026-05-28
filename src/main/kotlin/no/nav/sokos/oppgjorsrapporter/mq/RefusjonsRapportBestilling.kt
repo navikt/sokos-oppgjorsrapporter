@@ -81,6 +81,8 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
 
     companion object {
         val json = Json { explicitNulls = false }
+
+        fun decode(dokument: String): RefusjonsRapportBestilling = json.decodeFromString<RefusjonsRapportBestilling>(dokument)
     }
 }
 

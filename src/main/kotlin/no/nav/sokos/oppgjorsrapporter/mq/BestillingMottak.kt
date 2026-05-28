@@ -51,7 +51,7 @@ class BestillingMottak(
             val (bestilling, rader) =
                 when (melding.rapportType) {
                     RapportType.`ref-arbg` -> {
-                        val bestilling = RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(melding.data)
+                        val bestilling = RefusjonsRapportBestilling.decode(melding.data)
                         if (ekstraSjekk) {
                             bestilling.valider()
                         }

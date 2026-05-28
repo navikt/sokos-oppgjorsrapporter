@@ -62,7 +62,7 @@ data class TrekkHendBestilling(
                 .addModule(kotlinModule)
                 .build()
 
-        fun decode(data: String): TrekkHendBestilling = xmlMapper.readValue<TrekkHendBestilling>(data)
+        fun decode(dokument: String): TrekkHendBestilling = xmlMapper.readValue<TrekkHendBestilling>(dokument)
 
         fun decode(stream: InputStream): TrekkHendBestilling = xmlMapper.readValue<TrekkHendBestilling>(stream)
     }
