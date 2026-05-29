@@ -1,6 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
-import java.time.Duration.between
+import java.time.Duration
 import java.time.Instant.now
 import kotlinx.coroutines.delay
 import mu.KLogger
@@ -42,7 +42,7 @@ class RapportBackFiller(private val rapportService: RapportService, applicationS
             }
             if (!done) {
                 val end = now()
-                delay(timeMillis = maxOf(200, between(start, end).toMillis() * 2))
+                delay(timeMillis = Duration.between(start, end).toMillis() / 2)
             }
         }
     }
