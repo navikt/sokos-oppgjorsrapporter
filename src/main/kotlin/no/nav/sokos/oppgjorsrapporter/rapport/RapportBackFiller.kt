@@ -1,8 +1,9 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
-import java.time.Duration
-import java.time.Instant.now
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.BakgrunnsJobb
@@ -16,12 +17,16 @@ class RapportBackFiller(private val rapportService: RapportService, applicationS
 
     override suspend fun run() {
         logger.trace { "${javaClass.simpleName}.run()" }
+        coroutineScope { (1..5).forEach { launch { fyllInnNevntInfo(100) } } }
+        logger.info { "${javaClass.simpleName}.run() finished" }
+    }
+
+    private suspend fun fyllInnNevntInfo(pauseMs: Long) {
         var done = false
         while (!done) {
-            val start = now()
             whenEnabled {
                 val res =
-                    rapportService.prosesserManglendeNevntInfo<Unit> { tx, rapport, bestilling ->
+                    rapportService.prosesserManglendeNevntInfo { tx, rapport, bestilling ->
                         val nevntInfo =
                             when (bestilling.genererSom) {
                                 RapportType.`ref-arbg` -> RefusjonsRapportBestilling.decode(bestilling.dokument)
@@ -41,8 +46,7 @@ class RapportBackFiller(private val rapportService: RapportService, applicationS
                 }
             }
             if (!done) {
-                val end = now()
-                delay(timeMillis = Duration.between(start, end).toMillis() / 2)
+                delay(pauseMs.milliseconds)
             }
         }
     }
