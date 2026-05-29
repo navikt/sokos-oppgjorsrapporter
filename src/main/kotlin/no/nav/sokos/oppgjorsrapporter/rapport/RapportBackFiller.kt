@@ -1,9 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
 import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.BakgrunnsJobb
@@ -17,7 +15,7 @@ class RapportBackFiller(private val rapportService: RapportService, applicationS
 
     override suspend fun run() {
         logger.trace { "${javaClass.simpleName}.run()" }
-        coroutineScope { (1..5).forEach { launch { fyllInnNevntInfo(100) } } }
+        fyllInnNevntInfo(50)
         logger.info { "${javaClass.simpleName}.run() finished" }
     }
 
