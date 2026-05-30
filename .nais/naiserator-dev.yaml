@@ -97,6 +97,8 @@ spec:
           cluster: dev-fss
         - application: pengeflyt-pdfgen
         - application: pengeflyt-pdfgenrs
+        - application: populasjonstilgangskontroll
+          namespace: tilgangsmaskin
   envFrom:
     - secret: altinn-authorization-subscription
     - secret: sokos-oppgjorsrapporter-secrets
@@ -158,4 +160,8 @@ spec:
         991078045,
         993110469,
         995277670,
-        999263550,
+        999263550
+    - name: TILGANGSMASKINEN_URL
+      value: http://populasjonstilgangskontroll.tilgangsmaskin
+    - name: TARGET_TILGANGSMASKINEN
+      value: dev-gcp:tilgangsmaskin:populasjonstilgangskontroll

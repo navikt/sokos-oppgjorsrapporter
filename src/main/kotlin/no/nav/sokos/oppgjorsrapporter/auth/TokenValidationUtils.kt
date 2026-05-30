@@ -126,3 +126,8 @@ suspend fun RoutingContext.autentisertBruker(): AutentisertBruker =
             throw IllegalStateException("Klarer ikke å finne AutentisertBruker")
         }
     }
+
+fun RoutingContext.hentTokenString(): String {
+    return call.principal<TokenValidationContextPrincipal>()?.context?.firstValidToken?.encodedToken
+        ?: throw RuntimeException("no token found in call context")
+}

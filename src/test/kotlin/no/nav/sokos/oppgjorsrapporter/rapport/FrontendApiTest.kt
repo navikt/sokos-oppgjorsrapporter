@@ -14,6 +14,7 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.plugins.di.dependencies
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import java.time.Clock
@@ -36,6 +37,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
 import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
 import no.nav.sokos.oppgjorsrapporter.toDataSource
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import no.nav.sokos.oppgjorsrapporter.withTestApplication
@@ -424,6 +426,7 @@ class FrontendApiTest :
             }
 
             context("for å søke etter rapporter der fnr eller underenhet er nevnt") {
+                val tilgangsmaskinService = mockk<TilgangsmaskinService>()
                 val nevntFnr = Fnr.genererGyldig().somUvalidert()
                 val ukjentFnr = Fnr.genererGyldig().somUvalidert()
                 val nevntUnderenhet = OrgNr.genererGyldig().somUvalidert()
@@ -496,6 +499,7 @@ class FrontendApiTest :
                 }
 
                 test("svarer med en liste av matchende rapporter når det søkes på et fnr") {
+                    coEvery { tilgangsmaskinService.sjekkTilgang(any(), any()) } returns null
                     withMockOAuth2Server {
                         withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
                             val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
@@ -613,6 +617,7 @@ class FrontendApiTest :
                 }
 
                 test("svarer med en tom liste når det søkes på et ukjent fnr") {
+                    coEvery { tilgangsmaskinService.sjekkTilgang(any(), any()) } returns null
                     withMockOAuth2Server {
                         withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
                             val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
