@@ -76,13 +76,14 @@ object PropertiesConfig {
         )
     }
 
-    data class RestEndpointProperties(val eregBaseUrl: URI, val pdfgenBaseUrl: URI, val pdfgenrsBaseUrl: URI) {
+    data class RestEndpointProperties(val eregBaseUrl: URI, val pdfgenBaseUrl: URI, val pdfgenrsBaseUrl: URI, val tilgangsmaskinUrl: URI) {
         constructor(
             source: ConfigSource
         ) : this(
             eregBaseUrl = URI.create(source.get("ereg.base_url")),
             pdfgenBaseUrl = URI.create(source.get("pdfgen.base_url")),
             pdfgenrsBaseUrl = URI.create(source.get("pdfgen.rs_base_url")),
+            tilgangsmaskinUrl = URI.create(source.get("tilgangsmaskin.base_url")),
         )
     }
 
@@ -139,6 +140,8 @@ object PropertiesConfig {
         val maskinporten: MaskinportenProperties,
         val altinn: AltinnProperties,
         val tokenEndpoint: String,
+        val tokenExchangeEndpoint: String,
+        val targetTilgangsmaskin: String,
     ) {
         constructor(
             source: ConfigSource
@@ -148,6 +151,8 @@ object PropertiesConfig {
             maskinporten = MaskinportenProperties(source),
             altinn = AltinnProperties(source),
             tokenEndpoint = source.get("auth.texas.token_endpoint"),
+            tokenExchangeEndpoint = source.get("auth.texas.token_exchange_endpoint"),
+            targetTilgangsmaskin = source.get("auth.texas.target_tilgangsmaskinen"),
         )
     }
 

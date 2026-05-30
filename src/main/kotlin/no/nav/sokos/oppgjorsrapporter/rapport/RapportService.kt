@@ -243,7 +243,6 @@ class RapportService(
 
     fun rapportSoek(fnr: Fnr, periode: LocalDateRange, inkluderArkiverte: Boolean, rapportType: RapportType): List<Rapport> =
         withTransaction { tx ->
-            // TODO sjekk tilgangsmaskinen for adressebekyttelse osv
             repository.rapportSoek(tx, fnr, periode, inkluderArkiverte, rapportType)
         }
 

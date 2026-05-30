@@ -22,6 +22,7 @@ import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.autentisertBruker
+import no.nav.sokos.oppgjorsrapporter.auth.hentTokenString
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.rapport.Api.RapportDTO
@@ -29,6 +30,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.varsel.Varsel
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.LocalDateRange
@@ -84,6 +86,7 @@ object FrontendApi {
         val varselService: VarselService by application.dependencies
         val rapportService: RapportService by application.dependencies
         val internTilgangService: InternTilgangService by application.dependencies
+        val tilgangsmaskinService: TilgangsmaskinService by application.dependencies
 
         get("/api/rapport/frontend/oppgitt-varsling") { call.respond(varselService.finnOppgitte().map(::VarselOppgittDTO)) }
 
@@ -122,7 +125,18 @@ object FrontendApi {
                         val rapporter =
                             when (reqBody) {
                                 is RapportFnrSoek ->
-                                    with(reqBody) { rapportService.rapportSoek(fnr, datoRange(), inkluderArkiverte, rapportType) }
+                                    with(reqBody) {
+                                        // TODO hva med når sjekkTilgang kaster? Hva ønsker vi å svare FE med?
+                                        val tilgang = tilgangsmaskinService.sjekkTilgang(hentTokenString(), reqBody.fnr)
+                                        tilgang?.let {
+                                            logger.warn("Bruker har ikke tilgang.")
+                                            logger.warn(TEAM_LOGS_MARKER) {
+                                                "Bruker $bruker forsøker å søke med fnr men tilgangsmaskinen avviser tilgang med avvisningskode ${tilgang.title} og begrunnelse ${tilgang.begrunnelse}"
+                                            }
+                                            return@post call.respond(HttpStatusCode.Forbidden)
+                                        }
+                                        rapportService.rapportSoek(fnr, datoRange(), inkluderArkiverte, rapportType)
+                                    }
                                 is RapportUnderenhetSoek ->
                                     with(reqBody) { rapportService.rapportSoek(underenhet, datoRange(), inkluderArkiverte, rapportType) }
                             }

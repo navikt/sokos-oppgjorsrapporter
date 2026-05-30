@@ -23,6 +23,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.di.DependencyRegistry
 import io.ktor.server.plugins.di.dependencies
+import io.ktor.server.plugins.di.provide
 import io.ktor.util.AttributeKey
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -83,6 +84,12 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinHttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
+import no.nav.sokos.oppgjorsrapporter.tokenexchange.LocalTokenExchangeService
+import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeHttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeService
+import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeServiceImpl
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
 
 private val logger = KotlinLogging.logger {}
@@ -141,6 +148,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             EregService(config.restEndpoint.eregBaseUrl, client, resolve())
         }
 
+        provide {
+            val client = httpClient("tilgangsmaskin", TilgangsmaskinHttpClientSetup)
+            TilgangsmaskinService(config.restEndpoint.tilgangsmaskinUrl, client, resolve(), resolve())
+        }
+
         provide<RapportGenerator> {
             val client =
                 httpClient("pdfgen", PdfgenHttpClientSetup) {
@@ -162,10 +174,15 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<AuthClient> { NoOpAuthClient() }
             provide<PdpService> { LocalhostPdpService }
             provide<InternTilgangService> { LocalhostInternTilgangService }
+            provide<TokenExchangeService> { LocalTokenExchangeService }
         } else {
             provide<AuthClient> { DefaultAuthClient(config.security.tokenEndpoint, config.security.altinn.baseUrl) }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
+            provide<TokenExchangeService> {
+                val client = httpClient("tokenexchange", TokenExchangeHttpClientSetup)
+                TokenExchangeServiceImpl(config.security.tokenExchangeEndpoint, config.security.targetTilgangsmaskin, client, resolve())
+            }
         }
         val authClient: AuthClient by this
 
