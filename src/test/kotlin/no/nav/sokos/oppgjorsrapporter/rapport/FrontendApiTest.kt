@@ -426,7 +426,7 @@ class FrontendApiTest :
             }
 
             context("for å søke etter rapporter der fnr eller underenhet er nevnt") {
-                val tilgangsmaskinService = mockk<TilgangsmaskinService>()
+                val mockedTilgangsmaskinService = mockk<TilgangsmaskinService>()
                 val nevntFnr = Fnr.genererGyldig().somUvalidert()
                 val ukjentFnr = Fnr.genererGyldig().somUvalidert()
                 val nevntUnderenhet = OrgNr.genererGyldig().somUvalidert()
@@ -460,6 +460,7 @@ class FrontendApiTest :
                 val dependencyOverrides: Application.() -> Unit = {
                     dependencies.provide<RapportService> { mockedRapportService }
                     dependencies.provide<InternTilgangService> { mockedInternTilgangService }
+                    dependencies.provide<TilgangsmaskinService> { mockedTilgangsmaskinService }
                 }
 
                 val clientJsonConfig = Json {
@@ -499,7 +500,7 @@ class FrontendApiTest :
                 }
 
                 test("svarer med en liste av matchende rapporter når det søkes på et fnr") {
-                    coEvery { tilgangsmaskinService.sjekkTilgang(any(), any()) } returns null
+                    coEvery { mockedTilgangsmaskinService.sjekkTilgang(any(), any()) } returns null
                     withMockOAuth2Server {
                         withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
                             val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
@@ -617,7 +618,7 @@ class FrontendApiTest :
                 }
 
                 test("svarer med en tom liste når det søkes på et ukjent fnr") {
-                    coEvery { tilgangsmaskinService.sjekkTilgang(any(), any()) } returns null
+                    coEvery { mockedTilgangsmaskinService.sjekkTilgang(any(), any()) } returns null
                     withMockOAuth2Server {
                         withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
                             val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
