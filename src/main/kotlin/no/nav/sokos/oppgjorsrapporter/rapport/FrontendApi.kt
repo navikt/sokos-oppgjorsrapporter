@@ -31,6 +31,8 @@ import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.UnexpectedResponseException
+import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeService
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.LocalDateRange
@@ -87,6 +89,7 @@ object FrontendApi {
         val rapportService: RapportService by application.dependencies
         val internTilgangService: InternTilgangService by application.dependencies
         val tilgangsmaskinService: TilgangsmaskinService by application.dependencies
+        val tokenExchangeService: TokenExchangeService by application.dependencies
 
         get("/api/rapport/frontend/oppgitt-varsling") { call.respond(varselService.finnOppgitte().map(::VarselOppgittDTO)) }
 
@@ -126,14 +129,14 @@ object FrontendApi {
                             when (reqBody) {
                                 is RapportFnrSoek ->
                                     with(reqBody) {
-                                        // TODO hva med når sjekkTilgang kaster? Hva ønsker vi å svare FE med?
-                                        val tilgang = tilgangsmaskinService.sjekkTilgang(hentTokenString(), reqBody.fnr)
-                                        tilgang?.let {
-                                            logger.warn("Bruker har ikke tilgang.")
-                                            logger.warn(TEAM_LOGS_MARKER) {
-                                                "Bruker $bruker forsøker å søke med fnr men tilgangsmaskinen avviser tilgang med avvisningskode ${tilgang.title} og begrunnelse ${tilgang.begrunnelse}"
+                                        try {
+                                            val onBehalfOfToken = tokenExchangeService.getOboToken(hentTokenString())
+                                            val tilgang = tilgangsmaskinService.sjekkTilgang(onBehalfOfToken, reqBody.fnr)
+                                            tilgang?.let {
+                                                return@post call.respond(HttpStatusCode.Forbidden, it.begrunnelse)
                                             }
-                                            return@post call.respond(HttpStatusCode.Forbidden)
+                                        } catch (ue: UnexpectedResponseException) {
+                                            return@post call.respond(HttpStatusCode.Forbidden, ue.message)
                                         }
                                         rapportService.rapportSoek(fnr, datoRange(), inkluderArkiverte, rapportType)
                                     }

@@ -38,6 +38,8 @@ import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.UnexpectedResponseException
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.kontrakter.AvvisningskodeDTO
 import no.nav.sokos.oppgjorsrapporter.toDataSource
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import no.nav.sokos.oppgjorsrapporter.withTestApplication
@@ -670,6 +672,69 @@ class FrontendApiTest :
                                 }
                             response.status shouldBe HttpStatusCode.OK
                             assertThatJson(response.bodyAsText()).isEqualTo("[]")
+                        }
+                    }
+                }
+
+                test("gir feilmelding når bruker ikke har tilgang til personen med gitt fnr") {
+                    coEvery { mockedTilgangsmaskinService.sjekkTilgang(any(), nevntFnr) } returns
+                        TestData.createPersonDetailResponseDTO(
+                            brukerIdent = nevntFnr,
+                            title = AvvisningskodeDTO.AVVIST_STRENGT_FORTROLIG_ADRESSE,
+                            begrunnelse = "Du har ikke tilgang til brukere med strengt fortrolig adresse",
+                        )
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
+                            val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
+
+                            val response =
+                                client.post("/api/rapport/frontend/nevnt-sok") {
+                                    bearerAuth(
+                                        this@withMockOAuth2Server.tokenFromDefaultProvider(
+                                            claims = mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG))
+                                        )
+                                    )
+                                    contentType(ContentType.Application.Json)
+                                    setBody(
+                                        FrontendApi.RapportFnrSoek(
+                                            nevntFnr,
+                                            LocalDate.now().minusDays(1),
+                                            LocalDate.now(),
+                                            RapportType.`ref-arbg`,
+                                        )
+                                    )
+                                }
+                            response.status shouldBe HttpStatusCode.Forbidden
+                            response.bodyAsText() shouldBe "Du har ikke tilgang til brukere med strengt fortrolig adresse"
+                        }
+                    }
+                }
+                test("gir feilmelding når tilgangsmaskinen gir uventet respons") {
+                    coEvery { mockedTilgangsmaskinService.sjekkTilgang(any(), nevntFnr) } throws
+                        UnexpectedResponseException("Uventet svar fra tilgangsmaskinen")
+                    withMockOAuth2Server {
+                        withTestApplication(dbContainer, dependencyOverrides = dependencyOverrides) {
+                            val client = createClient { install(ContentNegotiation) { json(clientJsonConfig) } }
+
+                            val response =
+                                client.post("/api/rapport/frontend/nevnt-sok") {
+                                    bearerAuth(
+                                        this@withMockOAuth2Server.tokenFromDefaultProvider(
+                                            claims = mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG))
+                                        )
+                                    )
+                                    contentType(ContentType.Application.Json)
+                                    setBody(
+                                        FrontendApi.RapportFnrSoek(
+                                            nevntFnr,
+                                            LocalDate.now().minusDays(1),
+                                            LocalDate.now(),
+                                            RapportType.`ref-arbg`,
+                                        )
+                                    )
+                                }
+                            response.status shouldBe HttpStatusCode.Forbidden
+                            response.bodyAsText() shouldBe "Uventet svar fra tilgangsmaskinen"
                         }
                     }
                 }

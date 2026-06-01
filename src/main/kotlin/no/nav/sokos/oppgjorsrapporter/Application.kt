@@ -23,7 +23,6 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.di.DependencyRegistry
 import io.ktor.server.plugins.di.dependencies
-import io.ktor.server.plugins.di.provide
 import io.ktor.util.AttributeKey
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -150,7 +149,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
 
         provide {
             val client = httpClient("tilgangsmaskin", TilgangsmaskinHttpClientSetup)
-            TilgangsmaskinService(config.restEndpoint.tilgangsmaskinUrl, client, resolve(), resolve())
+            TilgangsmaskinService(config.restEndpoint.tilgangsmaskinUrl, client, resolve())
         }
 
         provide<RapportGenerator> {
