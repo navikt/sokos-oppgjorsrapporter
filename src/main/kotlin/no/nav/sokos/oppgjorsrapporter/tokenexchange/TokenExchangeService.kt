@@ -5,6 +5,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.forms.submitForm
 import io.ktor.http.isSuccess
 import io.ktor.http.parameters
+import java.net.URI
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
@@ -25,6 +26,8 @@ class TokenExchangeServiceImpl(
     private val client: HttpClient,
     private val metrics: Metrics,
 ) : TokenExchangeService {
+    private val logger = KotlinLogging.logger {}
+
     override suspend fun getOboToken(token: String): String {
         val response =
             client.submitForm(
@@ -36,16 +39,15 @@ class TokenExchangeServiceImpl(
                 },
             )
 
+        metrics.tellEksternEndepunktRequest(response, URI(tokenExchangeEndpoint).path)
+
         if (response.status.isSuccess()) {
-            val respBody = response.body<TokenResponse.Success>()
-            return respBody.accessToken
+            logger.info { "Vellykket henting av obo token" }
+            return response.body<TokenResponse.Success>().accessToken
         } else {
-            val resp = TokenResponse.Error(response.body<TokenErrorResponse>(), response.status)
-            throw UnexpectedResponseException(
-                "Kunne ikke autentisere mot $targetScope feilmelding: ${resp.error.errorDescription}",
-                resp.status,
-                resp.error.error,
-            )
+            val errorBody = TokenResponse.Error(response.body<TokenErrorResponse>(), response.status)
+            logger.warn(TEAM_LOGS_MARKER) { "Feil ved henting av obo token. Status: ${response.status} body: $errorBody" }
+            throw UnexpectedResponseException("Unventet svar ved henting av obo token")
         }
     }
 }

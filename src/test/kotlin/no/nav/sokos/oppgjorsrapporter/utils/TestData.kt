@@ -11,6 +11,8 @@ import no.nav.sokos.oppgjorsrapporter.rapport.OrgNavn
 import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.kontrakter.AvvisningskodeDTO
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.kontrakter.PersonDetailResponseDTO
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
@@ -147,6 +149,17 @@ startxref
                 ),
             datarec = datarec,
         )
+    }
+
+    fun createPersonDetailResponseDTO(
+        title: AvvisningskodeDTO = AvvisningskodeDTO.AVVIST_STRENGT_FORTROLIG_ADRESSE,
+        begrunnelse: String = "Du har ikke tilgang til brukere med strengt fortrolig adresse",
+        traceId: String = UUID.randomUUID().toString(),
+        brukerIdent: Fnr = Fnr.genererGyldig().somUvalidert(),
+        navIdent: String = "NAVident",
+        kanOverstyres: Boolean = false,
+    ): PersonDetailResponseDTO {
+        return PersonDetailResponseDTO(title, begrunnelse, traceId, brukerIdent.raw, navIdent, kanOverstyres)
     }
 }
 

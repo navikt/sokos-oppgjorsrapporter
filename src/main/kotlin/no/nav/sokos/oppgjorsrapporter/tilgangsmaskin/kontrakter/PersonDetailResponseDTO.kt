@@ -1,8 +1,8 @@
 package no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.kontrakter
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import kotlinx.serialization.Serializable
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class PersonDetailResponseDTO(
     val title: AvvisningskodeDTO,
     val begrunnelse: String,
