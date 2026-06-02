@@ -8,6 +8,7 @@ import java.util.UUID
 import kotlin.collections.get
 import mu.KotlinLogging
 import no.nav.security.token.support.core.context.TokenValidationContext
+import no.nav.security.token.support.core.jwt.JwtToken
 import no.nav.security.token.support.core.jwt.JwtTokenClaims
 import no.nav.security.token.support.v3.TokenValidationContextPrincipal
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
@@ -127,7 +128,14 @@ suspend fun RoutingContext.autentisertBruker(): AutentisertBruker =
         }
     }
 
-fun RoutingContext.hentTokenString(): String {
-    return call.principal<TokenValidationContextPrincipal>()?.context?.firstValidToken?.encodedToken
-        ?: throw RuntimeException("no token found in call context")
+suspend fun RoutingContext.hentTokenString(authType: AuthenticationType): JwtToken {
+    val token = tokenValidationContext().getJwtToken(authType.name)
+    if (token == null) {
+        val error = "Fant ikke noe autentiserings-token fra issuer ${authType.name}"
+        logger.error { error }
+        throw TokenNotFoundException(error)
+    }
+    return token
 }
+
+class TokenNotFoundException(override val message: String) : Exception(message)

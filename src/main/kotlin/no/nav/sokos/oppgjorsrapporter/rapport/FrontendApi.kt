@@ -21,8 +21,10 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.auth.TokenNotFoundException
 import no.nav.sokos.oppgjorsrapporter.auth.autentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.hentTokenString
+import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.rapport.Api.RapportDTO
@@ -129,15 +131,21 @@ object FrontendApi {
                             when (reqBody) {
                                 is RapportFnrSoek ->
                                     with(reqBody) {
-                                        try {
-                                            val onBehalfOfToken = tokenExchangeService.getOboToken(hentTokenString())
-                                            val tilgang = tilgangsmaskinService.sjekkTilgang(onBehalfOfToken, reqBody.fnr)
-                                            tilgang?.let {
-                                                return@post call.respond(HttpStatusCode.Forbidden, it.begrunnelse)
+                                        val manglerTilgang =
+                                            try {
+                                                val token = hentTokenString(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)
+                                                val onBehalfOfToken = tokenExchangeService.getOboToken(token)
+                                                val tilgang = tilgangsmaskinService.sjekkTilgang(onBehalfOfToken, fnr)
+                                                tilgang?.begrunnelse
+                                            } catch (e: TokenNotFoundException) {
+                                                e.message
+                                            } catch (e: UnexpectedResponseException) {
+                                                e.message
                                             }
-                                        } catch (ue: UnexpectedResponseException) {
-                                            return@post call.respond(HttpStatusCode.Forbidden, ue.message)
+                                        if (manglerTilgang != null) {
+                                            return@post call.respond(HttpStatusCode.Forbidden, manglerTilgang)
                                         }
+
                                         rapportService.rapportSoek(fnr, datoRange(), inkluderArkiverte, rapportType)
                                     }
                                 is RapportUnderenhetSoek ->
