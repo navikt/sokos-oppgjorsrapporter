@@ -175,12 +175,12 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<InternTilgangService> { LocalhostInternTilgangService }
             provide<TokenExchangeService> { LocalTokenExchangeService }
         } else {
-            provide<AuthClient> { DefaultAuthClient(config.security.tokenEndpoint, config.security.altinn.baseUrl) }
+            provide<AuthClient> { DefaultAuthClient(config.security.texasTokenEndpoint, config.security.altinn.baseUrl) }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
             provide<TokenExchangeService> {
                 val client = httpClient("tokenexchange", TokenExchangeHttpClientSetup)
-                TokenExchangeServiceImpl(config.security.tokenExchangeEndpoint, config.security.targetTilgangsmaskin, client, resolve())
+                TokenExchangeServiceImpl(config.security.texasExchangeEndpoint, config.security.tilgangsmaskinenAudience, client, resolve())
             }
         }
         val authClient: AuthClient by this

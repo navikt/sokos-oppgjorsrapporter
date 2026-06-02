@@ -12,7 +12,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.Rapport
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.kontrakter.AvvisningskodeDTO
-import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.kontrakter.PersonDetailResponseDTO
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.kontrakter.ProblemDetailApiResponse
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
@@ -158,8 +158,8 @@ startxref
         brukerIdent: Fnr = Fnr.genererGyldig().somUvalidert(),
         navIdent: String = "NAVident",
         kanOverstyres: Boolean = false,
-    ): PersonDetailResponseDTO {
-        return PersonDetailResponseDTO(title, begrunnelse, traceId, brukerIdent.raw, navIdent, kanOverstyres)
+    ): ProblemDetailApiResponse {
+        return ProblemDetailApiResponse(title, begrunnelse, traceId, brukerIdent.raw, navIdent, kanOverstyres)
     }
 }
 
