@@ -18,13 +18,13 @@ import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
-import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.kontrakter.PersonDetailResponseDTO
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.kontrakter.ProblemDetailApiResponse
 import no.nav.sokos.utils.Fnr
 
 class TilgangsmaskinService(private val baseUrl: URI, private val client: HttpClient, private val metrics: Metrics) {
     private val logger = KotlinLogging.logger {}
 
-    suspend fun sjekkTilgang(oboToken: String, fnr: Fnr): PersonDetailResponseDTO? {
+    suspend fun sjekkTilgang(oboToken: String, fnr: Fnr): ProblemDetailApiResponse? {
         metrics.tellTilgangsmaskinKall()
         val response =
             client.post("${baseUrl}/api/v1/kjerne") {
@@ -38,7 +38,7 @@ class TilgangsmaskinService(private val baseUrl: URI, private val client: HttpCl
             when (response.status) {
                 HttpStatusCode.NoContent -> null
                 HttpStatusCode.Forbidden -> {
-                    response.body<PersonDetailResponseDTO?>().also {
+                    response.body<ProblemDetailApiResponse>().also {
                         logger.info("Tilgangsmaskinen avviser tilgang")
                         logger.info(TEAM_LOGS_MARKER) { "Tilgangsmaskinen avviser tilgang: $it" }
                     }

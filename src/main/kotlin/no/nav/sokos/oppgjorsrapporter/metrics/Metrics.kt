@@ -98,11 +98,11 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .publishPercentileHistogram()
             .withRegistry(registry)
 
-    private val tellTilgangsmaskinKallTeller =
+    private val tilgangsmaskinKallTeller =
         Counter.builder("${NAMESPACE}_tilgangsmaskin_call_count").description("Antall kall gjort mot Tilgangsmaskin").register(registry)
 
     fun tellTilgangsmaskinKall() {
-        tellTilgangsmaskinKallTeller.increment()
+        tilgangsmaskinKallTeller.increment()
     }
 
     val tilgangsmaskinKallTimer =

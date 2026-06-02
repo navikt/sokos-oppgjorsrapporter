@@ -163,5 +163,5 @@ spec:
         999263550,
     - name: TILGANGSMASKINEN_URL
       value: http://populasjonstilgangskontroll.tilgangsmaskin
-    - name: TARGET_TILGANGSMASKINEN
+    - name: TILGANGSMASKINEN_AUDIENCE
       value: dev-gcp:tilgangsmaskin:populasjonstilgangskontroll
