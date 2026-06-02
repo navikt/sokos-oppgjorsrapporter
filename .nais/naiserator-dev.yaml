@@ -160,7 +160,7 @@ spec:
         991078045,
         993110469,
         995277670,
-        999263550
+        999263550,
     - name: TILGANGSMASKINEN_URL
       value: http://populasjonstilgangskontroll.tilgangsmaskin
     - name: TARGET_TILGANGSMASKINEN
