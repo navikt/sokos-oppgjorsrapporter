@@ -8,6 +8,7 @@ import io.ktor.http.parameters
 import java.net.URI
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
+import no.nav.security.token.support.core.jwt.JwtToken
 import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
@@ -17,7 +18,7 @@ import no.nav.sokos.oppgjorsrapporter.tokenexchange.kontrakter.TokenErrorRespons
 import no.nav.sokos.oppgjorsrapporter.tokenexchange.kontrakter.TokenResponse
 
 interface TokenExchangeService {
-    suspend fun getOboToken(token: String): String
+    suspend fun getOboToken(token: JwtToken): String
 }
 
 class TokenExchangeServiceImpl(
@@ -28,13 +29,13 @@ class TokenExchangeServiceImpl(
 ) : TokenExchangeService {
     private val logger = KotlinLogging.logger {}
 
-    override suspend fun getOboToken(token: String): String {
+    override suspend fun getOboToken(token: JwtToken): String {
         val response =
             client.submitForm(
                 tokenExchangeEndpoint,
                 parameters {
                     set("target", targetScope)
-                    set("user_token", token)
+                    set("user_token", token.encodedToken)
                     set("identity_provider", "azuread")
                 },
             )
@@ -55,7 +56,7 @@ class TokenExchangeServiceImpl(
 object LocalTokenExchangeService : TokenExchangeService {
     private val logger = KotlinLogging.logger {}
 
-    override suspend fun getOboToken(token: String): String {
+    override suspend fun getOboToken(token: JwtToken): String {
         logger.info(TEAM_LOGS_MARKER) { "LocalTokenExchangeService - svarer med fake obotoken" }
         return "fake obotoken"
     }
