@@ -37,7 +37,7 @@ class TokenExchangeServiceImpl(
                 parameters {
                     set("target", targetScope)
                     set("user_token", token.encodedToken)
-                    set("identity_provider", AuthClientIdentityProvider.AZURE_AD.name)
+                    set("identity_provider", AuthClientIdentityProvider.AZURE_AD.verdi)
                 },
             )
 
