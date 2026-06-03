@@ -10,6 +10,7 @@ import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.security.token.support.core.jwt.JwtToken
 import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.auth.AuthClientIdentityProvider
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
@@ -36,7 +37,7 @@ class TokenExchangeServiceImpl(
                 parameters {
                     set("target", targetScope)
                     set("user_token", token.encodedToken)
-                    set("identity_provider", "azuread")
+                    set("identity_provider", AuthClientIdentityProvider.AZURE_AD.name)
                 },
             )
 
