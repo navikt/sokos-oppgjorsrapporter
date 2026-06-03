@@ -678,7 +678,7 @@ class FrontendApiTest :
 
                 test("gir feilmelding når bruker ikke har tilgang til personen med gitt fnr") {
                     coEvery { mockedTilgangsmaskinService.sjekkTilgang(any(), nevntFnr) } returns
-                        TestData.createPersonDetailResponseDTO(
+                        TestData.createProblemDetailApiResponse(
                             brukerIdent = nevntFnr,
                             title = AvvisningskodeDTO.AVVIST_STRENGT_FORTROLIG_ADRESSE,
                             begrunnelse = "Du har ikke tilgang til brukere med strengt fortrolig adresse",

@@ -43,12 +43,12 @@ class TokenExchangeServiceImpl(
         metrics.tellEksternEndepunktRequest(response, URI(tokenExchangeEndpoint).path)
 
         if (response.status.isSuccess()) {
-            logger.info { "Vellykket henting av obo token" }
+            logger.debug { "Vellykket henting av obo token" }
             return response.body<TokenResponse.Success>().accessToken
         } else {
             val errorBody = TokenResponse.Error(response.body<TokenErrorResponse>(), response.status)
-            logger.warn(TEAM_LOGS_MARKER) { "Feil ved henting av obo token. Status: ${response.status} body: $errorBody" }
-            throw UnexpectedResponseException("Unventet svar ved henting av obo token")
+            logger.warn(TEAM_LOGS_MARKER) { "Feil ved henting av obo token. Status: ${response.status} body: <$errorBody>" }
+            throw UnexpectedResponseException("Noe gikk galt. Prøv å logg inn på nytt ved å lukke nettleseren helt og starte den på nytt.")
         }
     }
 }
