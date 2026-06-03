@@ -179,7 +179,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
             provide<TokenExchangeService> {
-                val client = httpClient("tokenexchange", TokenExchangeHttpClientSetup)
+                val client = httpClient("obotokenexchange", TokenExchangeHttpClientSetup)
                 TokenExchangeServiceImpl(config.security.texasExchangeEndpoint, config.security.tilgangsmaskinenAudience, client, resolve())
             }
         }

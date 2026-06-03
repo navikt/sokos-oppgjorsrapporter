@@ -151,7 +151,7 @@ startxref
         )
     }
 
-    fun createPersonDetailResponseDTO(
+    fun createProblemDetailApiResponse(
         title: AvvisningskodeDTO = AvvisningskodeDTO.AVVIST_STRENGT_FORTROLIG_ADRESSE,
         begrunnelse: String = "Du har ikke tilgang til brukere med strengt fortrolig adresse",
         traceId: String = UUID.randomUUID().toString(),
