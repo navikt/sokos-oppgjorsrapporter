@@ -10,7 +10,6 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import io.ktor.http.isSuccess
 import java.net.URI
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
@@ -27,29 +26,27 @@ class TilgangsmaskinService(private val baseUrl: URI, private val client: HttpCl
     suspend fun sjekkTilgang(oboToken: String, fnr: Fnr): ProblemDetailApiResponse? {
         metrics.tellTilgangsmaskinKall()
 
-        val response =
-            metrics.coRecord({ result ->
-                metrics.tilgangsmaskinKallTimer.withTags("feilet", (result.getOrNull()?.status?.isSuccess() ?: false).toString())
-            }) {
+        return metrics.coRecord({ result -> metrics.tilgangsmaskinKallTimer.withTags("feilet", result.isFailure.toString()) }) {
+            val response =
                 client.post("${baseUrl}/api/v1/kjerne") {
                     contentType(ContentType.Application.Json)
                     accept(ContentType.Application.Json)
                     bearerAuth(oboToken)
                     setBody(fnr)
                 }
-            }
-        return when (response.status) {
-            HttpStatusCode.NoContent -> null
-            HttpStatusCode.Forbidden -> {
-                response.body<ProblemDetailApiResponse>().also {
-                    logger.info("Tilgangsmaskinen avviser tilgang")
-                    logger.info(TEAM_LOGS_MARKER) { "Tilgangsmaskinen avviser tilgang: $it" }
+            when (response.status) {
+                HttpStatusCode.NoContent -> null
+                HttpStatusCode.Forbidden -> {
+                    response.body<ProblemDetailApiResponse>().also {
+                        logger.info("Tilgangsmaskinen avviser tilgang")
+                        logger.info(TEAM_LOGS_MARKER) { "Tilgangsmaskinen avviser tilgang: $it" }
+                    }
                 }
-            }
-            else -> {
-                val body = response.bodyAsText()
-                logger.warn(TEAM_LOGS_MARKER) { "Feil fra tilgangsmaskinen. Status: ${response.status} body: <$body>" }
-                throw UnexpectedResponseException(message = "Uventet svar fra tilgangsmaskinen")
+                else -> {
+                    val body = response.bodyAsText()
+                    logger.warn(TEAM_LOGS_MARKER) { "Feil fra tilgangsmaskinen. Status: ${response.status} body: <$body>" }
+                    throw UnexpectedResponseException(message = "Uventet svar fra tilgangsmaskinen")
+                }
             }
         }
     }
