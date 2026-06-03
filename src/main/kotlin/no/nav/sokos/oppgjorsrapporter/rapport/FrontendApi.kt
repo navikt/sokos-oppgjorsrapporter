@@ -23,7 +23,7 @@ import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.TokenNotFoundException
 import no.nav.sokos.oppgjorsrapporter.auth.autentisertBruker
-import no.nav.sokos.oppgjorsrapporter.auth.hentTokenString
+import no.nav.sokos.oppgjorsrapporter.auth.hentJwtToken
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
@@ -133,7 +133,7 @@ object FrontendApi {
                                     with(reqBody) {
                                         val manglerTilgang =
                                             try {
-                                                val token = hentTokenString(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)
+                                                val token = hentJwtToken(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)
                                                 val onBehalfOfToken = tokenExchangeService.getOboToken(token)
                                                 val tilgang = tilgangsmaskinService.sjekkTilgang(onBehalfOfToken, fnr)
                                                 tilgang?.begrunnelse

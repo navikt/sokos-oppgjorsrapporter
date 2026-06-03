@@ -128,7 +128,7 @@ suspend fun RoutingContext.autentisertBruker(): AutentisertBruker =
         }
     }
 
-suspend fun RoutingContext.hentTokenString(authType: AuthenticationType): JwtToken {
+suspend fun RoutingContext.hentJwtToken(authType: AuthenticationType): JwtToken {
     val token = tokenValidationContext().getJwtToken(authType.name)
     if (token == null) {
         val error = "Fant ikke noe autentiserings-token fra issuer ${authType.name}"
