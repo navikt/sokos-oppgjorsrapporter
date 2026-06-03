@@ -98,6 +98,19 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .publishPercentileHistogram()
             .withRegistry(registry)
 
+    private val tilgangsmaskinKallTeller =
+        Counter.builder("${NAMESPACE}_tilgangsmaskin_call_count").description("Antall kall gjort mot Tilgangsmaskin").register(registry)
+
+    fun tellTilgangsmaskinKall() {
+        tilgangsmaskinKallTeller.increment()
+    }
+
+    val tilgangsmaskinKallTimer =
+        Timer.builder("${NAMESPACE}_tilgangsmaskin_call_seconds")
+            .description("Tid brukt på Tilgangsmaskin-kall")
+            .publishPercentileHistogram()
+            .withRegistry(registry)
+
     val rapportSokReturnertAntall =
         DistributionSummary.builder("${NAMESPACE}_api_rapport_sok_response_count")
             .description("Antallet rapporter søke-APIet returnerer per respons")

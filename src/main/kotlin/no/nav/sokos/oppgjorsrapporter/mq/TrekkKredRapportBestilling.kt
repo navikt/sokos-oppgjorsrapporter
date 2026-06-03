@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonRootName
 import java.math.BigDecimal
 import java.time.LocalDate
+import no.nav.sokos.oppgjorsrapporter.rapport.UlagretRapport
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
@@ -17,12 +18,21 @@ import tools.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import tools.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import tools.jackson.module.kotlin.KotlinFeature
 import tools.jackson.module.kotlin.KotlinModule
+import tools.jackson.module.kotlin.readValue
 
 @JsonRootName(value = "rundata")
 data class TrekkKredRapportBestilling(
     @JacksonXmlProperty(isAttribute = true) @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd") val dato: LocalDate,
     @get:JacksonXmlProperty(localName = "brukerdata") val brukerData: Brukerdata,
 ) : RapportBestillingMsg() {
+    override fun nevntInfo(): List<UlagretRapport.NevntInfo> =
+        listOf(UlagretRapport.NevntVersjon(1)) +
+            brukerData.brevinfo.variableFelter.ur.arkivRefList
+                .flatMap { it.enhetList }
+                .flatMap { it.trekkLinjeList }
+                .map { UlagretRapport.NevntFnr(it.fnr) }
+                .distinct()
+
     companion object {
         val kotlinModule = KotlinModule.Builder().enable(KotlinFeature.StrictNullChecks).build()
 
@@ -31,6 +41,8 @@ data class TrekkKredRapportBestilling(
                 .addModule(SimpleModule().apply { addDeserializer(String::class.java, TrimmingDeserializer()) })
                 .addModule(kotlinModule)
                 .build()
+
+        fun decode(dokument: String): TrekkKredRapportBestilling = xmlMapper.readValue<TrekkKredRapportBestilling>(dokument)
     }
 
     data class Brukerdata(val mottaker: Mottaker, val brevinfo: BrevInfo)

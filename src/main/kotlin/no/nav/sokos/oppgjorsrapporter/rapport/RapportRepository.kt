@@ -9,6 +9,9 @@ import kotlinx.io.bytestring.ByteString
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.utils.Fnr
+import no.nav.sokos.utils.OrgNr
+import org.threeten.extra.LocalDateRange
 
 class RapportRepository(private val clock: Clock) {
     fun lagreBestilling(tx: TransactionalSession, bestilling: UlagretRapportBestilling): RapportBestilling =
@@ -86,9 +89,10 @@ class RapportRepository(private val clock: Clock) {
         queryOf(
                 """
                 INSERT INTO rapport.rapport(bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
-                                            antall_rader, antall_underenheter, antall_personer)
+                                            antall_rader, antall_underenheter, antall_personer, nevnt_info)
                 VALUES (:bestilling_id, :orgnr, :org_navn, CAST(:type AS rapport.rapport_type), :dato_valutert, :bankkonto,
-                        :antall_rader, :antall_underenheter, :antall_personer)
+                        :antall_rader, :antall_underenheter, :antall_personer,
+                        CAST(:nevnt_info AS jsonb))
                 RETURNING id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
                           antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
                 """
@@ -103,11 +107,63 @@ class RapportRepository(private val clock: Clock) {
                     "antall_rader" to rapport.antallRader,
                     "antall_underenheter" to rapport.antallUnderenheter,
                     "antall_personer" to rapport.antallPersoner,
+                    "nevnt_info" to UlagretRapport.NevntInfo.serialize(rapport.nevntInfo),
                 ),
             )
             .map { row -> Rapport(row) }
             .asSingle
             .let { tx.run(it)!! }
+
+    fun finnRapportSomManglerNevntInfo(tx: TransactionalSession) =
+        queryOf(
+                """
+                SELECT r.id, r.uuid, r.bestilling_id, r.orgnr, r.org_navn, r.type, r.dato_valutert, r.bankkonto,
+                       r.antall_rader, r.antall_underenheter, r.antall_personer, r.opprettet, r.arkivert, r.dialogporten_uuid
+                FROM rapport.rapport r
+                JOIN rapport.rapport_bestilling b ON b.id = r.bestilling_id
+                WHERE r.nevnt_info IS NULL
+                  AND ( b.prosessering_feilet IS NULL OR
+                        b.prosessering_feilet + '10 minutes'::interval <= now() )
+                ORDER BY b.prosessering_feilet NULLS FIRST, id DESC
+                LIMIT 1
+                FOR NO KEY UPDATE SKIP LOCKED
+                """
+                    .trimIndent()
+            )
+            .map { Rapport(it) }
+            .asSingle
+            .let { tx.run(it) }
+
+    fun settNevntInfo(tx: TransactionalSession, rapportId: Rapport.Id, nevntInfo: List<UlagretRapport.NevntInfo>) =
+        queryOf(
+                """
+                UPDATE rapport.rapport
+                SET nevnt_info = CAST(:nevnt_info AS jsonb)
+                WHERE id = :id
+                  AND (nevnt_info IS NULL OR
+                       NOT EXISTS (SELECT 'x' FROM jsonb_array_elements(nevnt_info) AS elem
+                                   WHERE elem ?? 'versjon'
+                                     AND (elem->'versjon')::integer >= :versjon
+                                  )
+                      )
+                """
+                    .trimIndent(),
+                mapOf(
+                    "id" to rapportId.raw,
+                    "nevnt_info" to UlagretRapport.NevntInfo.serialize(nevntInfo),
+                    "versjon" to
+                        nevntInfo
+                            .mapNotNull {
+                                when (it) {
+                                    is UlagretRapport.NevntVersjon -> it.versjon
+                                    else -> null
+                                }
+                            }
+                            .single(),
+                ),
+            )
+            .asUpdate
+            .let { tx.run(it) }
 
     fun finnRapport(tx: TransactionalSession, id: Rapport.Id): Rapport? =
         queryOf(
@@ -451,6 +507,57 @@ class RapportRepository(private val clock: Clock) {
                     it.long("antall_rapporter"),
                 )
             }
+            .asList
+            .let { tx.run(it) }
+
+    fun rapportSoek(
+        tx: TransactionalSession,
+        fnr: Fnr,
+        periode: LocalDateRange,
+        inkluderArkiverte: Boolean,
+        rapportType: RapportType,
+    ): List<Rapport> = rapportSoekHjelper(tx, rapportSoekParams("fnr", fnr.raw, periode, inkluderArkiverte, rapportType))
+
+    fun rapportSoek(
+        tx: TransactionalSession,
+        underenhet: OrgNr,
+        periode: LocalDateRange,
+        inkluderArkiverte: Boolean,
+        rapportType: RapportType,
+    ): List<Rapport> = rapportSoekHjelper(tx, rapportSoekParams("underenhet", underenhet.raw, periode, inkluderArkiverte, rapportType))
+
+    private fun rapportSoekParams(
+        jsonKey: String,
+        jsonValue: String,
+        periode: LocalDateRange,
+        inkluderArkiverte: Boolean,
+        rapportType: RapportType,
+    ) =
+        mapOf(
+            "jsonKey" to jsonKey,
+            "jsonValue" to jsonValue,
+            "inkluderArkiverte" to inkluderArkiverte,
+            "fraDato" to periode.start,
+            "tilDato" to periode.endInclusive,
+            "rapportType" to rapportType.name,
+        )
+
+    private fun rapportSoekHjelper(tx: TransactionalSession, params: Map<String, Any?>) =
+        queryOf(
+                """
+                SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
+                       antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
+                FROM rapport.rapport
+                WHERE type = CAST(:rapportType AS rapport.rapport_type)
+                  AND (arkivert IS NULL OR :inkluderArkiverte)
+                  AND dato_valutert BETWEEN :fraDato AND :tilDato
+                  AND nevnt_info @> jsonb_build_array(jsonb_build_object(:jsonKey, :jsonValue))
+                ORDER BY id ASC
+                """
+                    .trimIndent(),
+                params,
+            )
+            .map { row -> Rapport(row) }
             .asList
             .let { tx.run(it) }
 }

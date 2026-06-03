@@ -9,9 +9,13 @@ import java.util.UUID
 import kotlinx.io.bytestring.ByteString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.ClassDiscriminatorMode
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNames
 import kotliquery.Row
+import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 
 @Serializable @JvmInline value class OrgNavn(val raw: String)
@@ -113,7 +117,23 @@ data class UlagretRapport(
     override val antallRader: Int,
     override val antallUnderenheter: Int?,
     override val antallPersoner: Int?,
-) : RapportFelter
+    val nevntInfo: List<NevntInfo>,
+) : RapportFelter {
+    @Serializable
+    sealed interface NevntInfo {
+        companion object {
+            private val jsonConfig: Json = Json(commonJsonConfig) { classDiscriminatorMode = ClassDiscriminatorMode.NONE }
+
+            fun serialize(nevntInfo: List<NevntInfo>): String = jsonConfig.encodeToString(nevntInfo)
+        }
+    }
+
+    @Serializable data class NevntVersjon(val versjon: Int) : NevntInfo
+
+    @Serializable data class NevntFnr(val fnr: Fnr) : NevntInfo
+
+    @Serializable data class NevntUnderenhet(val underenhet: OrgNr) : NevntInfo
+}
 
 data class Rapport(
     val id: Id,

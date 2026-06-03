@@ -75,6 +75,7 @@ import no.nav.sokos.oppgjorsrapporter.pdp.AltinnPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.LocalhostPdpService
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportBackFiller
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.PdfgenHttpClientSetup
@@ -82,6 +83,12 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinHttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
+import no.nav.sokos.oppgjorsrapporter.tokenexchange.LocalTokenExchangeService
+import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeHttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeService
+import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeServiceImpl
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
 
 private val logger = KotlinLogging.logger {}
@@ -140,6 +147,11 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             EregService(config.restEndpoint.eregBaseUrl, client, resolve())
         }
 
+        provide {
+            val client = httpClient("tilgangsmaskin", TilgangsmaskinHttpClientSetup)
+            TilgangsmaskinService(config.restEndpoint.tilgangsmaskinUrl, client, resolve())
+        }
+
         provide<RapportGenerator> {
             val client =
                 httpClient("pdfgen", PdfgenHttpClientSetup) {
@@ -161,10 +173,15 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<AuthClient> { NoOpAuthClient() }
             provide<PdpService> { LocalhostPdpService }
             provide<InternTilgangService> { LocalhostInternTilgangService }
+            provide<TokenExchangeService> { LocalTokenExchangeService }
         } else {
-            provide<AuthClient> { DefaultAuthClient(config.security.tokenEndpoint, config.security.altinn.baseUrl) }
+            provide<AuthClient> { DefaultAuthClient(config.security.texasTokenEndpoint, config.security.altinn.baseUrl) }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
+            provide<TokenExchangeService> {
+                val client = httpClient("obotokenexchange", TokenExchangeHttpClientSetup)
+                TokenExchangeServiceImpl(config.security.texasExchangeEndpoint, config.security.tilgangsmaskinenAudience, client, resolve())
+            }
         }
         val authClient: AuthClient by this
 
@@ -231,6 +248,14 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         provide(BestillingProsessor::class)
         provideJob<BestillingProsessor>(
             with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
+        )
+
+        if (config.application.disableBackgroundJobs) {
+            applicationState.disabledBackgroundJobs += RapportBackFiller::class
+        }
+        provide(RapportBackFiller::class)
+        provideJob<RapportBackFiller>(
+            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<RapportBackFiller>().run() } }
         )
 
         if (config.application.disableBackgroundJobs) {

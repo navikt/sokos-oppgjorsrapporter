@@ -90,6 +90,8 @@ spec:
           namespace: nais-system
         - application: pengeflyt-pdfgen
         - application: pengeflyt-pdfgenrs
+        - application: populasjonstilgangskontroll
+          namespace: tilgangsmaskin
   envFrom:
     - secret: altinn-authorization-subscription
     - secret: sokos-oppgjorsrapporter-secrets
@@ -159,3 +161,7 @@ spec:
         993110469,
         995277670,
         999263550,
+    - name: TILGANGSMASKINEN_URL
+      value: http://populasjonstilgangskontroll.tilgangsmaskin
+    - name: TILGANGSMASKINEN_AUDIENCE
+      value: prod-gcp:tilgangsmaskin:populasjonstilgangskontroll

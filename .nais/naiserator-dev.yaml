@@ -68,7 +68,7 @@ spec:
   gcp:
     sqlInstances:
       - type: POSTGRES_18
-        tier: db-f1-micro
+        tier: db-g1-small
         diskAutoresize: true
         databases:
           - name: sokos-oppgjorsrapporter-db
@@ -97,6 +97,8 @@ spec:
           cluster: dev-fss
         - application: pengeflyt-pdfgen
         - application: pengeflyt-pdfgenrs
+        - application: populasjonstilgangskontroll
+          namespace: tilgangsmaskin
   envFrom:
     - secret: altinn-authorization-subscription
     - secret: sokos-oppgjorsrapporter-secrets
@@ -159,3 +161,7 @@ spec:
         993110469,
         995277670,
         999263550,
+    - name: TILGANGSMASKINEN_URL
+      value: http://populasjonstilgangskontroll.tilgangsmaskin
+    - name: TILGANGSMASKINEN_AUDIENCE
+      value: dev-gcp:tilgangsmaskin:populasjonstilgangskontroll

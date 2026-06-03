@@ -17,7 +17,6 @@ import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
-import tools.jackson.module.kotlin.readValue
 
 class BestillingProsessor(
     private val metrics: Metrics,
@@ -30,7 +29,7 @@ class BestillingProsessor(
     private val logger: KLogger = KotlinLogging.logger {}
 
     override suspend fun run() {
-        logger.trace { "BestillingProsessor.run()" }
+        logger.trace { "${javaClass.simpleName}.run()" }
         val baseDelay = 1.seconds
         val maxDelay = 5.minutes
         var t = baseDelay
@@ -66,8 +65,7 @@ class BestillingProsessor(
             val (ulagret: UlagretRapport, generator: (suspend (VariantFormat) -> ByteString?)) =
                 when (bestilling.genererSom) {
                     RapportType.`ref-arbg` -> {
-                        val refusjonsRapportBestilling =
-                            RefusjonsRapportBestilling.json.decodeFromString<RefusjonsRapportBestilling>(bestilling.dokument)
+                        val refusjonsRapportBestilling = RefusjonsRapportBestilling.decode(bestilling.dokument)
                         val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(refusjonsRapportBestilling.header.orgnr)
                         Pair(
                             UlagretRapport(
@@ -80,6 +78,7 @@ class BestillingProsessor(
                                 antallRader = refusjonsRapportBestilling.datarec.size,
                                 antallUnderenheter = refusjonsRapportBestilling.datarec.distinctBy { it.bedriftsnummer }.size,
                                 antallPersoner = refusjonsRapportBestilling.datarec.distinctBy { it.fnr }.size,
+                                nevntInfo = refusjonsRapportBestilling.nevntInfo(),
                             ),
                             suspend { variant: VariantFormat ->
                                 when (variant) {
@@ -92,8 +91,7 @@ class BestillingProsessor(
                     }
 
                     RapportType.`trekk-kred` -> {
-                        val trekkKredRapportBestilling =
-                            TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(bestilling.dokument)
+                        val trekkKredRapportBestilling = TrekkKredRapportBestilling.decode(bestilling.dokument)
                         val urData = trekkKredRapportBestilling.brukerData.brevinfo.variableFelter.ur
                         val organisasjonsNavnOgAdresse = eregService.hentOrganisasjonsNavnOgAdresse(urData.orgnummer)
                         Pair(
@@ -116,6 +114,7 @@ class BestillingProsessor(
                                         .map { it.fnr }
                                         .distinct()
                                         .size,
+                                nevntInfo = trekkKredRapportBestilling.nevntInfo(),
                             ),
                             suspend { variant: VariantFormat ->
                                 when (variant) {
@@ -147,6 +146,7 @@ class BestillingProsessor(
                                             .distinct()
                                             .size
                                     },
+                                nevntInfo = trekkHendRapportBestilling.nevntInfo(),
                             ),
                             suspend { variant: VariantFormat ->
                                 when (variant) {

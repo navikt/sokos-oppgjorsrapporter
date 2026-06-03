@@ -23,6 +23,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.VariantFormatSerializer
 import no.nav.sokos.utils.Bankkonto
+import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.Interval
 import org.threeten.extra.LocalDateRange
@@ -123,6 +124,9 @@ class RapportService(
             }
             repository.audit(tx, rapportEvent)
         }
+
+    fun settNevntInfo(tx: TransactionalSession, rapportId: Rapport.Id, nevntInfo: List<UlagretRapport.NevntInfo>) =
+        repository.settNevntInfo(tx, rapportId, nevntInfo)
 
     fun finnRapport(id: Rapport.Id): Rapport? = withTransaction { repository.finnRapport(it, id) }
 
@@ -236,6 +240,36 @@ class RapportService(
                 },
             )
             .joinToString(":")
+
+    fun rapportSoek(fnr: Fnr, periode: LocalDateRange, inkluderArkiverte: Boolean, rapportType: RapportType): List<Rapport> =
+        withTransaction { tx ->
+            repository.rapportSoek(tx, fnr, periode, inkluderArkiverte, rapportType)
+        }
+
+    fun rapportSoek(underenhet: OrgNr, periode: LocalDateRange, inkluderArkiverte: Boolean, rapportType: RapportType): List<Rapport> =
+        withTransaction { tx ->
+            repository.rapportSoek(tx, underenhet, periode, inkluderArkiverte, rapportType)
+        }
+
+    fun <T> prosesserManglendeNevntInfo(process: suspend (TransactionalSession, Rapport, RapportBestilling) -> T): Result<T>? =
+        withTransaction { tx ->
+            val savepoint = tx.connection.underlying.setSavepoint()
+            repository.finnRapportSomManglerNevntInfo(tx)?.let { rapport ->
+                runCatching {
+                        val bestilling = repository.finnBestilling(tx, rapport.bestillingId)!!
+                        process(tx, rapport, bestilling)
+                    }
+                    .onFailure { e ->
+                        logger.error { "Feil under backfilling av nevnt_info for $rapport" }
+                        logger.error(TEAM_LOGS_MARKER, e) { "Feil under backfilling av nevnt_info for $rapport: $e" }
+
+                        // Rull tilbake evt. database-endringer som ble gjort av `process` før ting feilet
+                        tx.connection.underlying.rollback(savepoint)
+
+                        repository.markerBestillingProsesseringFeilet(tx, rapport.bestillingId)
+                    }
+            }
+        }
 }
 
 sealed interface RapportKriterier {

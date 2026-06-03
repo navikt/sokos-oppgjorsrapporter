@@ -3,6 +3,7 @@ package no.nav.sokos.oppgjorsrapporter.mq
 import com.fasterxml.jackson.annotation.JsonRootName
 import java.io.InputStream
 import java.time.LocalDate
+import no.nav.sokos.oppgjorsrapporter.rapport.UlagretRapport
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 import tools.jackson.databind.annotation.JsonDeserialize
@@ -23,6 +24,20 @@ data class TrekkHendBestilling(
     val dato: LocalDate,
     val trekkhendelse: TrekkHendelse,
 ) : RapportBestillingMsg() {
+    override fun nevntInfo(): List<UlagretRapport.NevntInfo> =
+        listOf(UlagretRapport.NevntVersjon(1)) +
+            when (typeMottaker) {
+                TypeMottaker.kreditor ->
+                    trekkhendelse.kreditorMelding!!.flatMap {
+                        listOf(UlagretRapport.NevntFnr(it.debitorsFnr), UlagretRapport.NevntUnderenhet(it.namsmannsOrgNr))
+                    }
+
+                TypeMottaker.namsmann ->
+                    trekkhendelse.namsmannMelding!!.flatMap {
+                        listOf(UlagretRapport.NevntFnr(it.debitorsFnr), UlagretRapport.NevntUnderenhet(it.kreditorsOrgNr))
+                    }
+            }.distinct()
+
     init {
         when (typeMottaker) {
             TypeMottaker.kreditor -> {
@@ -47,7 +62,7 @@ data class TrekkHendBestilling(
                 .addModule(kotlinModule)
                 .build()
 
-        fun decode(data: String): TrekkHendBestilling = xmlMapper.readValue<TrekkHendBestilling>(data)
+        fun decode(dokument: String): TrekkHendBestilling = xmlMapper.readValue<TrekkHendBestilling>(dokument)
 
         fun decode(stream: InputStream): TrekkHendBestilling = xmlMapper.readValue<TrekkHendBestilling>(stream)
     }
