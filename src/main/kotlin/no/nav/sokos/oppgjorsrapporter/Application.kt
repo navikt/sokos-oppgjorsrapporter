@@ -144,7 +144,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         }
 
         provide {
-            val client = httpClient("tilgangsmaskin", TilgangsmaskinHttpClientSetup)
+            val client = httpClient("tilgangsmaskin", TilgangsmaskinHttpClientSetup) { expectSuccess = false }
             TilgangsmaskinService(config.restEndpoint.tilgangsmaskinUrl, client, resolve())
         }
 
