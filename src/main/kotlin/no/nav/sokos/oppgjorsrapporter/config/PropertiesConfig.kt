@@ -60,7 +60,6 @@ object PropertiesConfig {
         val guiBaseUri: URI,
         val profile: Profile,
         val disableBackgroundJobs: Boolean,
-        val pilotProdOrgs: List<OrgNr>,
         val navOrgs: List<OrgNr>,
     ) {
         constructor(
@@ -71,7 +70,6 @@ object PropertiesConfig {
             guiBaseUri = URI.create(source.get("application.gui_base_uri")),
             profile = Profile.valueOf(source.get("application.profile")),
             disableBackgroundJobs = source.get("application.disable_background_jobs").toBoolean(),
-            pilotProdOrgs = source.get("application.pilot_prod_orgnrs").tilOrgnrs("pilot_prod_orgnrs"),
             navOrgs = source.get("application.nav_orgnrs").tilOrgnrs("nav_orgnrs"),
         )
     }
@@ -215,8 +213,8 @@ object PropertiesConfig {
             .map { it.trim() }
             .filterNot { it.isEmpty() }
             .map(::OrgNr)
-            .also { pilotOrgs ->
-                pilotOrgs
+            .also { orgnrs ->
+                orgnrs
                     .map { OrgNr.Validert.valider(it.raw) }
                     .mapNotNull { it.exceptionOrNull()?.message }
                     .sorted()
