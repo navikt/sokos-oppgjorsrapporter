@@ -14,16 +14,31 @@ import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 interface AuthClient {
     fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): suspend () -> String
 
+    suspend fun exchange(provider: AuthClientIdentityProvider, target: String, userToken: String): TokenResponse
+
+    suspend fun introspect(provider: AuthClientIdentityProvider, accessToken: String): TokenIntrospectionResponse
+
     suspend fun altinnExchange(maskinportenToken: String): String
 }
 
 class NoOpAuthClient : AuthClient {
     override fun tokenGetter(identityProvider: AuthClientIdentityProvider, target: String): suspend () -> String = { "dummy-token" }
 
+    override suspend fun exchange(provider: AuthClientIdentityProvider, target: String, userToken: String): TokenResponse =
+        TokenResponse("dummy-obo-token", 60)
+
+    override suspend fun introspect(provider: AuthClientIdentityProvider, accessToken: String): TokenIntrospectionResponse =
+        TokenIntrospectionResponse(true)
+
     override suspend fun altinnExchange(maskinportenToken: String): String = "dummy-token"
 }
 
-class DefaultAuthClient(private val tokenEndpoint: String, private val altinn3BaseUrl: URI) : AuthClient {
+class DefaultAuthClient(
+    private val tokenEndpoint: String,
+    private val tokenExchangeEndpoint: String,
+    private val tokenIntrospectionEndpoint: String,
+    private val altinn3BaseUrl: URI,
+) : AuthClient {
     private val logger = KotlinLogging.logger {}
     private val httpClient = createHttpClient()
 
@@ -31,7 +46,7 @@ class DefaultAuthClient(private val tokenEndpoint: String, private val altinn3Ba
         token(identityProvider, target).accessToken
     }
 
-    internal suspend fun token(provider: AuthClientIdentityProvider, target: String): TokenResponse =
+    suspend fun token(provider: AuthClientIdentityProvider, target: String): TokenResponse =
         try {
             httpClient
                 .submitForm(
@@ -46,6 +61,35 @@ class DefaultAuthClient(private val tokenEndpoint: String, private val altinn3Ba
         } catch (e: ResponseException) {
             e.logAndRethrow()
         }
+
+    override suspend fun exchange(provider: AuthClientIdentityProvider, target: String, userToken: String): TokenResponse =
+        try {
+            httpClient
+                .submitForm(
+                    url = tokenExchangeEndpoint,
+                    formParameters =
+                        parameters {
+                            identityProvider(provider)
+                            target(target)
+                            userToken(userToken)
+                        },
+                )
+                .body()
+        } catch (e: ResponseException) {
+            e.logAndRethrow()
+        }
+
+    override suspend fun introspect(provider: AuthClientIdentityProvider, accessToken: String): TokenIntrospectionResponse =
+        httpClient
+            .submitForm(
+                url = tokenIntrospectionEndpoint,
+                formParameters =
+                    parameters {
+                        identityProvider(provider)
+                        token(accessToken)
+                    },
+            )
+            .body()
 
     override suspend fun altinnExchange(maskinportenToken: String): String {
         val tokenAltinn3ExchangeEndpoint: URI = altinn3BaseUrl.resolve("/authentication/api/v1/exchange/maskinporten")

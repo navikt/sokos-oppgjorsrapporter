@@ -175,7 +175,14 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<InternTilgangService> { LocalhostInternTilgangService }
             provide<TokenExchangeService> { LocalTokenExchangeService }
         } else {
-            provide<AuthClient> { DefaultAuthClient(config.security.texasTokenEndpoint, config.security.altinn.baseUrl) }
+            provide<AuthClient> {
+                DefaultAuthClient(
+                    config.security.texasTokenEndpoint,
+                    config.security.texasExchangeEndpoint,
+                    config.security.texasIntrospectionEndpoint,
+                    config.security.altinn.baseUrl,
+                )
+            }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
             provide<TokenExchangeService> {
