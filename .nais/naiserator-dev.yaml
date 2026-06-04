@@ -164,4 +164,4 @@ spec:
     - name: TILGANGSMASKINEN_URL
       value: http://populasjonstilgangskontroll.tilgangsmaskin
     - name: TILGANGSMASKINEN_AUDIENCE
-      value: dev-gcp:tilgangsmaskin:populasjonstilgangskontroll
+      value: api://dev-gcp.tilgangsmaskin.populasjonstilgangskontroll/.default
