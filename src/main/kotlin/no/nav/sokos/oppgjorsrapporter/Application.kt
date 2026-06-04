@@ -85,10 +85,6 @@ import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
-import no.nav.sokos.oppgjorsrapporter.tokenexchange.LocalTokenExchangeService
-import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeHttpClientSetup
-import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeService
-import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeServiceImpl
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
 
 private val logger = KotlinLogging.logger {}
@@ -148,7 +144,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         }
 
         provide {
-            val client = httpClient("tilgangsmaskin", TilgangsmaskinHttpClientSetup)
+            val client = httpClient("tilgangsmaskin", TilgangsmaskinHttpClientSetup) { expectSuccess = false }
             TilgangsmaskinService(config.restEndpoint.tilgangsmaskinUrl, client, resolve())
         }
 
@@ -173,15 +169,17 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<AuthClient> { NoOpAuthClient() }
             provide<PdpService> { LocalhostPdpService }
             provide<InternTilgangService> { LocalhostInternTilgangService }
-            provide<TokenExchangeService> { LocalTokenExchangeService }
         } else {
-            provide<AuthClient> { DefaultAuthClient(config.security.texasTokenEndpoint, config.security.altinn.baseUrl) }
+            provide<AuthClient> {
+                DefaultAuthClient(
+                    config.security.texasTokenEndpoint,
+                    config.security.texasExchangeEndpoint,
+                    config.security.texasIntrospectionEndpoint,
+                    config.security.altinn.baseUrl,
+                )
+            }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
-            provide<TokenExchangeService> {
-                val client = httpClient("obotokenexchange", TokenExchangeHttpClientSetup)
-                TokenExchangeServiceImpl(config.security.texasExchangeEndpoint, config.security.tilgangsmaskinenAudience, client, resolve())
-            }
         }
         val authClient: AuthClient by this
 

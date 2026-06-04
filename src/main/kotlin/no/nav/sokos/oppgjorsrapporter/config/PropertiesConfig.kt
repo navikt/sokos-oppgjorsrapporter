@@ -141,6 +141,7 @@ object PropertiesConfig {
         val altinn: AltinnProperties,
         val texasTokenEndpoint: String,
         val texasExchangeEndpoint: String,
+        val texasIntrospectionEndpoint: String,
         val tilgangsmaskinenAudience: String,
     ) {
         constructor(
@@ -152,6 +153,7 @@ object PropertiesConfig {
             altinn = AltinnProperties(source),
             texasTokenEndpoint = source.get("auth.texas.token_endpoint"),
             texasExchangeEndpoint = source.get("auth.texas.token_exchange_endpoint"),
+            texasIntrospectionEndpoint = source.get("auth.texas.token_introspection_endpoint"),
             tilgangsmaskinenAudience = source.get("tilgangsmaskinen.audience"),
         )
     }
