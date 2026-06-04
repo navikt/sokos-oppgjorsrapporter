@@ -20,11 +20,14 @@ import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
+import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
+import no.nav.sokos.oppgjorsrapporter.auth.AuthClientIdentityProvider
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.TokenNotFoundException
 import no.nav.sokos.oppgjorsrapporter.auth.autentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.hentJwtToken
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
+import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.rapport.Api.RapportDTO
@@ -34,7 +37,6 @@ import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.UnexpectedResponseException
-import no.nav.sokos.oppgjorsrapporter.tokenexchange.TokenExchangeService
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.LocalDateRange
@@ -91,7 +93,8 @@ object FrontendApi {
         val rapportService: RapportService by application.dependencies
         val internTilgangService: InternTilgangService by application.dependencies
         val tilgangsmaskinService: TilgangsmaskinService by application.dependencies
-        val tokenExchangeService: TokenExchangeService by application.dependencies
+        val authClient: AuthClient by application.dependencies
+        val config: PropertiesConfig.Configuration by application.dependencies
 
         get("/api/rapport/frontend/oppgitt-varsling") { call.respond(varselService.finnOppgitte().map(::VarselOppgittDTO)) }
 
@@ -134,8 +137,13 @@ object FrontendApi {
                                         val manglerTilgang =
                                             try {
                                                 val token = hentJwtToken(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)
-                                                val onBehalfOfToken = tokenExchangeService.getOboToken(token)
-                                                val tilgang = tilgangsmaskinService.sjekkTilgang(onBehalfOfToken, fnr)
+                                                val onBehalfOfToken =
+                                                    authClient.exchange(
+                                                        AuthClientIdentityProvider.AZURE_AD,
+                                                        config.security.tilgangsmaskinenAudience,
+                                                        token.encodedToken,
+                                                    )
+                                                val tilgang = tilgangsmaskinService.sjekkTilgang(onBehalfOfToken.accessToken, fnr)
                                                 tilgang?.begrunnelse
                                             } catch (e: TokenNotFoundException) {
                                                 e.message
