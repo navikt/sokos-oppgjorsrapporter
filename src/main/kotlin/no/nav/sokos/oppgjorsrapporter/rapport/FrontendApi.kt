@@ -139,7 +139,7 @@ object FrontendApi {
                                                 val token = hentJwtToken(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)
                                                 val onBehalfOfToken =
                                                     authClient.exchange(
-                                                        AuthClientIdentityProvider.AZURE_AD,
+                                                        AuthClientIdentityProvider.ENTRA_ID,
                                                         config.security.tilgangsmaskinenAudience,
                                                         token.encodedToken,
                                                     )

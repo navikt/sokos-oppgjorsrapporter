@@ -1,7 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter.auth
 
 enum class AuthClientIdentityProvider(val verdi: String) {
-    AZURE_AD("azuread"),
+    ENTRA_ID("entra_id"),
     IDPORTEN("idporten"),
     MASKINPORTEN("maskinporten"),
     TOKEN_X("tokenx"),
