@@ -126,19 +126,14 @@ spec:
       value: https://sokos-oppgjorsrapporter.nav.no/
     - name: ALTINN_BASE_URL
       value: https://platform.altinn.no
-    # Setter alle AD-gruppene til å ha samme UUID som grunn tilgang(0000-CA-SOKOS-MF-OPPGJORSRAPPORTER)
-    # siden disse tilgangene ikke klare til å tildeles i omada ennå.
     - name: OPPGJORSRAPPORTER_ADMIN_GROUP_UUID
       value: 4eb9d678-f951-4498-962b-a7e8209425fa
     - name: OPPGJORSRAPPORTER_REF_ARBG_UUID
-      value: 2abbcfe4-98c8-4b30-8bac-5ea1e0c6d0e1
-#      value: d9bff4e3-f13e-47af-8818-6ba401239447
+      value: d9bff4e3-f13e-47af-8818-6ba401239447
     - name: OPPGJORSRAPPORTER_TREKK_HEND_UUID
-      value: 2abbcfe4-98c8-4b30-8bac-5ea1e0c6d0e1
-#      value: 67eae973-b4b5-4351-9faf-677b2e22414d
+      value: 67eae973-b4b5-4351-9faf-677b2e22414d
     - name: OPPGJORSRAPPORTER_TREKK_KRED_UUID
-      value: 2abbcfe4-98c8-4b30-8bac-5ea1e0c6d0e1
-#      value: bef40404-b41e-4b91-9566-0208f0ee4d6e
+      value: bef40404-b41e-4b91-9566-0208f0ee4d6e
     - name: NAV_ORGNRS # Hentet fra https://confluence.adeo.no/spaces/TOB/pages/791029635/TOB-6273+-+Orgnr+som+skal+v%C3%A6re+med+i+pilot-produksjon
       value: >-
         874652202,
