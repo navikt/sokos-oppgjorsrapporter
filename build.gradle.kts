@@ -1,29 +1,29 @@
 group = "no.nav.sokos"
 
-val flywayVersion = "12.6.1"
+val flywayVersion = "12.7.0"
 val hikariVersion = "7.0.2"
 val ibmMqVersion = "9.4.5.0"
 val janinoVersion = "3.1.12"
-val jacksonVersion ="3.1.3"
-val junitVersion = "6.0.3"
-val jsonUnitVersion = "5.1.1"
+val jacksonVersion ="3.1.4"
+val junitVersion = "6.1.0"
+val jsonUnitVersion = "5.1.2"
 val konfigVersion = "1.6.10.0"
 val kotestVersion = "6.1.11"
 val kotlinLoggingVersion = "3.0.5"
 val kotlinxSerializationVersion = "1.11.0"
 val kotliqueryVersion = "1.9.1"
-val ktorVersion = "3.4.3"
-val logbackVersion = "1.5.32"
+val ktorVersion = "3.5.0"
+val logbackVersion = "1.5.33"
 val logstashVersion = "9.0"
 val micrometerVersion = "1.17.0-RC1"
 val mockOAuth2ServerVersion = "3.0.3"
-val mockkVersion = "1.14.9"
-val opentelemetryAnnotationsVersion = "2.27.0"
+val mockkVersion = "1.14.11"
+val opentelemetryAnnotationsVersion = "2.28.1"
 val pdpClientVersion = "1.1.0"
 val postgresVersion = "42.7.11"
 val swaggerRequestValidatorVersion = "2.46.1"
 val testcontainersVersion = "2.0.5"
-val threetenExtraVersion = "1.8.0"
+val threetenExtraVersion = "1.9.0"
 val tokenSupportVersion = "6.0.0"
 val utilsVersion = "0.10.1"
 
@@ -33,7 +33,7 @@ plugins {
     application
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
-    id("com.diffplug.spotless") version "8.5.1"
+    id("com.diffplug.spotless") version "8.6.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.8"
 }
 
