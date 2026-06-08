@@ -59,22 +59,8 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-di:$ktorVersion")
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
-    constraints {
-        // TODO: Ta bort disse overstyringene når vi oppgraderer KTor til 3.5.1+
-        val upgradedNettyVersion = "4.2.13.Final"
-        implementation("io.netty:netty-codec-http2") {
-            version { require(upgradedNettyVersion) }
-            because(" CVE-2026-42581 +  CVE-2026-42584")
-        }
-        implementation("io.netty:netty-transport-native-kqueue") {
-            version { require(upgradedNettyVersion) }
-            because(" CVE-2026-42581 +  CVE-2026-42584")
-        }
-        implementation("io.netty:netty-transport-native-epoll") {
-            version { require(upgradedNettyVersion) }
-            because(" CVE-2026-42581 +  CVE-2026-42584")
-        }
-    }
+    // TODO: Ta bort denne overstyringen når vi oppgraderer KTor til 3.5.1+
+    implementation(platform("io.netty:netty-bom:4.2.13.Final"))
     implementation("io.ktor:ktor-server-swagger:$ktorVersion")
 
     // Ekstra tid/dato-klasser (utover java.time.*)
