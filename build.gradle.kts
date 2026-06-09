@@ -59,6 +59,8 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-di:$ktorVersion")
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
+    // TODO: Ta bort denne overstyringen når vi oppgraderer KTor til 3.5.1+
+    implementation(platform("io.netty:netty-bom:4.2.13.Final"))
     implementation("io.ktor:ktor-server-swagger:$ktorVersion")
 
     // Ekstra tid/dato-klasser (utover java.time.*)
