@@ -3,7 +3,9 @@ package no.nav.sokos.oppgjorsrapporter.rapport
 import io.opentelemetry.instrumentation.annotations.WithSpan
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.bytestring.ByteString
 import mu.KLogger
 import mu.KotlinLogging
@@ -15,6 +17,7 @@ import no.nav.sokos.oppgjorsrapporter.mq.RefusjonsRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkHendBestilling
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
+import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
 
@@ -38,8 +41,9 @@ class BestillingProsessor(
                 val resultat = prosesserEnBestilling()
                 if (resultat == null) {
                     logger.debug { "Fant ingen uprosesserte bestillinger å prosessere; venter $t før neste forsøk" }
-                    delay(t)
-                    t = minOf((t * 1.5), maxDelay)
+                    if (withTimeoutOrNull(t) { kanal.receive() } == null) {
+                        t = minOf((t * 1.5), maxDelay)
+                    }
                 } else if (resultat.isFailure) {
                     logger.info { "Fant en bestilling, men prosessering feilet; venter $baseDelay før neste forsøk" }
                     // At prosessering av en bestilling feilet betyr ikke nødvendigvis at prosessering av andre bestillinger vil feile, så
@@ -52,6 +56,7 @@ class BestillingProsessor(
                     delay(baseDelay)
                 } else {
                     logger.info { "Bestilling prosessert; vil se etter flere bestillinger å prosessere umiddelbart" }
+                    VarselProsessor.nudge()
                     // Vi fant en bestilling å prosessere; resett eksponensiell backoff.
                     t = baseDelay
                 }
@@ -189,6 +194,14 @@ class BestillingProsessor(
                     .forEach { variant -> metrics.tellGenerertRapportVariant(rapport.type, variant.format, variant.bytes) }
                 varselService.registrerVarsel(tx, rapport)
             }
+        }
+    }
+
+    companion object {
+        private val kanal = Channel<Unit>(capacity = 1)
+
+        fun nudge() {
+            kanal.trySend(Unit)
         }
     }
 }

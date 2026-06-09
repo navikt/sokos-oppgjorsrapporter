@@ -3,7 +3,9 @@ package no.nav.sokos.oppgjorsrapporter.rapport.varsel
 import io.opentelemetry.instrumentation.annotations.WithSpan
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import mu.KLogger
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.BakgrunnsJobb
@@ -23,8 +25,9 @@ class VarselProsessor(private val varselService: VarselService, applicationState
                 val resultat = prosesserEtVarsel()
                 if (resultat == null) {
                     logger.debug { "Fant ingen uprosesserte varsler å prosessere; venter $t før neste forsøk" }
-                    delay(t)
-                    t = minOf((t * 1.5), maxDelay)
+                    if (withTimeoutOrNull(t) { kanal.receive() } == null) {
+                        t = minOf((t * 1.5), maxDelay)
+                    }
                 } else {
                     resultat.fold(
                         { varsel ->
@@ -42,4 +45,12 @@ class VarselProsessor(private val varselService: VarselService, applicationState
     }
 
     @WithSpan private fun prosesserEtVarsel(): Result<Varsel>? = handleSpanException { varselService.sendVarsel() }
+
+    companion object {
+        private val kanal = Channel<Unit>(capacity = 1)
+
+        fun nudge() {
+            kanal.trySend(Unit)
+        }
+    }
 }
