@@ -78,7 +78,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.BestillingProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportBackFiller
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
-import no.nav.sokos.oppgjorsrapporter.rapport.generator.PdfgenHttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.rapport.generator.PdfgenrsHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
@@ -150,19 +150,13 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
 
         provide<RapportGenerator> {
             val client =
-                httpClient("pdfgen", PdfgenHttpClientSetup) {
+                httpClient("pdfgenrs", PdfgenrsHttpClientSetup) {
                     install(HttpTimeout) {
                         socketTimeoutMillis = 60_000
                         requestTimeoutMillis = 60_000
                     }
                 }
-            RapportGenerator(
-                pdfgenBaseUrl = config.restEndpoint.pdfgenBaseUrl,
-                pdfgenrsBaseUrl = config.restEndpoint.pdfgenrsBaseUrl,
-                client = client,
-                resolve(),
-                resolve(),
-            )
+            RapportGenerator(pdfgenrsBaseUrl = config.restEndpoint.pdfgenrsBaseUrl, client = client, resolve(), resolve())
         }
 
         if (config.application.profile == PropertiesConfig.Profile.LOCAL) {

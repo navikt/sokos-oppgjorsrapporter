@@ -74,13 +74,12 @@ object PropertiesConfig {
         )
     }
 
-    data class RestEndpointProperties(val eregBaseUrl: URI, val pdfgenBaseUrl: URI, val pdfgenrsBaseUrl: URI, val tilgangsmaskinUrl: URI) {
+    data class RestEndpointProperties(val eregBaseUrl: URI, val pdfgenrsBaseUrl: URI, val tilgangsmaskinUrl: URI) {
         constructor(
             source: ConfigSource
         ) : this(
             eregBaseUrl = URI.create(source.get("ereg.base_url")),
-            pdfgenBaseUrl = URI.create(source.get("pdfgen.base_url")),
-            pdfgenrsBaseUrl = URI.create(source.get("pdfgen.rs_base_url")),
+            pdfgenrsBaseUrl = URI.create(source.get("pdfgenrs.base_url")),
             tilgangsmaskinUrl = URI.create(source.get("tilgangsmaskinen.base_url")),
         )
     }

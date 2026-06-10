@@ -26,12 +26,11 @@ import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.tilCSV
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.TrekkKredPdfMapper.mapTilTrekkKredRapportPdfPayload
 
-private const val REFUSJON_ARBG_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/ref-arbg"
-private const val TREKK_KRED_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/T14"
-private const val TREKK_HEND_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/trekk-hend"
+private const val REFUSJON_ARBG_PDFGENRS_PATH = "/api/v1/genpdf/oppgjorsrapporter/ref-arbg"
+private const val TREKK_KRED_PDFGENRS_PATH = "/api/v1/genpdf/oppgjorsrapporter/trekk-kred"
+private const val TREKK_HEND_PDFGENRS_PATH = "/api/v1/genpdf/oppgjorsrapporter/trekk-hend"
 
 class RapportGenerator(
-    private val pdfgenBaseUrl: URI,
     private val pdfgenrsBaseUrl: URI,
     private val client: HttpClient,
     private val metrics: Metrics,
@@ -55,7 +54,7 @@ class RapportGenerator(
     }
 
     suspend fun genererPdfInnhold(bestilling: RapportBestillingMsg, arbeidsgiverNavnOgAdresse: OrganisasjonsNavnOgAdresse): ByteString {
-        val pdfgenPayload =
+        val pdfgenrsPayload =
             when (bestilling) {
                 is RefusjonsRapportBestilling -> {
                     RefusjonsRapportPdfPayload(
@@ -65,8 +64,8 @@ class RapportGenerator(
                         )
                         .also { payload ->
                             logger.debug {
-                                val json = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
-                                logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgen: $json" }
+                                val json = PdfgenrsHttpClientSetup.jsonConfig.encodeToString(payload)
+                                logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgenrs: $json" }
                             }
                         }
                 }
@@ -78,8 +77,8 @@ class RapportGenerator(
                         )
                         .also { payload ->
                             logger.debug {
-                                val json = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
-                                logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgen: $json" }
+                                val json = PdfgenrsHttpClientSetup.jsonConfig.encodeToString(payload)
+                                logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgenrs: $json" }
                             }
                         }
                 }
@@ -87,19 +86,19 @@ class RapportGenerator(
                 is TrekkHendBestilling -> {
                     bestilling.mapTilTrekkHendPdfPayload().also { payload ->
                         logger.debug {
-                            val json = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
-                            logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgen: $json" }
+                            val json = PdfgenrsHttpClientSetup.jsonConfig.encodeToString(payload)
+                            logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgenrs: $json" }
                         }
                     }
                 }
             }
-        val pdfgenUrl = bestilling.resolvePdfgenUrl()
+        val pdfgenrsUrl = bestilling.resolvePdfgenrsUrl()
         val response =
-            client.post(pdfgenUrl) {
+            client.post(pdfgenrsUrl) {
                 contentType(ContentType.Application.Json)
-                setBody(pdfgenPayload)
+                setBody(pdfgenrsPayload)
             }
-        metrics.tellEksternEndepunktRequest(response, pdfgenUrl.path)
+        metrics.tellEksternEndepunktRequest(response, pdfgenrsUrl.path)
 
         return when {
             response.status.isSuccess() -> {
@@ -116,14 +115,14 @@ class RapportGenerator(
         }
     }
 
-    private fun RapportBestillingMsg.resolvePdfgenUrl() =
+    private fun RapportBestillingMsg.resolvePdfgenrsUrl() =
         when (this) {
-            is RefusjonsRapportBestilling -> pdfgenrsBaseUrl.resolve(REFUSJON_ARBG_PDFGEN_PATH).toURL()
-            is TrekkKredRapportBestilling -> pdfgenBaseUrl.resolve(TREKK_KRED_PDFGEN_PATH).toURL()
-            is TrekkHendBestilling -> pdfgenrsBaseUrl.resolve(TREKK_HEND_PDFGEN_PATH).toURL()
+            is RefusjonsRapportBestilling -> pdfgenrsBaseUrl.resolve(REFUSJON_ARBG_PDFGENRS_PATH).toURL()
+            is TrekkKredRapportBestilling -> pdfgenrsBaseUrl.resolve(TREKK_KRED_PDFGENRS_PATH).toURL()
+            is TrekkHendBestilling -> pdfgenrsBaseUrl.resolve(TREKK_HEND_PDFGENRS_PATH).toURL()
         }
 }
 
-object PdfgenHttpClientSetup : HttpClientSetup {
+object PdfgenrsHttpClientSetup : HttpClientSetup {
     override val jsonConfig: Json = commonJsonConfig
 }

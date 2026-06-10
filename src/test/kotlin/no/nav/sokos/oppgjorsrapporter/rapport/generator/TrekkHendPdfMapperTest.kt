@@ -6,13 +6,13 @@ import no.nav.sokos.oppgjorsrapporter.mq.TrekkHendBestilling
 
 class TrekkHendPdfMapperTest :
     FunSpec({
-        test("Generer trekk-hend/kreditor payload til pdfgen og valider felter") {
+        test("Generer trekk-hend/kreditor payload til pdfgenrs og valider felter") {
             val bestilling =
                 TrekkHendBestilling.decode(javaClass.classLoader.getResourceAsStream("mq/trekk_hend_bestilling-kreditor.xml")!!)
 
             val payload = bestilling.mapTilTrekkHendPdfPayload()
 
-            val jsonPayload = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
+            val jsonPayload = PdfgenrsHttpClientSetup.jsonConfig.encodeToString(payload)
 
             assertThatJson(jsonPayload)
                 .isEqualTo(
@@ -62,13 +62,13 @@ class TrekkHendPdfMapperTest :
                 )
         }
 
-        test("Generer trekk-hend/namsmann payload til pdfgen og valider felter") {
+        test("Generer trekk-hend/namsmann payload til pdfgenrs og valider felter") {
             val bestilling =
                 TrekkHendBestilling.decode(javaClass.classLoader.getResourceAsStream("mq/trekk_hend_bestilling-namsmann.xml")!!)
 
             val payload = bestilling.mapTilTrekkHendPdfPayload()
 
-            val jsonPayload = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
+            val jsonPayload = PdfgenrsHttpClientSetup.jsonConfig.encodeToString(payload)
 
             assertThatJson(jsonPayload)
                 .isEqualTo(

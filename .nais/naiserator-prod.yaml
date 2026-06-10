@@ -88,7 +88,6 @@ spec:
       rules:
         - application: logging
           namespace: nais-system
-        - application: pengeflyt-pdfgen
         - application: pengeflyt-pdfgenrs
         - application: populasjonstilgangskontroll
           namespace: tilgangsmaskin
@@ -114,8 +113,6 @@ spec:
       value: QA.P_OPPGJORSRAPPORTER.TREKK_KRED_GRLAG
     - name: EREG_URL
       value: https://ereg-services.prod-fss-pub.nais.io/
-    - name: PDF_GENERATOR_URL
-      value: http://pengeflyt-pdfgen
     - name: PDFRS_GENERATOR_URL
       value: http://pengeflyt-pdfgenrs
     - name: OPPGJORSRAPPORT_GUI_URL
