@@ -236,7 +236,9 @@ Alarmene overvåker metrics som:
 
 # 7. Swagger
 
-Hva er url til Lokal, dev og prod?
+[Lokal url:]()
+[Dev url:](https://sokos-oppgjorsrapporter.ekstern.dev.nav.no/api/rapport/v1/docs) 
+[Prod url:](https://sokos-oppgjorsrapporter.nav.no/api/rapport/v1/docs) 
 
 # 8. Henvendelser og tilgang
 
