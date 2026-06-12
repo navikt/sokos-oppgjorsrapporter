@@ -16,7 +16,7 @@ class TrekkKredPdfMapperTest :
         val fixedDate = LocalDate.of(2026, 3, 10)
         val onoa = OrganisasjonsNavnOgAdresse(organisasjonsnummer = "123456789", navn = "ONOG ONOG OH NO ONONOGO", adresse = "Onogata 33")
 
-        test("Generer trekk-kred payload til pdfgenrs og valider felter") {
+        test("Generer trekk-kred payload til pdfgen og valider felter") {
             val bestilling =
                 TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(
                     javaClass.classLoader.getResourceAsStream("mq/trekk_kred_bestilling_flere_enheter.xml")!!

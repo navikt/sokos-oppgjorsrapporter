@@ -113,7 +113,7 @@ spec:
       value: QA.P_OPPGJORSRAPPORTER.TREKK_KRED_GRLAG
     - name: EREG_URL
       value: https://ereg-services.prod-fss-pub.nais.io/
-    - name: PDFRS_GENERATOR_URL
+    - name: PDF_GENERATOR_URL
       value: http://pengeflyt-pdfgenrs
     - name: OPPGJORSRAPPORT_GUI_URL
       # Må matche ingress i https://github.com/navikt/sokos-oppgjorsrapporter-selvbetjening-frontend/blob/main/.nais/naiserator-prod.yaml
