@@ -8,9 +8,9 @@ info:
     API for oppgjørsrapporter
     
     APIet tilgjengeliggjør oppgjørsrapporter av følgende typer:
-    * Oppgjørsrapport arbeidsgiver - refusjoner fra Nav (tidl. K27),
-    * Trekkoppgjør kreditor (tidl. T14), og
-    * Trekkhendelser (tidl. T12)
+    * [Oppgjørsrapport arbeidsgiver - refusjoner fra Nav](https://www.nav.no/arbeidsgiver/oppgjorsrapport) (tidl. K27),
+    * [Trekkoppgjør kreditor](https://www.nav.no/samarbeidspartner/trekkoppgjorsrapport) (tidl. T14), og
+    * [Trekkhendelser]() (tidl. T12)
   version: 1.1.2
 
 servers:
@@ -27,6 +27,9 @@ security:
 paths:
   /api/rapport/v1:
     post:
+      tags:
+        - Oppgjørsrapport
+      summary: Søk etter oppgjørsrapporter
       description: |
         Søk etter oppgjørsrapporter brukeren har tilgang til.
       requestBody:
@@ -53,6 +56,17 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Rapport"
+              examples:
+                Eksempel:
+                  value:
+                    - id: 42
+                      orgnr: "983887457"
+                      orgNavn: "SKRAVLETE ALTETENDE TIGER AS"
+                      type: "ref-arbg"
+                      datoValutert: "2025-11-17"
+                      bankkonto: "12345678901"
+                      opprettet: "2025-11-18T06:30:00Z"
+                      arkivert: false
         "400":
           description: Bad Request
           content:
@@ -61,6 +75,9 @@ paths:
                 type: string
   /api/rapport/v1/{id}:
     get:
+      tags:
+        - Oppgjørsrapport
+      summary: Hent metadata om en spesifikk oppgjørsrapport
       description: |
         Hent metadata om en spesifikk rapport.
       parameters:
@@ -88,8 +105,20 @@ paths:
             'application/json':
               schema:
                 $ref: "#/components/schemas/Rapport"
+              example:
+                id: 42
+                orgnr: "983887457"
+                orgNavn: "ARBEIDS- OG INKLUDERINGSDEPARTEMENTET"
+                type: "ref-arbg"
+                datoValutert: "2025-11-17"
+                bankkonto: "12345678901"
+                opprettet: "2025-11-18T06:30:00Z"
+                arkivert: false
   /api/rapport/v1/{id}/arkiver:
     put:
+      tags:
+        - Oppgjørsrapport
+      summary: Arkiver eller gjenopprett en rapport
       description: |
         Skru av/på arkivert-statusen til en spesifikk rapport.
       parameters:
@@ -121,8 +150,103 @@ paths:
           description: Not Found
   /api/rapport/v1/{id}/innhold:
     get:
+      tags:
+        - Oppgjørsrapport
+      summary: Hent innholdet i en spesifikk oppgjørsrapport
       description: |
-        Hent innhold i en spesifikk rapport.
+        Hent innholdet i en spesifikk rapport som PDF- eller CSV-fil.
+
+        Ønsket format angis via `Accept`-headeren:
+        - `Accept: application/pdf` – PDF-versjon av rapporten
+        - `Accept: text/csv` – CSV-versjon av rapporten (ISO-8859-1-kodet)
+
+        Hvis `Accept`-headeren mangler eller inneholder et format som ikke støttes, returneres `406 Not Acceptable`.
+
+        ---
+
+        ### CSV-format
+
+        CSV-filen tilsvarer det som tidligere ble levert i henholdsvis K27-, T14- og T12-filene,
+        og har samme feltstruktur som disse. Feltseparator er semikolon (`;`), og tegnsettet er
+        **ISO-8859-1**. Eventuelle teng som ikke lar seg representere i **ISO-8859-1** vil bli til `?`.
+        ---
+
+        #### ref-arbg (tidligere kjent som K27) – Oppgjørsrapport arbeidsgiver - refusjoner fra Nav
+
+        Én rad per utbetaling. Feltene er i fast rekkefølge:
+
+        | # | Felt | Format |
+        |---|------|--------|
+        | 1 | Nav-enhetsnummer | 4 siffer |
+        | 2 | Organisasjonsnummer (hovedenhet) | 9 siffer |
+        | 3 | Bedriftsnummer (underenhet) | 9 siffer |
+        | 4 | Ytelseskode | 1 alfanumerisk tegn | For detaljert info se [her](https://www.nav.no/arbeidsgiver/oppgjorsrapport#oppgjorsrapport-feriepenger) 
+        | 5 | Fødselsnummer | 11 siffer |
+        | 6 | Fra-dato for ytelsen | ÅÅÅÅMMDD (eller `00000000` hvis ikke satt) |
+        | 7 | Bankkonto utbetalt til | 11 tegn |
+        | 8 | Navn på person | Maks 25 tegn | Navn på person, padding med mellomrom til høyre hvis kortere. Semikolon erstattes med mellomrom
+        | 9 | Til-dato for ytelsen | ÅÅÅÅMMDD (eller `00000000` hvis ikke satt) |
+        | 10 | Beløp | 11 tegn | Beløp i ører (10 siffer + fortegn). Kreditbeløp (negative) får '-' på slutten, debetbeløp får ' '
+        | 11 | Reservert felt | `0000000000 ` | hardkodet (10 nuller + mellomrom)
+        | 12 | Maks-dato | ÅÅÅÅMMDD (eller `00000000` hvis ikke satt) |
+
+        **Eksempel:**
+        ```csv
+        0220;983887457;987654321;S;12345678901;20251001;12345678901;HANSEN KARI             ;20251031;0000025000 ;0000000000 ;00000000
+        0220;983887457;987654321;F;23456789012;20251101;12345678901;OLSEN OLE               ;20251130;0000015000-;0000000000 ;00000000
+        ```
+
+        ---
+
+        #### trekk-kred (tidligere kjent som T14) – Trekkoppgjør fra Nav
+
+        Filen inneholder linjer av ulike typer, angitt av første kolonne:
+
+        | Type | Innhold |
+        |------|---------|
+        | `H` | **Hodelinje** (én per rapport): brevdato, mottakernavn, utbetalingsdato, orgnr, , kontonummer, tssid, fom dato for yttelsen, tom dato for yttelsen|
+        | `E` | **Trekklinje** (én per trekk): arkivreferansenummer, Nav-enhetsnummer, Nav-enhetsnavn, saksreferanse, arbeidsgivers organisasjonsnummer, fødselsnummer, navn, fom dato for trekk, tom dato for trekk, beløp, KID-status |
+        | `D` | **Delsum** per Nav-enhet |
+        | `A` | **Delsum** per arkivreferanse |
+        | `T` | **Totalsum** for kreditor |
+
+
+        **Eksempel:**
+        ```csv
+        H;20260217;MOLDE KOMMUNE;20260217;921221967; ;42141415926;80000815306;20260201;20260228
+        E;235753327;8020;;Molde barnevern;;15267807496;DONALD DUCK MED VENNER;20260201;20260228;10000;KU
+        E;235750560;8020;NAV Økonomi Stønad;Barnevernstjenesten;895821802;19486545678;JJJJJCCCCCBBB AAAAAAAAAAA;20260201;20260228;7500;KU
+        E;235750560;8020;NAV Økonomi Stønad;Frivillig forvaltning, H. Berg;895821802;29667789766;BURGER MED POMMES FRITES;20260201;20260228;5000;KU
+        D;22500
+        A;22500
+        T;22500
+        ```
+
+        ---
+
+        #### trekk-hend (tidligere kjent som T12) – Trekkhendelser - tilbakemelding fra Nav
+
+        Filen inneholder linjer av ulike typer, angitt av første kolonne:
+
+        | Type | Innhold |
+        |------|---------|
+        | `H` | **Hodelinje** (én per rapport): mottakertype (`kreditor`/`namsmann`), dato trekk fremkjørt, mottaker organisasjonsnummer, mottaker navn, adresselinje 1, adresselinje 2, adresselinje 3, postnr, poststed, land |
+        | `T` | **Transaksjonslinje** (én per hendelse): orgnr til motpart (namsmann eller kreditor), navn, Kreditors KID/referanse, debitors fødselsnummer, debitors navn, type hendelse |
+        
+        **Eksempel: trekk-hend (kreditor)**
+        ```csv
+        H;kreditor;21.04.2026;859503241;McDuck inkasso AS;Postboks 313;;;3158;ANDEBY;
+        T;087453421;NAMSFOGDEN I ANDEBY;0107036257420540624;18453866986;Donald Duck;Ingen ytelse;
+        T;141619942;NAMSFOGDEN I GÅSEBY;0103064541812328464;22468528375;Gulbrand Gråstein;Opphør ytelse;
+        ```
+
+        **Eksempel: trekk-hend (namsmann)**
+        ```csv
+        H;namsmann;21.04.2026;087453421;NAMSFOGDEN I ANDEBY;Postboks 313;;;3158;;
+        T;859503241;McDuck inkasso AS;0107036257420540624;18453866986;Donald Duck;Ingen ytelse;
+        T;134907843;RIKERUD COLLECTION AS;5900562964792591;24508924131;Guffen Gås;Ingen ytelse;
+        T;134907843;RIKERUD COLLECTION AS;01626785861606857982;28482019570;Petter Smart;Opphør ytelse;
+        ```
       parameters:
         - name: id
           in: path
@@ -153,10 +277,18 @@ paths:
               schema:
                 type: string
                 format: binary
+                description: Rapporten som PDF-fil.
             text/csv:
               schema:
                 type: string
                 format: binary
+                description: |
+                  Rapporten som CSV-fil (ISO-8859-1-kodet, semikolonseparert).
+                  Se endepunktsbeskrivelsen for feltstruktur per rapporttype og eksempel på CSV-innhold
+              examples:
+                ref-arbg:
+                  summary: Eksempel på ref-arbg CSV-innhold
+                  value: "0220;983887457;987654321;S;12345678901;20251001;12345678901;HANSEN KARI             ;20251031;0000025000+;0000000000 ;00000000"
         "404":
           description: Not Found
 components:
@@ -263,10 +395,18 @@ components:
         - "trekk-hend"
         - "trekk-kred"
       description: |
+        Rapporttype. Gyldige verdier:
+
+        | Verdi | Fullt navn | Gammel kode |
+        |-------|------------|-------------|
+        | `ref-arbg` | Oppgjørsrapport arbeidsgiver – refusjoner fra Nav | K27 |
+        | `trekk-hend` | Trekkhendelser – tilbakemelding fra Nav | T12 |
+        | `trekk-kred` | Trekkoppgjør kreditor | T14 |
+
         Inntil videre støtter APIet også input som bruker de gamle type-navnene:
-        * "K27" for "ref-arbg"
-        * "T12" for "trekk-hend
-        * "T14" for "trekk-kred"
+        * `K27` for `ref-arbg`
+        * `T12` for `trekk-hend`
+        * `T14` for `trekk-kred`
 
     Instant:
       type: string
@@ -275,25 +415,50 @@ components:
 
     Rapport:
       type: "object"
+      description: Metadata om en oppgjørsrapport.
       properties:
         id:
           type: "integer"
           format: "int64"
+          description: Unik identifikator for oppgjørsrapporten.
+          example: 42
         orgnr:
           type: "string"
+          description: Organisasjonsnummeret (9 siffer) til virksomheten rapporten gjelder.
+          example: "983887457"
         orgNavn:
           type: "string"
+          description: Navn på virksomheten rapporten gjelder.
+          example: "ARBEIDS- OG INKLUDERINGSDEPARTEMENTET"
         type:
           $ref: "#/components/schemas/RapportType"
         datoValutert:
           type: "string"
           format: "date"
+          description: |
+            Dato for utbetaling/valutering.
+
+            - For `ref-arbg`: datoen Nav utbetalte refusjon til arbeidsgivers bankkonto.
+            - For `trekk-kred`: datoen Nav utbetalte trekkmidler til kreditors bankkonto.
+            - For `trekk-hend`: datoen trekkhendelsene gjelder for.
+          example: "2025-11-17"
         bankkonto:
           type: "string"
+          description: |
+            Bankkonto (11 siffer) pengene ble utbetalt til.
+
+            Satt for `ref-arbg` og `trekk-kred`. Ikke satt for `trekk-hend` (T12).
+          example: "12345678901"
         opprettet:
           $ref: "#/components/schemas/Instant"
+          description: Tidspunktet rapporten ble opprettet/tilgjengeliggjort i systemet.
         arkivert:
           type: boolean
+          description: |
+            Angir om rapporten er arkivert.
+
+            Arkiverte rapporter utelates som standard fra søkeresultater, med mindre `inkluderArkiverte`
+            er satt til `true` i søket. Arkiv-statusen kan endres via `PUT /api/rapport/v1/{id}/arkiver`.
       required:
         - "id"
         - "orgnr"
@@ -301,6 +466,15 @@ components:
         - "datoValutert"
         - "opprettet"
         - "arkivert"
+      example:
+        id: 42
+        orgnr: "983887457"
+        orgNavn: "ARBEIDS- OG INKLUDERINGSDEPARTEMENTET"
+        type: "ref-arbg"
+        datoValutert: "2025-11-17"
+        bankkonto: "12345678901"
+        opprettet: "2025-11-18T06:30:00Z"
+        arkivert: false
 
   securitySchemes:
     Systembruker:
