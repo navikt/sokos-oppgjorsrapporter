@@ -27,12 +27,11 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.CsvGenerering.tilCSV
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.TrekkKredPdfMapper.mapTilTrekkKredRapportPdfPayload
 
 private const val REFUSJON_ARBG_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/ref-arbg"
-private const val TREKK_KRED_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/T14"
+private const val TREKK_KRED_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/trekk-kred"
 private const val TREKK_HEND_PDFGEN_PATH = "/api/v1/genpdf/oppgjorsrapporter/trekk-hend"
 
 class RapportGenerator(
     private val pdfgenBaseUrl: URI,
-    private val pdfgenrsBaseUrl: URI,
     private val client: HttpClient,
     private val metrics: Metrics,
     private val clock: Clock,
@@ -118,9 +117,9 @@ class RapportGenerator(
 
     private fun RapportBestillingMsg.resolvePdfgenUrl() =
         when (this) {
-            is RefusjonsRapportBestilling -> pdfgenrsBaseUrl.resolve(REFUSJON_ARBG_PDFGEN_PATH).toURL()
+            is RefusjonsRapportBestilling -> pdfgenBaseUrl.resolve(REFUSJON_ARBG_PDFGEN_PATH).toURL()
             is TrekkKredRapportBestilling -> pdfgenBaseUrl.resolve(TREKK_KRED_PDFGEN_PATH).toURL()
-            is TrekkHendBestilling -> pdfgenrsBaseUrl.resolve(TREKK_HEND_PDFGEN_PATH).toURL()
+            is TrekkHendBestilling -> pdfgenBaseUrl.resolve(TREKK_HEND_PDFGEN_PATH).toURL()
         }
 }
 
