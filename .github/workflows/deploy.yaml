@@ -45,6 +45,7 @@ jobs:
   deploy-prod:
     needs: [build, deploy-dev]
     name: Deploy to prod-gcp
+    if: github.ref == 'refs/heads/main'
     uses: navikt/pengeflyt-gha-workflows/.github/workflows/nais-app-deploy.yaml@main
     with:
       cluster: prod-gcp
