@@ -17,6 +17,9 @@ on:
       - '.github/workflows/manual-deploy.yaml'
       - '.github/workflows/security.yaml'
       - '.github/dependabot.yaml'
+  schedule:
+    # Deploy den 3. i hver måned kl. 08.51 (så er vi innafor "bygg og deploy minst hver 3. måned"-etterlevelseskravet)
+    - cron: "51 8 3 * *"
 
 env:
   TZ: Europe/Oslo
