@@ -95,7 +95,6 @@ spec:
         - application: ereg-services-q1
           namespace: arbeidsforhold
           cluster: dev-fss
-        - application: pengeflyt-pdfgen
         - application: pengeflyt-pdfgenrs
         - application: populasjonstilgangskontroll
           namespace: tilgangsmaskin
@@ -122,8 +121,6 @@ spec:
     - name: EREG_URL
       value: https://ereg-services-q1.dev-fss-pub.nais.io/
     - name: PDF_GENERATOR_URL
-      value: http://pengeflyt-pdfgen
-    - name: PDFRS_GENERATOR_URL
       value: http://pengeflyt-pdfgenrs
     - name: OPPGJORSRAPPORT_GUI_URL
       # Må matche ingress i https://github.com/navikt/sokos-oppgjorsrapporter-selvbetjening-frontend/blob/main/.nais/naiserator-dev.yaml
