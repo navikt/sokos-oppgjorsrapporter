@@ -15,7 +15,7 @@ spec:
             max by (rapporttype) (
                 sokos_oppgjorsrapporter_bestilling_uprosessert_count
             ) > 0
-          for: 3h
+          for: 20m
           annotations:
             summary: "Treg/feilende rapport-generering: {{ $labels.rapporttype }}"
             description: >-
