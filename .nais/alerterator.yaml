@@ -1,0 +1,30 @@
+apiVersion: "monitoring.coreos.com/v1"
+kind: PrometheusRule
+metadata:
+  name: sokos-oppgjorsrapporter-alerts
+  namespace: oppgjorsrapporter
+  labels:
+    team: oppgjorsrapporter
+spec:
+  groups:
+    - name: sokos-oppgjorsrapporter-alerts
+      interval: 15m
+      rules:
+        - alert: Har hatt feilende bestillinger i over 3 timer
+          expr: >-
+            max by (rapporttype) (
+                sokos_oppgjorsrapporter_bestilling_uprosessert_count
+            ) > 0
+          for: 3h
+          annotations:
+            summary: "Treg/feilende rapport-generering: {{ $labels.rapporttype }}"
+            description: >-
+              sokos-oppgjorsrapporter har mottatt rapport-grunnlag for {{ $labels.rapporttype }}, men ikke klart å generere rapporter av alle disse innen rimelig tid.
+              Dette kan bl.a skyldes at:
+                * generering av rapporter går tregt,
+                * sokos-oppgjorsrapporter har mottatt unormalt mange grunnlag å prosessere, eller
+                * minst ett av grunnlags-dokumentene ikke er på forventet format, slik at generering av rapport for dette feiler.
+            consequence: "Enkelte rapporter vil ikke bli generert, og dermed potensielt ikke sendt til mottaker innen fristen"
+            action: "Sjekk Grafana-dashboard for å se om 'uprosesserte bestillinger'-tallet går nedover; hvis ikke, sjekk logger for å se hva som feiler"
+          labels:
+            severity: "warn"
