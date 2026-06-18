@@ -34,5 +34,5 @@ spec:
               
               Hvis antallet går for sakte nedover, er det lurt å sjekke loggene (<{{ grafanaLogUrl }}|Grafana> / <{{ teamlogsUrl }}|Team logs>) for å se hva som feiler.
           labels:
-            namespace: {{team}}
+#            namespace: {{team}}
             severity: "warn"
