@@ -55,7 +55,9 @@ spec:
     scopes:
       exposes:
         - accessibleForAll: true
-          atMaxAge: 600 # OK med lang token-levetid i dev
+          # Token-levetid settes til 10 minutter (= 600 sekunder), for å være
+          # minst like lang som i produksjon.
+          atMaxAge: 600
           enabled: true
           product: utbetaling
           separator: "/"
