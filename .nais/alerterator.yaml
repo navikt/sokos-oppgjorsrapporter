@@ -27,4 +27,5 @@ spec:
             consequence: "Enkelte rapporter vil ikke bli generert, og dermed potensielt ikke sendt til mottaker innen fristen"
             action: "Sjekk Grafana-dashboard for å se om 'uprosesserte bestillinger'-tallet går nedover; hvis ikke, sjekk logger for å se hva som feiler"
           labels:
+            namespace: "oppgjorsrapporter"
             severity: "warn"
