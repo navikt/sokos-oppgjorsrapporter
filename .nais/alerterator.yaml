@@ -1,30 +1,38 @@
 apiVersion: "monitoring.coreos.com/v1"
 kind: PrometheusRule
 metadata:
-  name: sokos-oppgjorsrapporter-alerts
-  namespace: oppgjorsrapporter
+  name: {{app}}-alerts
+  namespace: {{team}}
   labels:
-    team: oppgjorsrapporter
+    team: {{team}}
 spec:
   groups:
-    - name: sokos-oppgjorsrapporter-alerts
+    - name: {{app}}-alerts
       interval: 15m
       rules:
-        - alert: Har hatt feilende bestillinger i over 3 timer
+
+        - alert: Treg/feilende rapport-generering - {{app}}
           expr: >-
             max by (rapporttype) (
                 sokos_oppgjorsrapporter_bestilling_uprosessert_count
             ) > 0
           for: 3h
           annotations:
-            summary: "Treg/feilende rapport-generering: {{ $labels.rapporttype }}"
+            summary: "Køen med uprosesserte '{{ $labels.rapporttype }}'-bestillinger har ikke vært tom de siste 3 timene"
             description: >-
-              sokos-oppgjorsrapporter har mottatt rapport-grunnlag for {{ $labels.rapporttype }}, men ikke klart å generere rapporter av alle disse innen rimelig tid.
-              Dette kan bl.a skyldes at:
-                * generering av rapporter går tregt,
-                * sokos-oppgjorsrapporter har mottatt unormalt mange grunnlag å prosessere, eller
-                * minst ett av grunnlags-dokumentene ikke er på forventet format, slik at generering av rapport for dette feiler.
-            consequence: "Enkelte rapporter vil ikke bli generert, og dermed potensielt ikke sendt til mottaker innen fristen"
-            action: "Sjekk Grafana-dashboard for å se om 'uprosesserte bestillinger'-tallet går nedover; hvis ikke, sjekk logger for å se hva som feiler"
+              sokos-oppgjorsrapporter har mottatt rapport-bestillinger for {{ $labels.rapporttype }}, men har ikke klart å generere rapporter av alle disse innen rimelig tid.
+              Dette kan bl.a. skje hvis:
+              
+                - generering av rapporter går tregt,
+                - sokos-oppgjorsrapporter har mottatt unormalt mange bestillinger å prosessere, eller
+                - noen bestillings-dokumenter ikke er på forventet format, slik at prosessering av disse feiler
+            consequence: >-
+              Enkelte rapporter vil ikke bli generert, og dermed potensielt ikke sendt til mottaker innen fristen
+            action: >-
+              Sjekk først i <https://grafana.nav.cloud.nais.io/d/860e2c41-c6ef-425b-8636-8bdf4ce9de22/sokos-oppgjorsrapporter|Grafana dashboard>
+              for å se om antallet uprosesserte bestillinger går nedover i omtrent forventet hastighet; i så fall kan det være at det bare har kommet unormalt mange bestillinger på nye rapporter.
+              
+              Hvis antallet går for sakte nedover, er det lurt å sjekke loggene (<{{ grafanaLogUrl }}|Grafana> / <{{ teamlogsUrl }}|Team logs>) for å se hva som feiler.
           labels:
+            namespace: {{team}}
             severity: "warn"
