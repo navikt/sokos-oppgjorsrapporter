@@ -55,6 +55,11 @@ spec:
     scopes:
       exposes:
         - accessibleForAll: true
+          # Token-levetid settes til 10 minutter (= 600 sekunder) fordi LPSer
+          # enkelte dager kan ha så mange nye rapporter å hente at defaulten
+          # på 30 sekunder ikke holder (uten å måtte refreshe token i løpet av
+          # økten)
+          atMaxAge: 600
           enabled: true
           product: utbetaling
           separator: "/"
