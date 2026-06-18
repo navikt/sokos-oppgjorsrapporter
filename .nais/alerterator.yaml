@@ -18,9 +18,9 @@ spec:
             ) > 0
           for: 3h
           annotations:
-            summary: "Køen med uprosesserte '{{ $labels.rapporttype }}'-bestillinger har ikke vært tom de siste 3 timene"
+            summary: "Køen med uprosesserte '\{{ $labels.rapporttype }}'-bestillinger har ikke vært tom de siste 3 timene"
             description: >-
-              sokos-oppgjorsrapporter har mottatt rapport-bestillinger for {{ $labels.rapporttype }}, men har ikke klart å generere rapporter av alle disse innen rimelig tid.
+              sokos-oppgjorsrapporter har mottatt rapport-bestillinger for \{{ $labels.rapporttype }}, men har ikke klart å generere rapporter av alle disse innen rimelig tid.
               Dette kan bl.a. skje hvis:
               
                 - generering av rapporter går tregt,
