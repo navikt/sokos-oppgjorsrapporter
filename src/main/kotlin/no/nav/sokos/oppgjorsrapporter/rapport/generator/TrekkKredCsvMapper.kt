@@ -28,7 +28,11 @@ fun TrekkKredRapportBestilling.toCsv(): String {
     val trekklinjer =
         with(brukerData.brevinfo.variableFelter.ur) {
             arkivRefList.flatMap { arkivRef ->
+                val sumArkivref = listOf<String>("A", arkivRef.delsumRef.belop.formater()).joinToString(";")
+
                 arkivRef.enhetList.flatMap { enhet ->
+                    val sumEnhet = listOf<String>("D", enhet.delsum.belop.formater()).joinToString(";")
+
                     enhet.trekkLinjeList.map {
                         listOf<String>(
                                 "E",
@@ -45,23 +49,12 @@ fun TrekkKredRapportBestilling.toCsv(): String {
                                 it.kidStatus,
                             )
                             .joinToString(";")
-                    }
-                }
+                    } + sumEnhet
+                } + sumArkivref
             }
         }
 
-    val sumEnheter =
-        listOf<String>(
-                "D",
-                brukerData.brevinfo.variableFelter.ur.arkivRefList.flatMap { it.enhetList }.sumOf { enhet -> enhet.delsum.belop }.formater(),
-            )
-            .joinToString(";")
-
-    val sumArkivref =
-        listOf<String>("A", brukerData.brevinfo.variableFelter.ur.arkivRefList.sumOf { it.delsumRef.belop }.formater()).joinToString(";")
-
     val sumKreditor = listOf<String>("T", brukerData.brevinfo.variableFelter.ur.sumTotal.belop.formater()).joinToString(";")
 
-    return listOf(headerLinje, *trekklinjer.toTypedArray(), sumEnheter, sumArkivref, sumKreditor)
-        .joinToString(LINJESKIFT, postfix = LINJESKIFT)
+    return listOf(headerLinje, *trekklinjer.toTypedArray(), sumKreditor).joinToString(LINJESKIFT, postfix = LINJESKIFT)
 }
