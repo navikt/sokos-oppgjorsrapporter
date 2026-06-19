@@ -11,6 +11,42 @@ spec:
       interval: 15m
       rules:
 
+        {{#if isProduction}}
+        - alert: Ingen bestillinger mottatt - {{app}}
+          expr: >-
+            max by (rapporttype) (
+              changes(sokos_oppgjorsrapporter_bestilling_mottatt_count_total{rapporttype="ref-arbg"}[13d]) or
+              changes(sokos_oppgjorsrapporter_bestilling_mottatt_count_total{rapporttype!="ref-arbg"}[6d])
+            ) == 0
+          # Total periode uten mottatte meldinger før det sendes alert blir (range-vektor-lengde + `for:`-periode), så:
+          # For ref-arbg: 13+1 = 14 dager
+          # For trekk-hend + trekk-kred: 6+1 = 7 dager
+          for: 1d
+          annotations:
+            summary: >-
+              Ingen '\{{ $labels.rapporttype }}'-bestillinger mottatt på
+              \{{ if eq $labels.rapporttype "ref-arbg" -}} 14 \{{- else -}} 7 \{{- end }}
+              dager
+            description: >-
+              sokos-oppgjorsrapporter har ikke mottatt noen '\{{ $labels.rapporttype }}'-bestillinger på
+              \{{ if eq $labels.rapporttype "ref-arbg" -}} 14 \{{- else -}} 7 \{{- end }} dager.
+              Dette kan bl.a. skje hvis:
+              
+                - bestillings-produsenten ikke har sendt noen bestillinger (muligens som følge av at noe er feil),
+                - bestillings-produsenten sender bestillingene til et annet sted enn den MQ-køen sokos-oppgjorsrapporter ser etter dem på,
+                - sokos-oppgjorsrapporter klarer ikke å se nye meldinger som kommer på denne rapporttypens MQ-kø, eller
+                - sokos-oppgjorsrapporter forstår ikke formatet på meldingene, og har derfor nektet å ta imot dem (slik at de har endt opp på backout-kø)
+            consequence: >-
+              Hvis bestillings-produsentene har forsøkt å sende bestillinger, har ikke tiltenkt rapport-mottaker fått noen rapport
+            action: >-
+              Sjekk med bestillings-produsenten (for ref-arbg + trekk-kred: URZ, for trekk-hend: OppdragZ) om de mener det burde ha blitt sendt bestillinger.
+              Hvis ja, så må det graves i hvorfor bestillingene ikke har kommet fram.
+              Hvis nei, vurder å justere denne alerten til å akseptere en lengre periode uten bestillinger.
+          labels:
+            namespace: {{team}}
+            severity: "warn"
+        {{/if}}
+
         - alert: Treg/feilende rapport-generering - {{app}}
           expr: >-
             max by (rapporttype) (
