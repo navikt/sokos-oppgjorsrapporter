@@ -7,6 +7,79 @@ metadata:
     team: {{team}}
 spec:
   groups:
+    # Generelle alerts som gjelder for alle applikasjoner i dette Nais-teamet; kan om ønskelig splittes ut i et annet repository.
+    # Mye av dette er lånt fra oppsettene til andre team i Nav, f.eks.
+    # https://github.com/navikt/dagpenger-iac/blob/main/alerts/felles-alerts.yaml
+    - name: {{team}}-generelle-alerts
+      rules:
+        - alert: InstanceDown
+          expr: >-
+            avg_over_time(
+              kube_deployment_status_replicas_available{namespace="{{team}}"}[5m]
+            ) < 1
+          for: 1m
+          annotations:
+            consequence: '*\{{ $labels.deployment }}* er nede'
+            action: '`kubectl describe pod -l app=\{{ $labels.deployment}}` -> `kubectl logs -l app=\{{ $labels.deployment}}`'
+          labels:
+            namespace: {{team}}
+            severity: critical
+
+        - alert: LogsErrorRate
+          expr: >-
+            ( 100 * sum by (app, namespace) (
+                avg_over_time(rate(log_messages_errors{level="Error", namespace="{{team}}"}[5m])[10m:])
+              ) /
+              sum by (app, namespace) (
+                avg_over_time(rate(log_messages_total{namespace="{{team}}"}[5m])[10m:])
+              )
+            ) > 5
+          for: 5m
+          annotations:
+            consequence: '*\{{ $labels.app }}* logger mer enn 5% feil'
+            action: '`kubectl logs -l app=\{{ $labels.app}}`'
+          labels:
+            namespace: {{team}}
+            severity: warning
+
+        - alert: CrashLoopBackoff
+          expr: >-
+            sum(
+              changes(
+                kube_pod_container_status_restarts_total{namespace="{{team}}"}[5m]
+              )
+            ) by (container, namespace) > 0
+          for: 5m
+          annotations:
+            consequence: '*\{{ $labels.container }}* står i CrashLoopBackoff'
+            action: 'Du må se på hvorfor appen kræsjer'
+          labels:
+            namespace: {{team}}
+            severity: warning
+
+        - alert: OOMKilled
+          expr: >-
+            (
+              kube_pod_container_status_last_terminated_reason{
+                namespace="{{team}}",
+                reason="OOMKilled"
+              } == 1
+            )
+            and on (namespace, pod, container)
+            (
+              increase(
+                kube_pod_container_status_restarts_total{namespace="{{team}}"}[5m]
+              ) > 0
+            )
+          for: 1m
+          annotations:
+            consequence: 'Applikasjonen *\{{ $labels.container }}* ble OOMKilled av Kubernetes. Pod: \{{ $labels.pod }}'
+            action: 'Du må se på hvorfor appen brukte for mye minne.'
+          labels:
+            namespace: {{team}}
+            severity: warning
+
+    # Alerts spesifikke for applikasjonen i dette repositoriet
     - name: {{app}}-alerts
       interval: 15m
       rules:
