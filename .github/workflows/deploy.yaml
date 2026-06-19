@@ -1,6 +1,7 @@
 name: Deploy application
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -16,6 +17,9 @@ on:
       - '.github/workflows/manual-deploy.yaml'
       - '.github/workflows/security.yaml'
       - '.github/dependabot.yaml'
+  schedule:
+    # Deploy den 3. i hver måned kl. 08.51 (så er vi innafor "bygg og deploy minst hver 3. måned"-etterlevelseskravet)
+    - cron: "51 8 3 * *"
 
 env:
   TZ: Europe/Oslo
@@ -45,6 +49,7 @@ jobs:
   deploy-prod:
     needs: [build, deploy-dev]
     name: Deploy to prod-gcp
+    if: github.ref == 'refs/heads/main'
     uses: navikt/pengeflyt-gha-workflows/.github/workflows/nais-app-deploy.yaml@main
     with:
       cluster: prod-gcp
