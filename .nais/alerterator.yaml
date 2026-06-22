@@ -25,19 +25,33 @@ spec:
             namespace: {{team}}
             severity: critical
 
-        - alert: LogsErrorRate
+        - alert: Høy feilrate i logger
           expr: >-
-            ( 100 * sum by (app, namespace) (
-                avg_over_time(rate(log_messages_errors{level="Error", namespace="{{team}}"}[5m])[10m:])
-              ) /
-              sum by (app, namespace) (
-                avg_over_time(rate(log_messages_total{namespace="{{team}}"}[5m])[10m:])
-              )
-            ) > 5
-          for: 5m
+            max by (service_name, k8s_cluster_name) ( sum_over_time(
+              loki:service:loglevel:count1m{
+                detected_level="error",
+                service_namespace="{{team}}",
+                service_name=~"^(sokos|pengeflyt).*",
+              }[1h] )
+            ) > 5 and
+            max by (service_name, k8s_cluster_name) ( sum_over_time(
+              loki:service:loglevel:count1m{
+                detected_level="error",
+                service_namespace="{{team}}",
+                service_name=~"^(sokos|pengeflyt).*",
+              }[15m] )
+            ) > 0
           annotations:
-            consequence: '*\{{ $labels.app }}* logger mer enn 5% feil'
-            action: '`kubectl logs -l app=\{{ $labels.app}}`'
+            summary: >-
+              *\{{ $labels.service_name }}* i \{{ $labels.k8s_cluster_name }} har logget mye feil
+              (mer enn 5 feil siste time, og minst 1 feil siste 15 min)
+            action: "Sjekk loggene til appen \{{ $labels.service_name }} for å se hvorfor det er så mye feil"
+            dashboard_url: >-
+              https://grafana.nav.cloud.nais.io/a/grafana-lokiexplore-app/explore/service/\{{ $labels.service_name
+              }}/logs?var-filters=service_name%7C%3D%7C\{{ $labels.service_name
+              }}&var-filters=service_namespace%7C%3D%7C{{ team
+              }}&var-filters=k8s_cluster_name%7C%3D%7C\{{ $labels.k8s_cluster_name
+              }}&from=now-3h&to=now&var-levels=detected_level%7C%3D%7Cerror&var-ds=Logs
           labels:
             namespace: {{team}}
             severity: warning
