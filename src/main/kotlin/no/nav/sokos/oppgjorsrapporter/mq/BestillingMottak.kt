@@ -22,7 +22,6 @@ import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
-import tools.jackson.module.kotlin.readValue
 
 class BestillingMottak(
     private val consumers: List<MqConsumer>,
@@ -59,7 +58,7 @@ class BestillingMottak(
                         bestilling to bestilling.datarec.size
                     }
                     RapportType.`trekk-kred` -> {
-                        val bestilling = TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(melding.data)
+                        val bestilling = TrekkKredRapportBestilling.decode(melding.data)
                         // TODO Skal vi implementere "ekstraSjekk" eller er dette strengt tatt nødvendig for T14?
                         bestilling to
                             bestilling.brukerData.brevinfo.variableFelter.ur.arkivRefList.sumOf {
