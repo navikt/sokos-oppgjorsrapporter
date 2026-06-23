@@ -2,16 +2,13 @@ package no.nav.sokos.oppgjorsrapporter.rapport.generator
 
 import io.kotest.core.spec.style.FunSpec
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
+import no.nav.sokos.oppgjorsrapporter.utils.xmlResourceAsString
 import org.assertj.core.api.Assertions.assertThat
-import tools.jackson.module.kotlin.readValue
 
 class TrekkKredCsvMapperTest :
     FunSpec({
         test("Generert trekk-kred CSV har riktig format") {
-            val bestilling =
-                TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(
-                    javaClass.classLoader.getResourceAsStream("mq/trekk_kred_bestilling.xml")!!
-                )
+            val bestilling = TrekkKredRapportBestilling.decode(xmlResourceAsString("mq/trekk_kred_bestilling.xml"))
 
             val forventet =
                 listOf(

@@ -9,6 +9,7 @@ import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.ereg.OrganisasjonsNavnOgAdresse
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkKredRapportBestilling
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.TrekkKredPdfMapper.mapTilTrekkKredRapportPdfPayload
+import no.nav.sokos.oppgjorsrapporter.utils.xmlResourceAsString
 import tools.jackson.module.kotlin.readValue
 
 class TrekkKredPdfMapperTest :
@@ -17,10 +18,7 @@ class TrekkKredPdfMapperTest :
         val onoa = OrganisasjonsNavnOgAdresse(organisasjonsnummer = "123456789", navn = "ONOG ONOG OH NO ONONOGO", adresse = "Onogata 33")
 
         test("Generer trekk-kred payload til pdfgen og valider felter") {
-            val bestilling =
-                TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(
-                    javaClass.classLoader.getResourceAsStream("mq/trekk_kred_bestilling_flere_enheter.xml")!!
-                )
+            val bestilling = TrekkKredRapportBestilling.decode(xmlResourceAsString("mq/trekk_kred_bestilling_flere_enheter.xml"))
 
             val payload = bestilling.mapTilTrekkKredRapportPdfPayload(onoa, fixedDate)
 
@@ -32,7 +30,7 @@ class TrekkKredPdfMapperTest :
         test("Når validering etter mapping feiler så skal det kastes exception") {
             val bestilling =
                 TrekkKredRapportBestilling.xmlMapper.readValue<TrekkKredRapportBestilling>(
-                    javaClass.classLoader.getResourceAsStream("mq/trekk_kred_bestilling_flere_enheter_med_feil_summering.xml")!!
+                    xmlResourceAsString("mq/trekk_kred_bestilling_flere_enheter_med_feil_summering.xml")!!
                 )
 
             shouldThrowWithMessage<Exception>("Validering av pdf payload for bestilling feilet") {

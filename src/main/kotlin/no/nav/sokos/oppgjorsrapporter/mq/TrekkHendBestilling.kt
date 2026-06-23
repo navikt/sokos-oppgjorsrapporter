@@ -1,7 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.mq
 
 import com.fasterxml.jackson.annotation.JsonRootName
-import java.io.InputStream
 import java.time.LocalDate
 import no.nav.sokos.oppgjorsrapporter.rapport.UlagretRapport
 import no.nav.sokos.utils.Fnr
@@ -63,8 +62,6 @@ data class TrekkHendBestilling(
                 .build()
 
         fun decode(dokument: String): TrekkHendBestilling = xmlMapper.readValue<TrekkHendBestilling>(dokument)
-
-        fun decode(stream: InputStream): TrekkHendBestilling = xmlMapper.readValue<TrekkHendBestilling>(stream)
     }
 
     enum class TypeMottaker {

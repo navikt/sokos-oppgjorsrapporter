@@ -2,13 +2,13 @@ package no.nav.sokos.oppgjorsrapporter.rapport.generator
 
 import io.kotest.core.spec.style.FunSpec
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkHendBestilling
+import no.nav.sokos.oppgjorsrapporter.utils.xmlResourceAsString
 import org.assertj.core.api.Assertions.assertThat
 
 class TrekkHendCsvTest :
     FunSpec({
         test("Generert CSV for trekk-hend (kreditor) har riktig format") {
-            val bestilling =
-                TrekkHendBestilling.decode(javaClass.classLoader.getResourceAsStream("mq/trekk_hend_bestilling-kreditor.xml")!!)
+            val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-kreditor.xml"))
 
             val forventet =
                 listOf(
@@ -27,8 +27,7 @@ class TrekkHendCsvTest :
         }
 
         test("Generert CSV for trekk-hend (namsmann) har riktig format") {
-            val bestilling =
-                TrekkHendBestilling.decode(javaClass.classLoader.getResourceAsStream("mq/trekk_hend_bestilling-namsmann.xml")!!)
+            val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-namsmann.xml"))
 
             val forventet =
                 listOf(

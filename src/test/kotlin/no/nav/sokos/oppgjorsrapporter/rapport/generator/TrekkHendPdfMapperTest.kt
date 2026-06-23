@@ -3,12 +3,12 @@ package no.nav.sokos.oppgjorsrapporter.rapport.generator
 import io.kotest.core.spec.style.FunSpec
 import net.javacrumbs.jsonunit.assertj.assertThatJson
 import no.nav.sokos.oppgjorsrapporter.mq.TrekkHendBestilling
+import no.nav.sokos.oppgjorsrapporter.utils.xmlResourceAsString
 
 class TrekkHendPdfMapperTest :
     FunSpec({
         test("Generer trekk-hend/kreditor payload til pdfgen og valider felter") {
-            val bestilling =
-                TrekkHendBestilling.decode(javaClass.classLoader.getResourceAsStream("mq/trekk_hend_bestilling-kreditor.xml")!!)
+            val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-kreditor.xml"))
 
             val payload = bestilling.mapTilTrekkHendPdfPayload()
 
@@ -63,8 +63,7 @@ class TrekkHendPdfMapperTest :
         }
 
         test("Generer trekk-hend/namsmann payload til pdfgen og valider felter") {
-            val bestilling =
-                TrekkHendBestilling.decode(javaClass.classLoader.getResourceAsStream("mq/trekk_hend_bestilling-namsmann.xml")!!)
+            val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-namsmann.xml"))
 
             val payload = bestilling.mapTilTrekkHendPdfPayload()
 
