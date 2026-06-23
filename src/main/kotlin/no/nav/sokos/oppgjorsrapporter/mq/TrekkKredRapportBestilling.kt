@@ -42,7 +42,24 @@ data class TrekkKredRapportBestilling(
                 .addModule(kotlinModule)
                 .build()
 
-        fun decode(dokument: String): TrekkKredRapportBestilling = xmlMapper.readValue<TrekkKredRapportBestilling>(dokument)
+        fun decode(dokument: String): TrekkKredRapportBestilling {
+            // Dersom XML-dokumentet påstår at det er i enkoding ISO-8859-1, men inneholder tegn i rangen [0x80-0x9f] (som er
+            // "undefined" i det tegnsettet), så er det /sannsynligvis/ egentlig enkodet i Windows Codepage 1252.
+            // Java sin "decode som ISO-8859-1" har ikke noen mekanisme for å gi feilmelding om at enkelte byte-values ikke
+            // faktisk er definert i tegnsettet ISO-8859-1, men legger heller rått inn enhver slik udefinert byte-value som
+            // tilsvarende char-value... og det like pdfgenrs dårlig.
+            // Vi vasker derfor bort slike tegn - ved å gjette på at CP 1252 "en-dash" og "em-dash" skal være vanlig "-",
+            // mens andre udefinerte byte-verdier blir "?"
+            val vasket: String? =
+                "\\A<[?]xml\\s(.*?)\\s[?]>".toRegex().find(dokument.trim())?.let { xmlDecl ->
+                    if (xmlDecl.groups[1]?.value?.contains("""encoding="ISO-8859-1"""") ?: false) {
+                        dokument.replace("[\\x80-\\x9f]".toRegex()) { undef ->
+                            if (undef.value == "\u0096" || undef.value == "\u0097") "-" else "?"
+                        }
+                    } else null
+                }
+            return xmlMapper.readValue(vasket ?: dokument)
+        }
     }
 
     data class Brukerdata(val mottaker: Mottaker, val brevinfo: BrevInfo)
