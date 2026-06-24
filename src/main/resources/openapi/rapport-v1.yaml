@@ -8,9 +8,9 @@ info:
     API for oppgjørsrapporter
     
     APIet tilgjengeliggjør oppgjørsrapporter av følgende typer:
-    * [Oppgjørsrapport arbeidsgiver - refusjoner fra Nav](https://www.nav.no/arbeidsgiver/oppgjorsrapport) (tidl. K27),
-    * [Trekkoppgjør kreditor](https://www.nav.no/samarbeidspartner/trekkoppgjorsrapport) (tidl. T14), og
-    * [Trekkhendelser]() (tidl. T12)
+    * [Oppgjørsrapport arbeidsgiver - refusjoner fra Nav](https://tjenesteoversikten.no/resource/nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver) (tidl. K27),
+    * [Trekkoppgjør kreditor](https://tjenesteoversikten.no/resource/nav_utbetaling_oppgjorsrapport-trekkoppgjor) (tidl. T14), og
+    * [Trekkhendelser](https://tjenesteoversikten.no/resource/nav_utbetaling_oppgjorsrapport-trekkhendelser) (tidl. T12)
   version: 1.1.2
 
 servers:
@@ -44,7 +44,7 @@ paths:
           content:
             '*/*':
               schema:
-                type: object
+                type: string
               examples:
                 Example#1:
                   value: "Uautorisert tilgang"
@@ -93,7 +93,7 @@ paths:
           content:
             '*/*':
               schema:
-                type: object
+                type: string
               examples:
                 Example#1:
                   value: "Uautorisert tilgang"
@@ -118,7 +118,7 @@ paths:
     put:
       tags:
         - Oppgjørsrapport
-      summary: Arkiver eller gjenopprett en rapport
+      summary: Arkiver eller de-arkiver en rapport
       description: |
         Skru av/på arkivert-statusen til en spesifikk rapport.
       parameters:
@@ -140,7 +140,7 @@ paths:
           content:
             '*/*':
               schema:
-                type: object
+                type: string
               examples:
                 Example#1:
                   value: "Uautorisert tilgang"
@@ -161,92 +161,8 @@ paths:
         - `Accept: text/csv` – CSV-versjon av rapporten (ISO-8859-1-kodet)
 
         Hvis `Accept`-headeren mangler eller inneholder et format som ikke støttes, returneres `406 Not Acceptable`.
-
-        ---
-
-        ### CSV-format
-
-        CSV-filen tilsvarer det som tidligere ble levert i henholdsvis K27-, T14- og T12-filene,
-        og har samme feltstruktur som disse. Feltseparator er semikolon (`;`), og tegnsettet er
-        **ISO-8859-1**. Eventuelle teng som ikke lar seg representere i **ISO-8859-1** vil bli til `?`.
-        ---
-
-        #### ref-arbg (tidligere kjent som K27) – Oppgjørsrapport arbeidsgiver - refusjoner fra Nav
-
-        Én rad per utbetaling. Feltene er i fast rekkefølge:
-
-        | # | Felt | Format |
-        |---|------|--------|
-        | 1 | Nav-enhetsnummer | 4 siffer |
-        | 2 | Organisasjonsnummer (hovedenhet) | 9 siffer |
-        | 3 | Bedriftsnummer (underenhet) | 9 siffer |
-        | 4 | Ytelseskode | 1 alfanumerisk tegn | For detaljert info se [her](https://www.nav.no/arbeidsgiver/oppgjorsrapport#oppgjorsrapport-feriepenger) 
-        | 5 | Fødselsnummer | 11 siffer |
-        | 6 | Fra-dato for ytelsen | ÅÅÅÅMMDD (eller `00000000` hvis ikke satt) |
-        | 7 | Bankkonto utbetalt til | 11 tegn |
-        | 8 | Navn på person | Maks 25 tegn | Navn på person, padding med mellomrom til høyre hvis kortere. Semikolon erstattes med mellomrom
-        | 9 | Til-dato for ytelsen | ÅÅÅÅMMDD (eller `00000000` hvis ikke satt) |
-        | 10 | Beløp | 11 tegn | Beløp i ører (10 siffer + fortegn). Kreditbeløp (negative) får '-' på slutten, debetbeløp får ' '
-        | 11 | Reservert felt | `0000000000 ` | hardkodet (10 nuller + mellomrom)
-        | 12 | Maks-dato | ÅÅÅÅMMDD (eller `00000000` hvis ikke satt) |
-
-        **Eksempel:**
-        ```csv
-        0220;983887457;987654321;S;12345678901;20251001;12345678901;HANSEN KARI             ;20251031;0000025000 ;0000000000 ;00000000
-        0220;983887457;987654321;F;23456789012;20251101;12345678901;OLSEN OLE               ;20251130;0000015000-;0000000000 ;00000000
-        ```
-
-        ---
-
-        #### trekk-kred (tidligere kjent som T14) – Trekkoppgjør fra Nav
-
-        Filen inneholder linjer av ulike typer, angitt av første kolonne:
-
-        | Type | Innhold |
-        |------|---------|
-        | `H` | **Hodelinje** (én per rapport): brevdato, mottakernavn, utbetalingsdato, orgnr, , kontonummer, tssid, fom dato for yttelsen, tom dato for yttelsen|
-        | `E` | **Trekklinje** (én per trekk): arkivreferansenummer, Nav-enhetsnummer, Nav-enhetsnavn, saksreferanse, arbeidsgivers organisasjonsnummer, fødselsnummer, navn, fom dato for trekk, tom dato for trekk, beløp, KID-status |
-        | `D` | **Delsum** per Nav-enhet |
-        | `A` | **Delsum** per arkivreferanse |
-        | `T` | **Totalsum** for kreditor |
-
-
-        **Eksempel:**
-        ```csv
-        H;20260217;MOLDE KOMMUNE;20260217;921221967; ;42141415926;80000815306;20260201;20260228
-        E;235753327;8020;;Molde barnevern;;15267807496;DONALD DUCK MED VENNER;20260201;20260228;10000;KU
-        E;235750560;8020;NAV Økonomi Stønad;Barnevernstjenesten;895821802;19486545678;JJJJJCCCCCBBB AAAAAAAAAAA;20260201;20260228;7500;KU
-        E;235750560;8020;NAV Økonomi Stønad;Frivillig forvaltning, H. Berg;895821802;29667789766;BURGER MED POMMES FRITES;20260201;20260228;5000;KU
-        D;22500
-        A;22500
-        T;22500
-        ```
-
-        ---
-
-        #### trekk-hend (tidligere kjent som T12) – Trekkhendelser - tilbakemelding fra Nav
-
-        Filen inneholder linjer av ulike typer, angitt av første kolonne:
-
-        | Type | Innhold |
-        |------|---------|
-        | `H` | **Hodelinje** (én per rapport): mottakertype (`kreditor`/`namsmann`), dato trekk fremkjørt, mottaker organisasjonsnummer, mottaker navn, adresselinje 1, adresselinje 2, adresselinje 3, postnr, poststed, land |
-        | `T` | **Transaksjonslinje** (én per hendelse): orgnr til motpart (namsmann eller kreditor), navn, Kreditors KID/referanse, debitors fødselsnummer, debitors navn, type hendelse |
         
-        **Eksempel: trekk-hend (kreditor)**
-        ```csv
-        H;kreditor;21.04.2026;859503241;McDuck inkasso AS;Postboks 313;;;3158;ANDEBY;
-        T;087453421;NAMSFOGDEN I ANDEBY;0107036257420540624;18453866986;Donald Duck;Ingen ytelse;
-        T;141619942;NAMSFOGDEN I GÅSEBY;0103064541812328464;22468528375;Gulbrand Gråstein;Opphør ytelse;
-        ```
-
-        **Eksempel: trekk-hend (namsmann)**
-        ```csv
-        H;namsmann;21.04.2026;087453421;NAMSFOGDEN I ANDEBY;Postboks 313;;;3158;;
-        T;859503241;McDuck inkasso AS;0107036257420540624;18453866986;Donald Duck;Ingen ytelse;
-        T;134907843;RIKERUD COLLECTION AS;5900562964792591;24508924131;Guffen Gås;Ingen ytelse;
-        T;134907843;RIKERUD COLLECTION AS;01626785861606857982;28482019570;Petter Smart;Opphør ytelse;
-        ```
+        Eksempel på og beskrivelse av innhold i CSV-format er tilgjengelig i [denne wiki siden](https://github.com/navikt/sokos-oppgjorsrapporter/wiki/CSV%E2%80%90format).
       parameters:
         - name: id
           in: path
@@ -260,7 +176,7 @@ paths:
           content:
             '*/*':
               schema:
-                type: object
+                type: string
               examples:
                 Example#1:
                   value: "Uautorisert tilgang"
