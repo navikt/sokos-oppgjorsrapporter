@@ -164,7 +164,7 @@ spec:
           expr: >-
             round(
               max by (rapporttype, system) (
-                delta(sokos_oppgjorsrapporter_varsel_uprosessert_count{feilet="oppgitt"}[1h]
+                delta(sokos_oppgjorsrapporter_varsel_uprosessert_count{feilet="oppgitt"}[1h])
               ) > 2
             )
           for: 30m
