@@ -10,58 +10,51 @@ private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 private fun BigDecimal.formater() = toString().let { it.dropLast(3) + it.substring(it.length - 2) }
 
 fun TrekkKredRapportBestilling.toCsv(): String {
-    val headerLinje =
-        listOf<String>(
-                "H",
-                brukerData.brevinfo.brevdato.format(dateFormatter),
-                brukerData.mottaker.navn.fulltNavn,
-                dato.format(dateFormatter),
-                brukerData.brevinfo.variableFelter.ur.orgnummer.raw,
-                " ",
-                brukerData.brevinfo.variableFelter.ur.kontonummer?.raw ?: "",
-                brukerData.brevinfo.variableFelter.ur.tssId,
-                brukerData.brevinfo.variableFelter.ur.rapportFom.format(dateFormatter),
-                brukerData.brevinfo.variableFelter.ur.rapportTom.format(dateFormatter),
-            )
-            .joinToString(";")
+    val csvRader = buildList {
+        add(
+            listOf(
+                    "H",
+                    brukerData.brevinfo.brevdato.format(dateFormatter),
+                    brukerData.mottaker.navn.fulltNavn,
+                    dato.format(dateFormatter),
+                    brukerData.brevinfo.variableFelter.ur.orgnummer.raw,
+                    " ",
+                    brukerData.brevinfo.variableFelter.ur.kontonummer?.raw ?: "",
+                    brukerData.brevinfo.variableFelter.ur.tssId,
+                    brukerData.brevinfo.variableFelter.ur.rapportFom.format(dateFormatter),
+                    brukerData.brevinfo.variableFelter.ur.rapportTom.format(dateFormatter),
+                )
+                .joinToString(";")
+        )
 
-    val trekklinjer =
         with(brukerData.brevinfo.variableFelter.ur) {
-            arkivRefList.flatMap { arkivRef ->
-                arkivRef.enhetList.flatMap { enhet ->
-                    enhet.trekkLinjeList.map {
-                        listOf<String>(
-                                "E",
-                                arkivRef.nr,
-                                enhet.enhetnr,
-                                enhet.navn,
-                                it.saksreferanse,
-                                it.arbeidgiverOrgnr.raw,
-                                it.fnr.raw,
-                                it.navn,
-                                it.trekkFOM.format(dateFormatter),
-                                it.trekkTOM.format(dateFormatter),
-                                it.belop.formater(),
-                                it.kidStatus,
-                            )
-                            .joinToString(";")
+            arkivRefList.forEach { arkivRef ->
+                arkivRef.enhetList.forEach { enhet ->
+                    enhet.trekkLinjeList.forEach { trekkLinje ->
+                        add(
+                            listOf(
+                                    "E",
+                                    arkivRef.nr,
+                                    enhet.enhetnr,
+                                    enhet.navn,
+                                    trekkLinje.saksreferanse,
+                                    trekkLinje.arbeidgiverOrgnr.raw,
+                                    trekkLinje.fnr.raw,
+                                    trekkLinje.navn,
+                                    trekkLinje.trekkFOM.format(dateFormatter),
+                                    trekkLinje.trekkTOM.format(dateFormatter),
+                                    trekkLinje.belop.formater(),
+                                    trekkLinje.kidStatus,
+                                )
+                                .joinToString(";")
+                        )
                     }
+                    add(listOf("D", enhet.delsum.belop.formater()).joinToString(";"))
                 }
+                add(listOf("A", arkivRef.delsumRef.belop.formater()).joinToString(";"))
             }
+            add(listOf("T", sumTotal.belop.formater()).joinToString(";"))
         }
-
-    val sumEnheter =
-        listOf<String>(
-                "D",
-                brukerData.brevinfo.variableFelter.ur.arkivRefList.flatMap { it.enhetList }.sumOf { enhet -> enhet.delsum.belop }.formater(),
-            )
-            .joinToString(";")
-
-    val sumArkivref =
-        listOf<String>("A", brukerData.brevinfo.variableFelter.ur.arkivRefList.sumOf { it.delsumRef.belop }.formater()).joinToString(";")
-
-    val sumKreditor = listOf<String>("T", brukerData.brevinfo.variableFelter.ur.sumTotal.belop.formater()).joinToString(";")
-
-    return listOf(headerLinje, *trekklinjer.toTypedArray(), sumEnheter, sumArkivref, sumKreditor)
-        .joinToString(LINJESKIFT, postfix = LINJESKIFT)
+    }
+    return csvRader.joinToString(LINJESKIFT, postfix = LINJESKIFT)
 }
