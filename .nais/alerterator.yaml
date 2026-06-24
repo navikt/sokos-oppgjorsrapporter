@@ -177,7 +177,7 @@ spec:
             action: >-
               En utvikler må grave i hvorfor utsending har feilet (typisk ved å sjekke logger i <{{ grafanaLogUrl }}|Grafana> / <{{ teamlogsUrl }}|Team logs>).
               Avhengig av hva som er årsaken, kan man enten
-
+              
                 - fjerne "feilet"-markeringen i databasen (slik at varsel-utsendingen forsøkes på ny), eller
                 - slette de aktuelle radene fra `varsel_behov`-tabellen (men i så fall må det vurderes å på noe annet vis gi mottaker beskjed om at rapporten finnes)
           labels:
