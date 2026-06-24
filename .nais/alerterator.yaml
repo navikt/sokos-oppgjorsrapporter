@@ -159,3 +159,27 @@ spec:
           labels:
             namespace: {{team}}
             severity: "warn"
+
+        - alert: Gitt opp å sende varsel om rapporter - {{app}}
+          expr: >-
+            round(
+              max by (rapporttype, system) (
+                delta(sokos_oppgjorsrapporter_varsel_uprosessert_count{feilet="oppgitt"}[1h]
+              ) > 2
+            )
+          for: 30m
+          annotations:
+            summary: "Forsøkene på å sende ut \{{ $labels.system }}-varsel for \{{ $value }} '\{{ $labels.rapporttype }}'-rapporter har blitt gitt opp"
+            description: >-
+              sokos-oppgjorsrapporter har klart å generere disse rapportene (så de er tilgjengelige i Utbetalingsportalen), men forsøk på å sende varsel om dem via \{{ $labels.system }} har feilet
+              så mange ganger at disse varslingene nå er markert som "feilet".  Man kan se hvilke rapporter det er snakk om i "Avvikslisten" på Oppgjørsrapporter-flaten i Utbetalingsportalen.
+            consequence: "Mottaker har ikke fått beskjed om at rapporten finnes"
+            action: >-
+              En utvikler må grave i hvorfor utsending har feilet (typisk ved å sjekke logger i <{{ grafanaLogUrl }}|Grafana> / <{{ teamlogsUrl }}|Team logs>).
+              Avhengig av hva som er årsaken, kan man enten
+
+                - fjerne "feilet"-markeringen i databasen (slik at varsel-utsendingen forsøkes på ny), eller
+                - slette de aktuelle radene fra `varsel_behov`-tabellen (men i så fall må det vurderes å på noe annet vis gi mottaker beskjed om at rapporten finnes)
+          labels:
+            namespace: {{team}}
+            severity: "warn"
