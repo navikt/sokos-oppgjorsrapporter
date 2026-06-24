@@ -35,8 +35,19 @@
                                 <kidstatus>KU</kidstatus>
                                 <dettssid>80000815306</dettssid>
                             </trekklinje>
+                            <trekklinje>
+                                <saksref>Molde kommune</saksref>
+                                <arborgnr>000000002</arborgnr>
+                                <fnr>15267807496</fnr>
+                                <navn>DeDaDe DaDeDa</navn>
+                                <trekkfom>20260201</trekkfom>
+                                <trekktom>20260228</trekktom>
+                                <belop>17500</belop>
+                                <kidstatus>KU</kidstatus>
+                                <dettssid>80000815306</dettssid>
+                            </trekklinje>
                             <delsum>
-                                <belop>10000</belop>
+                                <belop>27500</belop>
                             </delsum>
                         </enhet>
                         <enhet enhetnr="4819" navn="                         ">
@@ -55,28 +66,12 @@
                                 <belop>15000</belop>
                             </delsum>
                         </enhet>
-                        <enhet enhetnr="8020" navn="                         ">
-                            <trekklinje>
-                                <saksref>Molde barnevern</saksref>
-                                <arborgnr>000000002</arborgnr>
-                                <fnr>15267807496</fnr>
-                                <navn>DeDaDe DaDeDa</navn>
-                                <trekkfom>20260201</trekkfom>
-                                <trekktom>20260228</trekktom>
-                                <belop>17500</belop>
-                                <kidstatus>KU</kidstatus>
-                                <dettssid>80000815306</dettssid>
-                            </trekklinje>
-                            <delsum>
-                                <belop>17500</belop>
-                            </delsum>
-                        </enhet>
                         <delsumref>
                             <belop>42500</belop>
                         </delsumref>
                     </arkivref>
                     <arkivref nr="235750560 ">
-                        <enhet enhetnr="8020" navn="NAV ?konomi St?nad       ">
+                        <enhet enhetnr="8020" navn="NAV Økonomi Stønad       ">
                             <trekklinje>
                                 <saksref>Barnevernstjenesten</saksref>
                                 <arborgnr>895821802</arborgnr>
