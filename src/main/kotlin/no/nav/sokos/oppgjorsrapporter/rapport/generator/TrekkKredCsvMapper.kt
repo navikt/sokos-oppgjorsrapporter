@@ -12,19 +12,18 @@ private fun BigDecimal.formater() = toString().let { it.dropLast(3) + it.substri
 fun TrekkKredRapportBestilling.toCsv(): String {
     val csvRader = buildList {
         add(
-            listOf(
-                    "H",
-                    brukerData.brevinfo.brevdato.format(dateFormatter),
-                    brukerData.mottaker.navn.fulltNavn,
-                    dato.format(dateFormatter),
-                    brukerData.brevinfo.variableFelter.ur.orgnummer.raw,
-                    " ",
-                    brukerData.brevinfo.variableFelter.ur.kontonummer?.raw ?: "",
-                    brukerData.brevinfo.variableFelter.ur.tssId,
-                    brukerData.brevinfo.variableFelter.ur.rapportFom.format(dateFormatter),
-                    brukerData.brevinfo.variableFelter.ur.rapportTom.format(dateFormatter),
-                )
-                .joinToString(";")
+            csvRad(
+                "H",
+                brukerData.brevinfo.brevdato.format(dateFormatter),
+                brukerData.mottaker.navn.fulltNavn,
+                dato.format(dateFormatter),
+                brukerData.brevinfo.variableFelter.ur.orgnummer.raw,
+                " ",
+                brukerData.brevinfo.variableFelter.ur.kontonummer?.raw ?: "",
+                brukerData.brevinfo.variableFelter.ur.tssId,
+                brukerData.brevinfo.variableFelter.ur.rapportFom.format(dateFormatter),
+                brukerData.brevinfo.variableFelter.ur.rapportTom.format(dateFormatter),
+            )
         )
 
         with(brukerData.brevinfo.variableFelter.ur) {
