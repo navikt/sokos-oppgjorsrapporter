@@ -32,29 +32,30 @@ fun TrekkKredRapportBestilling.toCsv(): String {
                 arkivRef.enhetList.forEach { enhet ->
                     enhet.trekkLinjeList.forEach { trekkLinje ->
                         add(
-                            listOf(
-                                    "E",
-                                    arkivRef.nr,
-                                    enhet.enhetnr,
-                                    enhet.navn,
-                                    trekkLinje.saksreferanse,
-                                    trekkLinje.arbeidgiverOrgnr.raw,
-                                    trekkLinje.fnr.raw,
-                                    trekkLinje.navn,
-                                    trekkLinje.trekkFOM.format(dateFormatter),
-                                    trekkLinje.trekkTOM.format(dateFormatter),
-                                    trekkLinje.belop.formater(),
-                                    trekkLinje.kidStatus,
-                                )
-                                .joinToString(";")
+                            csvRad(
+                                "E",
+                                arkivRef.nr,
+                                enhet.enhetnr,
+                                enhet.navn,
+                                trekkLinje.saksreferanse,
+                                trekkLinje.arbeidgiverOrgnr.raw,
+                                trekkLinje.fnr.raw,
+                                trekkLinje.navn,
+                                trekkLinje.trekkFOM.format(dateFormatter),
+                                trekkLinje.trekkTOM.format(dateFormatter),
+                                trekkLinje.belop.formater(),
+                                trekkLinje.kidStatus,
+                            )
                         )
                     }
-                    add(listOf("D", enhet.delsum.belop.formater()).joinToString(";"))
+                    add(csvRad("D", enhet.delsum.belop.formater()))
                 }
-                add(listOf("A", arkivRef.delsumRef.belop.formater()).joinToString(";"))
+                add(csvRad("A", arkivRef.delsumRef.belop.formater()))
             }
-            add(listOf("T", sumTotal.belop.formater()).joinToString(";"))
+            add(csvRad("T", sumTotal.belop.formater()))
         }
     }
     return csvRader.joinToString(LINJESKIFT, postfix = LINJESKIFT)
 }
+
+private fun csvRad(vararg kolonner: String): String = kolonner.joinToString(";")
