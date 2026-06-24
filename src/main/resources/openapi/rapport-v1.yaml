@@ -59,14 +59,18 @@ paths:
               examples:
                 Eksempel:
                   value:
-                    - id: 42
-                      orgnr: "983887457"
-                      orgNavn: "SKRAVLETE ALTETENDE TIGER AS"
-                      type: "ref-arbg"
-                      datoValutert: "2025-11-17"
-                      bankkonto: "12345678901"
-                      opprettet: "2025-11-18T06:30:00Z"
-                      arkivert: false
+                    [
+                      {
+                        "id": 42,
+                        "orgnr": "983887457",
+                        "orgNavn": "SKRAVLETE ALTETENDE TIGER AS",
+                        "type": "ref-arbg",
+                        "datoValutert": "2025-11-17",
+                        "bankkonto": "12345678901",
+                        "opprettet": "2025-11-18T06:30:00Z",
+                        "arkivert": false
+                      }
+                    ]
         "400":
           description: Bad Request
           content:
@@ -198,13 +202,8 @@ paths:
               schema:
                 type: string
                 format: binary
-                description: |
-                  Rapporten som CSV-fil (ISO-8859-1-kodet, semikolonseparert).
-                  Se endepunktsbeskrivelsen for feltstruktur per rapporttype og eksempel på CSV-innhold
-              examples:
-                ref-arbg:
-                  summary: Eksempel på ref-arbg CSV-innhold
-                  value: "0220;983887457;987654321;S;12345678901;20251001;12345678901;HANSEN KARI             ;20251031;0000025000+;0000000000 ;00000000"
+                description:
+                  Eksempel på og beskrivelse av innhold i CSV-format er tilgjengelig i [denne wiki siden](https://github.com/navikt/sokos-oppgjorsrapporter/wiki/CSV%E2%80%90format).
         "404":
           description: Not Found
 components:
