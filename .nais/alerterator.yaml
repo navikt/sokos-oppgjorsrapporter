@@ -135,16 +135,13 @@ spec:
         {{/if}}
 
         - alert: Treg/feilende rapport-generering - {{app}}
-          expr: >-
-            max by (rapporttype) (
-                sokos_oppgjorsrapporter_bestilling_uprosessert_count
-            ) > 0
+          expr: min by (rapporttype) ( sokos_oppgjorsrapporter_bestilling_uprosessert_count != 0 )
           for: 3h
           annotations:
             summary: "Køen med uprosesserte '\{{ $labels.rapporttype }}'-bestillinger har ikke vært tom de siste 3 timene"
             description: >-
-              sokos-oppgjorsrapporter har mottatt rapport-bestillinger for \{{ $labels.rapporttype }}, men har ikke klart å generere rapporter av alle disse innen rimelig tid.
-              Dette kan bl.a. skje hvis:
+              sokos-oppgjorsrapporter har mottatt rapport-bestillinger for \{{ $labels.rapporttype }}, men for \{{ $value }} av disse har
+              den ikke (innen rimelig tid) klart å generere rapporter. Dette kan bl.a. skje hvis:
               
                 - generering av rapporter går tregt,
                 - sokos-oppgjorsrapporter har mottatt unormalt mange bestillinger å prosessere, eller
