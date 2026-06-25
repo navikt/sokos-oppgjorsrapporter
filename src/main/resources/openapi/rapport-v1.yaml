@@ -8,9 +8,9 @@ info:
     API for oppgjørsrapporter
     
     APIet tilgjengeliggjør oppgjørsrapporter av følgende typer:
-    * Oppgjørsrapport arbeidsgiver - refusjoner fra Nav (tidl. K27),
-    * Trekkoppgjør kreditor (tidl. T14), og
-    * Trekkhendelser (tidl. T12)
+    * [Oppgjørsrapport arbeidsgiver - refusjoner fra Nav](https://tjenesteoversikten.no/resource/nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver) (tidl. K27),
+    * [Trekkoppgjør kreditor](https://tjenesteoversikten.no/resource/nav_utbetaling_oppgjorsrapport-trekkoppgjor) (tidl. T14), og
+    * [Trekkhendelser](https://tjenesteoversikten.no/resource/nav_utbetaling_oppgjorsrapport-trekkhendelser) (tidl. T12)
   version: 1.1.2
 
 servers:
@@ -27,6 +27,9 @@ security:
 paths:
   /api/rapport/v1:
     post:
+      tags:
+        - Oppgjørsrapport
+      summary: Søk etter oppgjørsrapporter
       description: |
         Søk etter oppgjørsrapporter brukeren har tilgang til.
       requestBody:
@@ -41,7 +44,7 @@ paths:
           content:
             '*/*':
               schema:
-                type: object
+                type: string
               examples:
                 Example#1:
                   value: "Uautorisert tilgang"
@@ -53,6 +56,21 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Rapport"
+              examples:
+                Eksempel:
+                  value:
+                    [
+                      {
+                        "id": 42,
+                        "orgnr": "983887457",
+                        "orgNavn": "SKRAVLETE ALTETENDE TIGER AS",
+                        "type": "ref-arbg",
+                        "datoValutert": "2025-11-17",
+                        "bankkonto": "12345678901",
+                        "opprettet": "2025-11-18T06:30:00Z",
+                        "arkivert": false
+                      }
+                    ]
         "400":
           description: Bad Request
           content:
@@ -61,6 +79,9 @@ paths:
                 type: string
   /api/rapport/v1/{id}:
     get:
+      tags:
+        - Oppgjørsrapport
+      summary: Hent metadata om en spesifikk oppgjørsrapport
       description: |
         Hent metadata om en spesifikk rapport.
       parameters:
@@ -76,7 +97,7 @@ paths:
           content:
             '*/*':
               schema:
-                type: object
+                type: string
               examples:
                 Example#1:
                   value: "Uautorisert tilgang"
@@ -88,8 +109,22 @@ paths:
             'application/json':
               schema:
                 $ref: "#/components/schemas/Rapport"
+              example:
+                {
+                  id: 42,
+                  orgnr: "983887457",
+                  orgNavn: "ARBEIDS- OG INKLUDERINGSDEPARTEMENTET",
+                  type: "ref-arbg",
+                  datoValutert: "2025-11-17",
+                  bankkonto: "12345678901",
+                  opprettet: "2025-11-18T06:30:00Z",
+                  arkivert: false
+                }
   /api/rapport/v1/{id}/arkiver:
     put:
+      tags:
+        - Oppgjørsrapport
+      summary: Arkiver eller de-arkiver en rapport
       description: |
         Skru av/på arkivert-statusen til en spesifikk rapport.
       parameters:
@@ -111,7 +146,7 @@ paths:
           content:
             '*/*':
               schema:
-                type: object
+                type: string
               examples:
                 Example#1:
                   value: "Uautorisert tilgang"
@@ -121,8 +156,19 @@ paths:
           description: Not Found
   /api/rapport/v1/{id}/innhold:
     get:
+      tags:
+        - Oppgjørsrapport
+      summary: Hent innholdet i en spesifikk oppgjørsrapport
       description: |
-        Hent innhold i en spesifikk rapport.
+        Hent innholdet i en spesifikk rapport som PDF- eller CSV-fil.
+
+        Ønsket format angis via `Accept`-headeren:
+        - `Accept: application/pdf` – PDF-versjon av rapporten
+        - `Accept: text/csv` – CSV-versjon av rapporten (ISO-8859-1-kodet)
+
+        Hvis `Accept`-headeren mangler eller inneholder et format som ikke støttes, returneres `406 Not Acceptable`.
+        
+        Eksempel på og beskrivelse av innhold i CSV-format er tilgjengelig i [denne wiki siden](https://github.com/navikt/sokos-oppgjorsrapporter/wiki/CSV%E2%80%90format).
       parameters:
         - name: id
           in: path
@@ -136,7 +182,7 @@ paths:
           content:
             '*/*':
               schema:
-                type: object
+                type: string
               examples:
                 Example#1:
                   value: "Uautorisert tilgang"
@@ -153,10 +199,13 @@ paths:
               schema:
                 type: string
                 format: binary
+                description: Rapporten som PDF-fil.
             text/csv:
               schema:
                 type: string
                 format: binary
+                description:
+                  Eksempel på og beskrivelse av innhold i CSV-format er tilgjengelig i [denne wiki siden](https://github.com/navikt/sokos-oppgjorsrapporter/wiki/CSV%E2%80%90format).
         "404":
           description: Not Found
 components:
@@ -263,10 +312,18 @@ components:
         - "trekk-hend"
         - "trekk-kred"
       description: |
+        Rapporttype. Gyldige verdier:
+
+        | Verdi | Fullt navn | Gammel kode |
+        |-------|------------|-------------|
+        | `ref-arbg` | Oppgjørsrapport arbeidsgiver – refusjoner fra Nav | K27 |
+        | `trekk-hend` | Trekkhendelser – tilbakemelding fra Nav | T12 |
+        | `trekk-kred` | Trekkoppgjør kreditor | T14 |
+
         Inntil videre støtter APIet også input som bruker de gamle type-navnene:
-        * "K27" for "ref-arbg"
-        * "T12" for "trekk-hend
-        * "T14" for "trekk-kred"
+        * `K27` for `ref-arbg`
+        * `T12` for `trekk-hend`
+        * `T14` for `trekk-kred`
 
     Instant:
       type: string
@@ -275,25 +332,50 @@ components:
 
     Rapport:
       type: "object"
+      description: Metadata om en oppgjørsrapport.
       properties:
         id:
           type: "integer"
           format: "int64"
+          description: Unik identifikator for oppgjørsrapporten.
+          example: 42
         orgnr:
           type: "string"
+          description: Organisasjonsnummeret (9 siffer) til virksomheten rapporten gjelder.
+          example: "983887457"
         orgNavn:
           type: "string"
+          description: Navn på virksomheten rapporten gjelder.
+          example: "ARBEIDS- OG INKLUDERINGSDEPARTEMENTET"
         type:
           $ref: "#/components/schemas/RapportType"
         datoValutert:
           type: "string"
           format: "date"
+          description: |
+            Dato for utbetaling/valutering.
+
+            - For `ref-arbg`: datoen Nav utbetalte refusjon til arbeidsgivers bankkonto.
+            - For `trekk-kred`: datoen Nav utbetalte trekkmidler til kreditors bankkonto.
+            - For `trekk-hend`: datoen trekkhendelsene gjelder for.
+          example: "2025-11-17"
         bankkonto:
           type: "string"
+          description: |
+            Bankkonto (11 siffer) pengene ble utbetalt til.
+
+            Satt for `ref-arbg` og `trekk-kred`. Ikke satt for `trekk-hend` (T12).
+          example: "12345678901"
         opprettet:
           $ref: "#/components/schemas/Instant"
+          description: Tidspunktet rapporten ble opprettet/tilgjengeliggjort i systemet.
         arkivert:
           type: boolean
+          description: |
+            Angir om rapporten er arkivert.
+
+            Arkiverte rapporter utelates som standard fra søkeresultater, med mindre `inkluderArkiverte`
+            er satt til `true` i søket. Arkiv-statusen kan endres via `PUT /api/rapport/v1/{id}/arkiver`.
       required:
         - "id"
         - "orgnr"
@@ -301,6 +383,17 @@ components:
         - "datoValutert"
         - "opprettet"
         - "arkivert"
+      example:
+        {
+          id: 42,
+          orgnr: "983887457",
+          orgNavn: "ARBEIDS- OG INKLUDERINGSDEPARTEMENTET",
+          type: "ref-arbg",
+          datoValutert: "2025-11-17",
+          bankkonto: "12345678901",
+          opprettet: "2025-11-18T06:30:00Z",
+          arkivert: false,
+        }
 
   securitySchemes:
     Systembruker:
