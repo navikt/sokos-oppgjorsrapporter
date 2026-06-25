@@ -110,14 +110,16 @@ paths:
               schema:
                 $ref: "#/components/schemas/Rapport"
               example:
-                id: 42
-                orgnr: "983887457"
-                orgNavn: "ARBEIDS- OG INKLUDERINGSDEPARTEMENTET"
-                type: "ref-arbg"
-                datoValutert: "2025-11-17"
-                bankkonto: "12345678901"
-                opprettet: "2025-11-18T06:30:00Z"
-                arkivert: false
+                {
+                  id: 42,
+                  orgnr: "983887457",
+                  orgNavn: "ARBEIDS- OG INKLUDERINGSDEPARTEMENTET",
+                  type: "ref-arbg",
+                  datoValutert: "2025-11-17",
+                  bankkonto: "12345678901",
+                  opprettet: "2025-11-18T06:30:00Z",
+                  arkivert: false
+                }
   /api/rapport/v1/{id}/arkiver:
     put:
       tags:
@@ -382,14 +384,16 @@ components:
         - "opprettet"
         - "arkivert"
       example:
-        id: 42
-        orgnr: "983887457"
-        orgNavn: "ARBEIDS- OG INKLUDERINGSDEPARTEMENTET"
-        type: "ref-arbg"
-        datoValutert: "2025-11-17"
-        bankkonto: "12345678901"
-        opprettet: "2025-11-18T06:30:00Z"
-        arkivert: false
+        {
+          id: 42,
+          orgnr: "983887457",
+          orgNavn: "ARBEIDS- OG INKLUDERINGSDEPARTEMENTET",
+          type: "ref-arbg",
+          datoValutert: "2025-11-17",
+          bankkonto: "12345678901",
+          opprettet: "2025-11-18T06:30:00Z",
+          arkivert: false,
+        }
 
   securitySchemes:
     Systembruker:
