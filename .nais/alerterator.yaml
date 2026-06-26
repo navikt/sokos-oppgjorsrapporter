@@ -99,7 +99,7 @@ spec:
             namespace: {{team}}
             severity: warning
 
-    # Alerts spesifikke for applikasjonen i dette repositoriet
+    # Alerts spesifikke for applikasjonen i dette repositoriet - med sjekking av alert-condition hvert 15. minutt
     - name: {{app}}-alerts
       interval: 15m
       rules:
@@ -124,7 +124,7 @@ spec:
               sokos-oppgjorsrapporter har ikke mottatt noen '\{{ $labels.rapporttype }}'-bestillinger på
               \{{ if eq $labels.rapporttype "ref-arbg" -}} 14 \{{- else -}} 7 \{{- end }} dager.
               Dette kan bl.a. skje hvis:
-              
+
                 - bestillings-produsenten ikke har sendt noen bestillinger (muligens som følge av at noe er feil),
                 - bestillings-produsenten sender bestillingene til et annet sted enn den MQ-køen sokos-oppgjorsrapporter ser etter dem på,
                 - sokos-oppgjorsrapporter klarer ikke å se nye meldinger som kommer på denne rapporttypens MQ-kø, eller
@@ -148,7 +148,7 @@ spec:
             description: >-
               sokos-oppgjorsrapporter har mottatt rapport-bestillinger for \{{ $labels.rapporttype }}, men for \{{ $value }} av disse har
               den ikke (innen rimelig tid) klart å generere rapporter. Dette kan bl.a. skje hvis:
-              
+
                 - generering av rapporter går tregt,
                 - sokos-oppgjorsrapporter har mottatt unormalt mange bestillinger å prosessere, eller
                 - noen bestillings-dokumenter ikke er på forventet format, slik at prosessering av disse feiler
@@ -157,7 +157,7 @@ spec:
             action: >-
               Sjekk først i <https://grafana.nav.cloud.nais.io/d/860e2c41-c6ef-425b-8636-8bdf4ce9de22/sokos-oppgjorsrapporter|Grafana dashboard>
               for å se om antallet uprosesserte bestillinger går nedover i omtrent forventet hastighet; i så fall kan det være at det bare har kommet unormalt mange bestillinger på nye rapporter.
-              
+
               Hvis antallet går for sakte nedover, er det lurt å sjekke loggene (<{{ grafanaLogUrl }}|Grafana> / <{{ teamlogsUrl }}|Team logs>) for å se hva som feiler.
           labels:
             namespace: {{team}}
@@ -180,9 +180,30 @@ spec:
             action: >-
               En utvikler må grave i hvorfor utsending har feilet (typisk ved å sjekke logger i <{{ grafanaLogUrl }}|Grafana> / <{{ teamlogsUrl }}|Team logs>).
               Avhengig av hva som er årsaken, kan man enten
-              
+
                 - fjerne "feilet"-markeringen i databasen (slik at varsel-utsendingen forsøkes på ny), eller
                 - slette de aktuelle radene fra `varsel_behov`-tabellen (men i så fall må det vurderes å på noe annet vis gi mottaker beskjed om at rapporten finnes)
           labels:
             namespace: {{team}}
             severity: "warn"
+
+    # Alerts spesifikke for applikasjonen i dette repositoriet - uten overstyrt sjekk-frekvens av alert-condition
+    # Disse alertene sjekkes dermed formodentlig hyppigere enn de over (og kan dermed ha "for:" som er kortere enn 15m).
+#    - name: {{app}}-alerts-frequent-check
+#      rules:
+#        - alert: Høy andel autentiseringsfeil - {{app}}
+#          # Alert hvis ved hver sjekk i 10 minutter, så har det i de siste 5 minuttene:
+#          #  1. kommet minst 50 API-requests, og
+#          #  2. minst 20% av disse har gitt 401-respons
+#          expr: >-
+#            sum(increase( ktor_http_server_requests_seconds_count{ namespace="{{team}}", app="{{app}}", route=~"^/api/.*" }[5m] )) > 50
+#            and
+#            ( sum(rate( ktor_http_server_requests_seconds_count{ namespace="{{team}}", app="{{app}}", route=~"^/api/.*", status="401" }[5m] ))
+#              /
+#              clamp_min(
+#                sum(rate( ktor_http_server_requests_seconds_count{ namespace="{{team}}", app="{{app}}", route=~"^/api/.*" }[5m] )),
+#                0.1
+#              )
+#            ) > 0.20
+#          for: 10m
+#          annotations:
