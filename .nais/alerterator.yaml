@@ -7,22 +7,148 @@ metadata:
     team: {{team}}
 spec:
   groups:
+    # Generelle alerts som gjelder for alle applikasjoner i dette Nais-teamet; kan om ønskelig splittes ut i et annet repository.
+    # Mye av dette er lånt fra oppsettene til andre team i Nav, f.eks.
+    # https://github.com/navikt/dagpenger-iac/blob/main/alerts/felles-alerts.yaml
+    - name: {{team}}-generelle-alerts
+      rules:
+        - alert: InstanceDown
+          expr: >-
+            avg_over_time(
+              kube_deployment_status_replicas_available{namespace="{{team}}"}[5m]
+            ) < 1
+          # I produksjon bør vi følge Nais
+          # [Good practices](https://doc.nais.io/workloads/explanations/good-practices/?h=replicas#run-multiple-replicas)
+          # og kjøre alle apper med minst 2 replicas for å unngå nedetid - og dermed også få nokså kjapp alert dersom
+          # antallet replicas for en app faller under 1.
+          # Utenfor produksjon, derimot, kan det være OK å kjøre enkelte apper med kun 1 replica - så der kan vi gi ting litt mer tid
+          # på å komme opp i >= 1 replica igjen før det sendes alert.
+          for: {{#if isProduction}} 1m {{else}} 10m {{/if}}
+          annotations:
+            consequence: '*\{{ $labels.deployment }}* er nede'
+            action: '`kubectl describe pod -l app=\{{ $labels.deployment}}` -> `kubectl logs -l app=\{{ $labels.deployment}}`'
+          labels:
+            namespace: {{team}}
+            severity: critical
+
+        - alert: Høy feilrate i logger
+          expr: >-
+            max by (service_name, k8s_cluster_name) ( sum_over_time(
+              loki:service:loglevel:count1m{
+                detected_level="error",
+                service_namespace="{{team}}",
+                service_name=~"^(sokos|pengeflyt).*",
+              }[1h] )
+            ) > 5 and
+            max by (service_name, k8s_cluster_name) ( sum_over_time(
+              loki:service:loglevel:count1m{
+                detected_level="error",
+                service_namespace="{{team}}",
+                service_name=~"^(sokos|pengeflyt).*",
+              }[15m] )
+            ) > 0
+          annotations:
+            summary: >-
+              *\{{ $labels.service_name }}* i \{{ $labels.k8s_cluster_name }} har logget mye feil
+              (mer enn 5 feil siste time, og minst 1 feil siste 15 min)
+            action: "Sjekk loggene til appen \{{ $labels.service_name }} for å se hvorfor det er så mye feil"
+            dashboard_url: >-
+              https://grafana.nav.cloud.nais.io/a/grafana-lokiexplore-app/explore/service/\{{ $labels.service_name
+              }}/logs?var-filters=service_name%7C%3D%7C\{{ $labels.service_name
+              }}&var-filters=service_namespace%7C%3D%7C{{ team
+              }}&var-filters=k8s_cluster_name%7C%3D%7C\{{ $labels.k8s_cluster_name
+              }}&from=now-3h&to=now&var-levels=detected_level%7C%3D%7Cerror&var-ds=Logs
+          labels:
+            namespace: {{team}}
+            severity: warning
+
+        - alert: CrashLoopBackoff
+          expr: >-
+            sum(
+              changes(
+                kube_pod_container_status_restarts_total{namespace="{{team}}"}[5m]
+              )
+            ) by (container, namespace) > 0
+          for: 5m
+          annotations:
+            consequence: '*\{{ $labels.container }}* står i CrashLoopBackoff'
+            action: 'Du må se på hvorfor appen kræsjer'
+          labels:
+            namespace: {{team}}
+            severity: warning
+
+        - alert: OOMKilled
+          expr: >-
+            (
+              kube_pod_container_status_last_terminated_reason{
+                namespace="{{team}}",
+                reason="OOMKilled"
+              } == 1
+            )
+            and on (namespace, pod, container)
+            (
+              increase(
+                kube_pod_container_status_restarts_total{namespace="{{team}}"}[5m]
+              ) > 0
+            )
+          for: 1m
+          annotations:
+            consequence: 'Applikasjonen *\{{ $labels.container }}* ble OOMKilled av Kubernetes. Pod: \{{ $labels.pod }}'
+            action: 'Du må se på hvorfor appen brukte for mye minne.'
+          labels:
+            namespace: {{team}}
+            severity: warning
+
+    # Alerts spesifikke for applikasjonen i dette repositoriet - med sjekking av alert-condition hvert 15. minutt
     - name: {{app}}-alerts
       interval: 15m
       rules:
 
-        - alert: Treg/feilende rapport-generering - {{app}}
+        {{#if isProduction}}
+        - alert: Ingen bestillinger mottatt - {{app}}
           expr: >-
             max by (rapporttype) (
-                sokos_oppgjorsrapporter_bestilling_uprosessert_count
-            ) > 0
+              changes(sokos_oppgjorsrapporter_bestilling_mottatt_count_total{rapporttype="ref-arbg"}[13d]) or
+              changes(sokos_oppgjorsrapporter_bestilling_mottatt_count_total{rapporttype!="ref-arbg"}[6d])
+            ) == 0
+          # Total periode uten mottatte meldinger før det sendes alert blir (range-vektor-lengde + `for:`-periode), så:
+          # For ref-arbg: 13+1 = 14 dager
+          # For trekk-hend + trekk-kred: 6+1 = 7 dager
+          for: 1d
+          annotations:
+            summary: >-
+              Ingen '\{{ $labels.rapporttype }}'-bestillinger mottatt på
+              \{{ if eq $labels.rapporttype "ref-arbg" -}} 14 \{{- else -}} 7 \{{- end }}
+              dager
+            description: >-
+              sokos-oppgjorsrapporter har ikke mottatt noen '\{{ $labels.rapporttype }}'-bestillinger på
+              \{{ if eq $labels.rapporttype "ref-arbg" -}} 14 \{{- else -}} 7 \{{- end }} dager.
+              Dette kan bl.a. skje hvis:
+
+                - bestillings-produsenten ikke har sendt noen bestillinger (muligens som følge av at noe er feil),
+                - bestillings-produsenten sender bestillingene til et annet sted enn den MQ-køen sokos-oppgjorsrapporter ser etter dem på,
+                - sokos-oppgjorsrapporter klarer ikke å se nye meldinger som kommer på denne rapporttypens MQ-kø, eller
+                - sokos-oppgjorsrapporter forstår ikke formatet på meldingene, og har derfor nektet å ta imot dem (slik at de har endt opp på backout-kø)
+            consequence: >-
+              Hvis bestillings-produsentene har forsøkt å sende bestillinger, har ikke tiltenkt rapport-mottaker fått noen rapport
+            action: >-
+              Sjekk med bestillings-produsenten (for ref-arbg + trekk-kred: URZ, for trekk-hend: OppdragZ) om de mener det burde ha blitt sendt bestillinger.
+              Hvis ja, så må det graves i hvorfor bestillingene ikke har kommet fram.
+              Hvis nei, vurder å justere denne alerten til å akseptere en lengre periode uten bestillinger.
+          labels:
+            namespace: {{team}}
+            severity: "warn"
+        {{/if}}
+
+        - alert: Treg/feilende rapport-generering - {{app}}
+          expr: min by (rapporttype) ( sokos_oppgjorsrapporter_bestilling_uprosessert_count != 0 )
           for: 3h
           annotations:
-            summary: "Køen med uprosesserte '{{ $labels.rapporttype }}'-bestillinger har ikke vært tom de siste 3 timene"
+            summary: "Køen med uprosesserte '\{{ $labels.rapporttype }}'-bestillinger har ikke vært tom de siste 3 timene"
             description: >-
-              sokos-oppgjorsrapporter har mottatt rapport-bestillinger for {{ $labels.rapporttype }}, men har ikke klart å generere rapporter av alle disse innen rimelig tid.
-              Dette kan bl.a. skje hvis:
-              
+              sokos-oppgjorsrapporter har mottatt rapport-bestillinger for \{{ $labels.rapporttype }}, men for \{{ $value }} av disse har
+              den ikke (innen rimelig tid) klart å generere rapporter. Dette kan bl.a. skje hvis:
+
                 - generering av rapporter går tregt,
                 - sokos-oppgjorsrapporter har mottatt unormalt mange bestillinger å prosessere, eller
                 - noen bestillings-dokumenter ikke er på forventet format, slik at prosessering av disse feiler
@@ -31,8 +157,53 @@ spec:
             action: >-
               Sjekk først i <https://grafana.nav.cloud.nais.io/d/860e2c41-c6ef-425b-8636-8bdf4ce9de22/sokos-oppgjorsrapporter|Grafana dashboard>
               for å se om antallet uprosesserte bestillinger går nedover i omtrent forventet hastighet; i så fall kan det være at det bare har kommet unormalt mange bestillinger på nye rapporter.
-              
+
               Hvis antallet går for sakte nedover, er det lurt å sjekke loggene (<{{ grafanaLogUrl }}|Grafana> / <{{ teamlogsUrl }}|Team logs>) for å se hva som feiler.
           labels:
             namespace: {{team}}
             severity: "warn"
+
+        - alert: Gitt opp å sende varsel om rapporter - {{app}}
+          expr: >-
+            round(
+              max by (rapporttype, system) (
+                delta(sokos_oppgjorsrapporter_varsel_uprosessert_count{feilet="oppgitt"}[1h])
+              ) > 2
+            )
+          for: 30m
+          annotations:
+            summary: "Forsøkene på å sende ut \{{ $labels.system }}-varsel for \{{ $value }} '\{{ $labels.rapporttype }}'-rapporter har blitt gitt opp"
+            description: >-
+              sokos-oppgjorsrapporter har klart å generere disse rapportene (så de er tilgjengelige i Utbetalingsportalen), men forsøk på å sende varsel om dem via \{{ $labels.system }} har feilet
+              så mange ganger at disse varslingene nå er markert som "feilet".  Man kan se hvilke rapporter det er snakk om i "Avvikslisten" på Oppgjørsrapporter-flaten i Utbetalingsportalen.
+            consequence: "Mottaker har ikke fått beskjed om at rapporten finnes"
+            action: >-
+              En utvikler må grave i hvorfor utsending har feilet (typisk ved å sjekke logger i <{{ grafanaLogUrl }}|Grafana> / <{{ teamlogsUrl }}|Team logs>).
+              Avhengig av hva som er årsaken, kan man enten
+
+                - fjerne "feilet"-markeringen i databasen (slik at varsel-utsendingen forsøkes på ny), eller
+                - slette de aktuelle radene fra `varsel_behov`-tabellen (men i så fall må det vurderes å på noe annet vis gi mottaker beskjed om at rapporten finnes)
+          labels:
+            namespace: {{team}}
+            severity: "warn"
+
+    # Alerts spesifikke for applikasjonen i dette repositoriet - uten overstyrt sjekk-frekvens av alert-condition
+    # Disse alertene sjekkes dermed formodentlig hyppigere enn de over (og kan dermed ha "for:" som er kortere enn 15m).
+#    - name: {{app}}-alerts-frequent-check
+#      rules:
+#        - alert: Høy andel autentiseringsfeil - {{app}}
+#          # Alert hvis ved hver sjekk i 10 minutter, så har det i de siste 5 minuttene:
+#          #  1. kommet minst 50 API-requests, og
+#          #  2. minst 20% av disse har gitt 401-respons
+#          expr: >-
+#            sum(increase( ktor_http_server_requests_seconds_count{ namespace="{{team}}", app="{{app}}", route=~"^/api/.*" }[5m] )) > 50
+#            and
+#            ( sum(rate( ktor_http_server_requests_seconds_count{ namespace="{{team}}", app="{{app}}", route=~"^/api/.*", status="401" }[5m] ))
+#              /
+#              clamp_min(
+#                sum(rate( ktor_http_server_requests_seconds_count{ namespace="{{team}}", app="{{app}}", route=~"^/api/.*" }[5m] )),
+#                0.1
+#              )
+#            ) > 0.20
+#          for: 10m
+#          annotations:

@@ -10,8 +10,8 @@ on:
       - .github/workflows/deploy-alerts.yaml
 
 jobs:
-  deploy-prod:
-    name: Deploy to prod
+  deploy-alerts:
+    name: Deploy to cluster
     runs-on: ubuntu-latest
     permissions:
       id-token: "write"

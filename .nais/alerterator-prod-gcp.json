@@ -1,5 +1,6 @@
 {
   "team": "oppgjorsrapporter",
+  "isProduction": true,
   "app": "sokos-oppgjorsrapporter",
   "grafanaLogUrl": "https://grafana.nav.cloud.nais.io/a/grafana-lokiexplore-app/explore/service_name/sokos-oppgjorsrapporter/logs?from=now-3h&to=now&var-ds=PEA2100DC89AE9FE2&var-filters=service_name%7C%3D%7C__CV%CE%A9__sokos-oppgjorsrapporter,sokos-oppgjorsrapporter&var-filters=k8s_cluster_name%7C%3D%7Cprod&patterns=%5B%5D&var-lineFormat=&var-fields=&var-levels=&var-metadata=&var-jsonFields=&var-patterns=&var-lineFilterV2=&var-lineFilters=&timezone=browser&var-all-fields=&urlColumns=%5B%5D&visualizationType=%22logs%22&displayedFields=%5B%5D&userDisplayedFields=false&sortOrder=%22Ascending%22&wrapLogMessage=false&prettifyLogMessage=false",
   "teamlogsUrl": "https://cloudlogging.app.goo.gl/zHzRhuJMwCUSeZSJ7"
