@@ -17,7 +17,13 @@ spec:
             avg_over_time(
               kube_deployment_status_replicas_available{namespace="{{team}}"}[5m]
             ) < 1
-          for: 1m
+          # I produksjon bør vi følge Nais
+          # [Good practices](https://doc.nais.io/workloads/explanations/good-practices/?h=replicas#run-multiple-replicas)
+          # og kjøre alle apper med minst 2 replicas for å unngå nedetid - og dermed også få nokså kjapp alert dersom
+          # antallet replicas for en app faller under 1.
+          # Utenfor produksjon, derimot, kan det være OK å kjøre enkelte apper med kun 1 replica - så der kan vi gi ting litt mer tid
+          # på å komme opp i >= 1 replica igjen før det sendes alert.
+          for: {{#if isProduction}} 1m {{else}} 10m {{/if}}
           annotations:
             consequence: '*\{{ $labels.deployment }}* er nede'
             action: '`kubectl describe pod -l app=\{{ $labels.deployment}}` -> `kubectl logs -l app=\{{ $labels.deployment}}`'
