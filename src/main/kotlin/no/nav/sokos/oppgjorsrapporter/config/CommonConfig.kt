@@ -19,6 +19,7 @@ import io.ktor.server.routing.route
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
 import javax.sql.DataSource
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import no.nav.security.token.support.v3.TokenValidationContextPrincipal
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
@@ -29,6 +30,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.getBruker
 import no.nav.sokos.oppgjorsrapporter.auth.getConsumerOrgnr
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import org.slf4j.LoggerFactory
 import org.slf4j.Marker
 import org.slf4j.MarkerFactory
 import org.slf4j.event.Level
@@ -47,9 +49,33 @@ fun Application.commonConfig() {
     val metrics: Metrics by dependencies
 
     install(CallLogging) {
+        // Siden K267.1 sier at man skal logge "hvem" som har gjort noe, vil call-loggene inneholde personinfo - og må
+        // derfor ikke sendes til vanlig logg.
+        logger = LoggerFactory.getLogger("tjenestekall")
         level = Level.INFO
         filter { call -> call.request.path().startsWith("/api") }
         disableDefaultColors()
+        mdc("user") { call ->
+            runBlocking {
+                runCatching {
+                        val context = call.principal<TokenValidationContextPrincipal>()?.context
+                        context?.getBruker()?.getOrThrow()?.let { bruker ->
+                            "${bruker.authType}:" +
+                                when (bruker) {
+                                    is EntraId -> "NAVident=${bruker.navIdent}"
+
+                                    is Systembruker -> {
+                                        val consumerOrg = context.getConsumerOrgnr().raw
+                                        "consumer=$consumerOrg systemuser_org=${bruker.userOrg.raw} systemuser_id=${bruker.userId}"
+                                    }
+
+                                    is TokenX -> "pid=${bruker.pid}"
+                                }
+                        }
+                    }
+                    .getOrNull()
+            }
+        }
     }
 
     install(ContentNegotiation) { json(commonJsonConfig) }
