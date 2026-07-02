@@ -88,6 +88,10 @@ class RapportGenerator(
                     }
             }
         val pdfgenUrl = bestilling.resolvePdfgenUrl()
+        if (pdfgenPayload.length >= (2 * 1024 * 1024)) {
+            logger.warn { "Forsøker å sende stor PDF-payload: lengde=${pdfgenPayload.length}" }
+            logger.warn(TEAM_LOGS_MARKER) { "Forsøker å sende stor PDF-payload: lengde=${pdfgenPayload.length}, data='$pdfgenPayload'" }
+        }
         val response =
             try {
                 client.post(pdfgenUrl) {
