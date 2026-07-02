@@ -56,47 +56,49 @@ class RapportGenerator(
     suspend fun genererPdfInnhold(bestilling: RapportBestillingMsg, arbeidsgiverNavnOgAdresse: OrganisasjonsNavnOgAdresse): ByteString {
         val pdfgenPayload =
             when (bestilling) {
-                is RefusjonsRapportBestilling -> {
+                is RefusjonsRapportBestilling ->
                     RefusjonsRapportPdfPayload(
                             bestilling = bestilling,
                             organisasjonsNavnOgAdresse = arbeidsgiverNavnOgAdresse,
                             rapportSendt = LocalDate.now(clock),
                         )
-                        .also { payload ->
-                            logger.debug {
-                                val json = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
-                                logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgen: $json" }
-                            }
+                        .let { payload ->
+                            val json = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
+                            logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgen: $json" }
+                            json
                         }
-                }
-                is TrekkKredRapportBestilling -> {
+
+                is TrekkKredRapportBestilling ->
                     bestilling
                         .mapTilTrekkKredRapportPdfPayload(
                             organisasjonsNavnOgAdresse = arbeidsgiverNavnOgAdresse,
                             rapportSendt = LocalDate.now(clock),
                         )
-                        .also { payload ->
-                            logger.debug {
-                                val json = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
-                                logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgen: $json" }
-                            }
-                        }
-                }
-
-                is TrekkHendBestilling -> {
-                    bestilling.mapTilTrekkHendPdfPayload().also { payload ->
-                        logger.debug {
+                        .let { payload ->
                             val json = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
                             logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgen: $json" }
+                            json
                         }
+
+                is TrekkHendBestilling ->
+                    bestilling.mapTilTrekkHendPdfPayload().let { payload ->
+                        val json = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
+                        logger.debug(TEAM_LOGS_MARKER) { "Sender ${payload.javaClass.simpleName} json til pdfgen: $json" }
+                        json
                     }
-                }
             }
         val pdfgenUrl = bestilling.resolvePdfgenUrl()
         val response =
-            client.post(pdfgenUrl) {
-                contentType(ContentType.Application.Json)
-                setBody(pdfgenPayload)
+            try {
+                client.post(pdfgenUrl) {
+                    contentType(ContentType.Application.Json)
+                    setBody(pdfgenPayload)
+                }
+            } catch (e: Exception) {
+                logger.error(TEAM_LOGS_MARKER, e) {
+                    "PDF-generering for ${bestilling.javaClass.simpleName} feilet; payload-lengde=${pdfgenPayload.length}, json='$pdfgenPayload'"
+                }
+                throw e
             }
         metrics.tellEksternEndepunktRequest(response, pdfgenUrl.path)
 
