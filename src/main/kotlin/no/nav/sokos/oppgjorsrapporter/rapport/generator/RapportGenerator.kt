@@ -109,10 +109,13 @@ class RapportGenerator(
             }
 
             else -> {
-                val apiError = ApiError(response, "Noe gikk galt ved kall mot PDF-generator tjenesten")
+                val apiError = ApiError(response, "Noe gikk galt ved kall mot PDF-generator-tjenesten")
 
-                logger.error { "Feil ved kall mot PDF-generator tjenesten $apiError" }
-                throw RuntimeException("Feil ved kall mot PDF-generator tjenesten: $apiError")
+                logger.error { "Feil ved kall mot PDF-generator-tjenesten $apiError" }
+                logger.error(TEAM_LOGS_MARKER) {
+                    "Feil ved kall mot PDF-generator-tjenesten; response=$response, bestillingstype=${bestilling.javaClass.simpleName}, payload-lengde=${pdfgenPayload.length}, json='$pdfgenPayload'"
+                }
+                throw RuntimeException("Feil ved kall mot PDF-generator-tjenesten: $apiError")
             }
         }
     }
