@@ -133,5 +133,5 @@ class RapportGenerator(
 }
 
 object PdfgenHttpClientSetup : HttpClientSetup {
-    override val jsonConfig: Json = commonJsonConfig
+    override val jsonConfig: Json = Json(commonJsonConfig) { prettyPrint = false }
 }
