@@ -46,20 +46,16 @@ class BestillingMottak(
     }
 
     @WithSpan
-    fun process(melding: Melding, ekstraSjekk: Boolean = false) {
+    fun process(melding: Melding) {
         handleSpanException {
             val (bestilling, rader) =
                 when (melding.rapportType) {
                     RapportType.`ref-arbg` -> {
                         val bestilling = RefusjonsRapportBestilling.decode(melding.data)
-                        if (ekstraSjekk) {
-                            bestilling.valider()
-                        }
                         bestilling to bestilling.datarec.size
                     }
                     RapportType.`trekk-kred` -> {
                         val bestilling = TrekkKredRapportBestilling.decode(melding.data)
-                        // TODO Skal vi implementere "ekstraSjekk" eller er dette strengt tatt nødvendig for T14?
                         bestilling to
                             bestilling.brukerData.brevinfo.variableFelter.ur.arkivRefList.sumOf {
                                 it.enhetList.sumOf { it.trekkLinjeList.size }
@@ -70,6 +66,21 @@ class BestillingMottak(
                         bestilling to with(bestilling.trekkhendelse) { (namsmannMelding?.size ?: 0) + (kreditorMelding?.size ?: 0) }
                     }
                 }
+
+            // Valider konsistens i bestillingen
+            bestilling
+                .valideringsFeil()
+                .takeIf { it.isNotEmpty() }
+                ?.let {
+                    throw IllegalArgumentException(
+                        """Bestillingen validerer ikke; fant følgende problemer:
+                        |${it.joinToString("\n|")}
+                        """
+                            .trimMargin()
+                            .trim()
+                    )
+                }
+
             logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
             val _ = rapportService.lagreBestilling(melding.kilde, melding.rapportType, melding.data)
             BestillingProsessor.nudge()

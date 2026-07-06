@@ -20,60 +20,49 @@ import no.nav.sokos.utils.OrgNr
 
 @Serializable
 data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data>) : RapportBestillingMsg() {
-    fun valider() {
+    override fun valideringsFeil(): List<String> =
         listOfNotNull(
-                // alle orgnr skal være gyldige
-                buildSet {
-                        add(header.orgnr)
-                        addAll(datarec.map { it.bedriftsnummer })
-                    }
-                    .filterNot { it.erGyldig() }
-                    .takeIf { it.isNotEmpty() }
-                    ?.map { it.raw }
-                    ?.let { "Ikke gyldig orgnr: ${it.sorted().joinToString()}" },
-                // alle fnr skal være gyldige
-                datarec
-                    .map { it.fnr }
-                    .toSet()
-                    .filterNot { it.erGyldig() }
-                    .takeIf { it.isNotEmpty() }
-                    ?.map { it.raw }
-                    ?.let { "Ikke gyldig fnr: ${it.sorted().joinToString()}" },
-                // bankkonto skal kun inneholde siffer, i riktig antall
-                header.bankkonto.takeUnless { it.erGyldig() }?.let { "Ikke gyldig bankkonto: ${it.raw}" },
-                // valutert dato kan ikke være for gammel (grense valgt på måfå) eller i fremtiden
-                if (header.valutert.isAfter(LocalDate.now())) {
-                    "Fremtidig dato for valutering: ${header.valutert}"
-                } else if (header.valutert.isBefore(LocalDate.ofEpochDay(0))) {
-                    "For gammel dato for valutering: ${header.valutert}"
-                } else {
-                    null
-                },
-                // Alle beløp skal være angitt med nøyaktig 2 desimaler
-                buildSet {
-                        add(header.sumBelop)
-                        addAll(datarec.map { it.belop })
-                    }
-                    .filterNot { Belop(it).verdi == it }
-                    .takeIf { it.isNotEmpty() }
-                    ?.let { "Ikke gyldig beløp: ${it.joinToString()}" },
-                // Summen av alle posterings-beløpene skal være likt sum-beløpet
-                datarec
-                    .sumOf { it.belop }
-                    .takeUnless { it == header.sumBelop }
-                    ?.let { "header.sumBelop (${header.sumBelop}) stemmer ikke med summen av posteringer: $it" },
-            )
-            .takeIf { it.isNotEmpty() }
-            ?.let {
-                throw IllegalArgumentException(
-                    """Bestillingen validerer ikke; fant følgende problemer:
-                        |${it.joinToString("\n|")}
-                    """
-                        .trimMargin()
-                        .trim()
-                )
-            }
-    }
+            // alle orgnr skal være gyldige
+            buildSet {
+                    add(header.orgnr)
+                    addAll(datarec.map { it.bedriftsnummer })
+                }
+                .filterNot { it.erGyldig() }
+                .takeIf { it.isNotEmpty() }
+                ?.map { it.raw }
+                ?.let { "Ikke gyldig orgnr: ${it.sorted().joinToString()}" },
+            // alle fnr skal være gyldige
+            datarec
+                .map { it.fnr }
+                .toSet()
+                .filterNot { it.erGyldig() }
+                .takeIf { it.isNotEmpty() }
+                ?.map { it.raw }
+                ?.let { "Ikke gyldig fnr: ${it.sorted().joinToString()}" },
+            // bankkonto skal kun inneholde siffer, i riktig antall
+            header.bankkonto.takeUnless { it.erGyldig() }?.let { "Ikke gyldig bankkonto: ${it.raw}" },
+            // valutert dato kan ikke være for gammel (grense valgt på måfå) eller i fremtiden
+            if (header.valutert.isAfter(LocalDate.now())) {
+                "Fremtidig dato for valutering: ${header.valutert}"
+            } else if (header.valutert.isBefore(LocalDate.ofEpochDay(0))) {
+                "For gammel dato for valutering: ${header.valutert}"
+            } else {
+                null
+            },
+            // Alle beløp skal være angitt med nøyaktig 2 desimaler
+            buildSet {
+                    add(header.sumBelop)
+                    addAll(datarec.map { it.belop })
+                }
+                .filterNot { Belop(it).verdi == it }
+                .takeIf { it.isNotEmpty() }
+                ?.let { "Ikke gyldig beløp: ${it.joinToString()}" },
+            // Summen av alle posterings-beløpene skal være likt sum-beløpet
+            datarec
+                .sumOf { it.belop }
+                .takeUnless { it == header.sumBelop }
+                ?.let { "header.sumBelop (${header.sumBelop}) stemmer ikke med summen av posteringer: $it" },
+        )
 
     override fun nevntInfo(): List<UlagretRapport.NevntInfo> =
         listOf(UlagretRapport.NevntVersjon(1)) +
