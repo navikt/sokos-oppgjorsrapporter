@@ -39,8 +39,8 @@ data class TrekkKredRapportBestilling(
             // Orgnr skal være gyldige
             urData.orgnummer.takeUnless { it.erGyldig() }?.let { "Ikke gyldig orgnr: ${it.raw}" },
 
-            // kontonummer skal være gyldig
-            urData.kontonummer?.takeUnless { it.erGyldig() }?.let { "Ikke gyldig kontonummer: ${it.raw}" },
+            // kontonummer skal ikke være null
+            if (urData.kontonummer == null) "Kontonummer må være angitt" else null,
 
             // Totalsum skal være lik delsummene i alle arkiv referansene
             Pair(urData.sumTotal.belop, urData.arkivRefList.sumOf { it.delsumRef.belop })
@@ -122,8 +122,10 @@ data class TrekkKredRapportBestilling(
     data class VariableFelter(@get:JacksonXmlProperty(localName = "UR") val ur: UR)
 
     data class UR(
+        // TODO Dette må endres for å kunne motta trekkoppgjør til fnr (TOB-6780)
         @JsonDeserialize(using = OrgnrDeserializer::class) val orgnummer: OrgNr,
         val kreditor: String,
+        // kontonummer kan være utenlandsk eller norsk konto, i motsettning til ref-arbg
         @JsonDeserialize(using = BankkontoDeserializer::class) val kontonummer: Bankkonto?,
         @get:JacksonXmlProperty(localName = "tssid") val tssId: String,
         @get:JacksonXmlProperty(localName = "rapfom")
