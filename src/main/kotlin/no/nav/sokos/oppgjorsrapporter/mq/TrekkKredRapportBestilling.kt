@@ -33,6 +33,44 @@ data class TrekkKredRapportBestilling(
                 .map { UlagretRapport.NevntFnr(it.fnr) }
                 .distinct()
 
+    override fun valideringsFeil(): List<String> {
+        val urData = brukerData.brevinfo.variableFelter.ur
+        return listOfNotNull(
+            // Orgnr skal være gyldige
+            urData.orgnummer.takeUnless { it.erGyldig() }?.let { "Ikke gyldig orgnr: ${it.raw}" },
+
+            // kontonummer skal ikke være null
+            if (urData.kontonummer == null) "Kontonummer må være angitt" else null,
+
+            // Totalsum skal være lik delsummene i alle arkiv referansene
+            Pair(urData.sumTotal.belop, urData.arkivRefList.sumOf { it.delsumRef.belop })
+                .takeUnless { (tot, sumArkivRef) -> tot == sumArkivRef }
+                ?.let { (tot, sumArkivRef) -> "Totalsum for bestilling ($tot) stemmer ikke med summen av arkivrefs ($sumArkivRef)" },
+            // For hver arkivreferanse skal delsummen være lik delsummene for enheter
+            *(urData.arkivRefList
+                .map { arkivRef ->
+                    Pair(arkivRef.delsumRef.belop, arkivRef.enhetList.sumOf { it.delsum.belop })
+                        .takeUnless { (delsumArkivRef, sumEnheter) -> delsumArkivRef == sumEnheter }
+                        ?.let { (delsumArkivRef, sumEnheter) ->
+                            "I arkivref ${arkivRef.nr} stemmer ikke delsum ($delsumArkivRef) med summen av dens enheter ($sumEnheter)"
+                        }
+                }
+                .toTypedArray()),
+            // For hver enhet skal summen av trekklinjene være lik delsum enhet
+            *(urData.arkivRefList
+                .flatMap { arkivRef ->
+                    arkivRef.enhetList.map { enhet ->
+                        Pair(enhet.delsum.belop, enhet.trekkLinjeList.sumOf { it.belop })
+                            .takeUnless { (delsumEnhet, sumTrekklinjer) -> delsumEnhet == sumTrekklinjer }
+                            ?.let { (delsumEnhet, sumTrekklinjer) ->
+                                "I arkivref/enhet ${arkivRef.nr}/${enhet.enhetnr} stemmer ikke delsum ($delsumEnhet) med summen av dens trekklinjer ($sumTrekklinjer)"
+                            }
+                    }
+                }
+                .toTypedArray()),
+        )
+    }
+
     companion object {
         val kotlinModule = KotlinModule.Builder().enable(KotlinFeature.StrictNullChecks).build()
 
@@ -84,8 +122,10 @@ data class TrekkKredRapportBestilling(
     data class VariableFelter(@get:JacksonXmlProperty(localName = "UR") val ur: UR)
 
     data class UR(
+        // TODO Dette må endres for å kunne motta trekkoppgjør til fnr (TOB-6780)
         @JsonDeserialize(using = OrgnrDeserializer::class) val orgnummer: OrgNr,
         val kreditor: String,
+        // kontonummer kan være utenlandsk eller norsk konto, i motsettning til ref-arbg
         @JsonDeserialize(using = BankkontoDeserializer::class) val kontonummer: Bankkonto?,
         @get:JacksonXmlProperty(localName = "tssid") val tssId: String,
         @get:JacksonXmlProperty(localName = "rapfom")

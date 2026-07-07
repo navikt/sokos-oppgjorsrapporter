@@ -300,17 +300,13 @@ fun Route.rapportApi() {
                     val rType = RapportType.valueOf(rapportType)
                     when (val bruker = autentisertBruker()) {
                         is EntraId ->
-                            runCatching {
-                                    bestillingMottak.process(
-                                        Melding("REST auth=${bruker.navIdent}", rType, call.receiveText()),
-                                        ekstraSjekk = true,
-                                    )
-                                }
+                            runCatching { bestillingMottak.process(Melding("REST auth=${bruker.navIdent}", rType, call.receiveText())) }
                                 .fold(
                                     onSuccess = {
                                         return@post call.respond(HttpStatusCode.NoContent)
                                     },
                                     onFailure = {
+                                        logger.warn(TEAM_LOGS_MARKER, it) { "Feil i bestilling" }
                                         return@post when (it) {
                                             is SerializationException ->
                                                 call.respond(HttpStatusCode.BadRequest, "Feil i bestilling: ${it.message}")

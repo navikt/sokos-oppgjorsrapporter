@@ -37,6 +37,9 @@ data class TrekkHendBestilling(
                     }
             }.distinct()
 
+    // Vi gjør ikke noe validering for trekk-hend bestillinger.
+    override fun valideringsFeil(): List<String> = emptyList()
+
     init {
         when (typeMottaker) {
             TypeMottaker.kreditor -> {
