@@ -90,8 +90,16 @@ import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
 private val logger = KotlinLogging.logger {}
 
 fun main() {
+    logger.info { "Applikasjonen starter opp" }
+    logger.info(TEAM_LOGS_MARKER) { "Applikasjonen starter opp" }
     embeddedServer(Netty, port = 8080, module = Application::module)
-        .also { it.addShutdownHook { it.stop(shutdownGracePeriod = 3, shutdownTimeout = 5, timeUnit = TimeUnit.SECONDS) } }
+        .also {
+            it.addShutdownHook {
+                logger.info { "Applikasjonen avslutter" }
+                logger.info(TEAM_LOGS_MARKER) { "Applikasjonen avslutter" }
+                it.stop(shutdownGracePeriod = 3, shutdownTimeout = 5, timeUnit = TimeUnit.SECONDS)
+            }
+        }
         .start(true)
 }
 
