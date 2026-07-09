@@ -12,14 +12,14 @@ APIet brukes bl.a. av [sokos-oppgjorsrapporter-selvbetjening-frontend](https://g
 ## Workflows
 
 1. [Deploy application](.github/workflows/deploy.yaml) -> For å bygge/teste prosjektet, bygge/pushe Docker image og deploy til dev og prod
-    1. Denne workflow trigges når kode pushes i `main` branch
+   1. Trigges når kode pushes til `main`-branchen
+   2. Kjøres automatisk (for `main`) en gang i måneden
+   3. Kan kjøres manuelt ved behov; om man velger en annen branch enn `main` vil det kun gjøres deploy til dev
 2. [Build/test PR](.github/workflows/build-pr.yaml) -> For å bygge og teste alle PR som blir opprettet og gjør en sjekk på branch prefix og title
     1. Denne workflow kjøres kun når det opprettes pull requester
 3. [Security](.github/workflows/security.yaml) -> For å skanne kode og docker image for sårbarheter. Kjøres hver morgen kl 06:00
     1. Denne kjøres når [Deploy application](.github/workflows/deploy.yaml) har kjørt ferdig
-4. [Deploy application manual](.github/workflows/manual-deploy.yaml) -> For å deploye applikasjonen manuelt til ulike miljøer
-    1. Denne workflow trigges manuelt basert på branch og miljø
-5. [DB migration lint check](.github/workflows/db-migrationcheck.yml) -> Bruker [squawk](https://squawkhq.com/) til å gi tips om feil/forbedringer i nye database-migreringer
+4. [DB migration lint check](.github/workflows/db-migrationcheck.yml) -> Bruker [squawk](https://squawkhq.com/) til å gi tips om feil/forbedringer i nye database-migreringer
     1. Trigges ved opprettelse/oppdatering av pull requests med target-branch `main`
 
 ## Bygge og kjøre prosjekt

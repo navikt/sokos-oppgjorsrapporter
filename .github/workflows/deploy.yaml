@@ -8,15 +8,16 @@ on:
     paths-ignore:
       - '**.md'
       - 'LICENCE'
-      - 'CODEOWNERS'
       - '.gitignore'
       - '.editorconfig'
       - 'setupLocalEnvironment.sh'
       - 'dokumentasjon/**'
-      - '.github/workflows/build-pr.yaml'
-      - '.github/workflows/manual-deploy.yaml'
-      - '.github/workflows/security.yaml'
+      - '.github/CODEOWNERS'
       - '.github/dependabot.yaml'
+      - '.github/workflows/build-pr.yaml'
+      - '.github/workflows/db-migrationcheck.yml'
+      - '.github/workflows/deploy-alerts.yaml'
+      - '.github/workflows/security.yaml'
   schedule:
     # Deploy den 3. i hver måned kl. 08.51 (så er vi innafor "bygg og deploy minst hver 3. måned"-etterlevelseskravet)
     - cron: "51 8 3 * *"
