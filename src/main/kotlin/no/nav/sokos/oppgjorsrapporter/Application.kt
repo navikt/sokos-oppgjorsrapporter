@@ -1,7 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter
 
 import ch.qos.logback.classic.LoggerContext
-import ch.qos.logback.core.status.OnConsoleStatusListener
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache5.Apache5
@@ -19,7 +18,6 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.plugin
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
-import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.addShutdownHook
 import io.ktor.server.engine.embeddedServer
@@ -94,19 +92,6 @@ import org.slf4j.LoggerFactory
 private val logger = KotlinLogging.logger {}
 
 fun main() {
-    // Registrer en status-listener som skriver evt. interne logback-feil til konsollet, før vi gjør første forsøk på å sende en logglinje
-    // til Team Logs.
-    val lc: LoggerContext = LoggerFactory.getILoggerFactory() as LoggerContext
-    val statusManager = lc.statusManager
-    val oldStatuses = statusManager.copyOfStatusList
-    val listener = OnConsoleStatusListener()
-    statusManager.add(listener)
-    // I tilfelle det allerede har oppstått feil før vi fikk registrert en listener: Be listener-en om å håndtere tidligere feil, også.
-    if (oldStatuses.isNotEmpty()) {
-        logger.info { "Skriver ut ${oldStatuses.size} gamle Logback-statuser (i.e. intern-feil)" }
-        oldStatuses.forEach { listener.addStatusEvent(it) }
-    }
-
     logger.info { "Applikasjonen starter opp" }
     logger.info(TEAM_LOGS_MARKER) { "Applikasjonen starter opp" }
     embeddedServer(Netty, port = 8080, module = Application::module)
@@ -116,7 +101,7 @@ fun main() {
                 logger.info(TEAM_LOGS_MARKER) { "Applikasjonen avslutter" }
                 it.stop(shutdownGracePeriod = 3, shutdownTimeout = 5, timeUnit = TimeUnit.SECONDS)
                 // Lukk LoggerContext (og dermed alle log-appendere) så vi ikke mister bufrede logg-linjer
-                lc.stop()
+                (LoggerFactory.getILoggerFactory() as LoggerContext).stop()
             }
         }
         .start(true)

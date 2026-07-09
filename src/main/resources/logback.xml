@@ -1,5 +1,9 @@
 <configuration>
-    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+    <!--
+     Vi opplever at applikasjonen noen ganger må ha logget ting til team logs - som vi så ikke finner der.
+     Under debugging av dette kan det være greit om "interne feil" i Logback skrives til stdout.
+    -->
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
 
     <!--
       Appenderne "console-json" og "team-logs" er ment å være enten/eller - et log-kall skal aldri ende opp i begge.
