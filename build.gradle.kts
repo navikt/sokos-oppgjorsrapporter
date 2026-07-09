@@ -3,7 +3,6 @@ group = "no.nav.sokos"
 val flywayVersion = "12.6.1"
 val hikariVersion = "7.0.2"
 val ibmMqVersion = "9.4.5.1"
-val janinoVersion = "3.1.12"
 val jacksonVersion ="3.1.3"
 val junitVersion = "6.0.3"
 val jsonUnitVersion = "5.1.1"
@@ -13,7 +12,7 @@ val kotlinLoggingVersion = "3.0.5"
 val kotlinxSerializationVersion = "1.11.0"
 val kotliqueryVersion = "1.9.1"
 val ktorVersion = "3.4.3"
-val logbackVersion = "1.5.32"
+val logbackVersion = "1.5.37"
 val logstashVersion = "9.0"
 val micrometerVersion = "1.17.0-RC1"
 val mockOAuth2ServerVersion = "3.0.3"
@@ -97,7 +96,6 @@ dependencies {
 
     // Logging
     implementation("io.github.microutils:kotlin-logging-jvm:$kotlinLoggingVersion")
-    runtimeOnly("org.codehaus.janino:janino:$janinoVersion")
     runtimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
     runtimeOnly("net.logstash.logback:logstash-logback-encoder:$logstashVersion")
 
