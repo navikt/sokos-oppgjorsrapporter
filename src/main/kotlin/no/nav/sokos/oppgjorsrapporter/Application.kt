@@ -1,6 +1,7 @@
 package no.nav.sokos.oppgjorsrapporter
 
 import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.core.status.OnConsoleStatusListener
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache5.Apache5
@@ -92,6 +93,11 @@ import org.slf4j.LoggerFactory
 private val logger = KotlinLogging.logger {}
 
 fun main() {
+    // Registrer en status-listener som skriver evt. interne logback-feil til konsollet, før vi gjør første forsøk på å sende en logglinje
+    // til Team Logs.
+    val lc: LoggerContext = LoggerFactory.getILoggerFactory() as LoggerContext
+    lc.statusManager.add(OnConsoleStatusListener())
+
     logger.info { "Applikasjonen starter opp" }
     logger.info(TEAM_LOGS_MARKER) { "Applikasjonen starter opp" }
     embeddedServer(Netty, port = 8080, module = Application::module)
@@ -101,7 +107,7 @@ fun main() {
                 logger.info(TEAM_LOGS_MARKER) { "Applikasjonen avslutter" }
                 it.stop(shutdownGracePeriod = 3, shutdownTimeout = 5, timeUnit = TimeUnit.SECONDS)
                 // Lukk LoggerContext (og dermed alle log-appendere) så vi ikke mister bufrede logg-linjer
-                (LoggerFactory.getILoggerFactory() as LoggerContext).stop()
+                lc.stop()
             }
         }
         .start(true)
