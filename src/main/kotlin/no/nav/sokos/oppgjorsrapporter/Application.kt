@@ -19,6 +19,7 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.plugin
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
+import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.addShutdownHook
 import io.ktor.server.engine.embeddedServer
@@ -96,7 +97,15 @@ fun main() {
     // Registrer en status-listener som skriver evt. interne logback-feil til konsollet, før vi gjør første forsøk på å sende en logglinje
     // til Team Logs.
     val lc: LoggerContext = LoggerFactory.getILoggerFactory() as LoggerContext
-    lc.statusManager.add(OnConsoleStatusListener())
+    val statusManager = lc.statusManager
+    val oldStatuses = statusManager.copyOfStatusList
+    val listener = OnConsoleStatusListener()
+    statusManager.add(listener)
+    // I tilfelle det allerede har oppstått feil før vi fikk registrert en listener: Be listener-en om å håndtere tidligere feil, også.
+    if (oldStatuses.isNotEmpty()) {
+        logger.info { "Skriver ut ${oldStatuses.size} gamle Logback-statuser (i.e. intern-feil)" }
+        oldStatuses.forEach { listener.addStatusEvent(it) }
+    }
 
     logger.info { "Applikasjonen starter opp" }
     logger.info(TEAM_LOGS_MARKER) { "Applikasjonen starter opp" }
