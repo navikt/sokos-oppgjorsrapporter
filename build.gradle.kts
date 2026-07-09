@@ -96,7 +96,7 @@ dependencies {
 
     // Logging
     implementation("io.github.microutils:kotlin-logging-jvm:$kotlinLoggingVersion")
-    runtimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
+    implementation("ch.qos.logback:logback-classic:$logbackVersion")
     runtimeOnly("net.logstash.logback:logstash-logback-encoder:$logstashVersion")
 
     // Inntil vi får tenkt gjennom om vi vil gjøre serialization etc. annerledes så henter vi inn Team HAG sine utils
