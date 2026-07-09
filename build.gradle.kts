@@ -13,6 +13,7 @@ val kotlinxSerializationVersion = "1.11.0"
 val kotliqueryVersion = "1.9.1"
 val ktorVersion = "3.4.3"
 val logbackVersion = "1.5.37"
+val logbackHttpVersion = "1.1.1"
 val logstashVersion = "9.0"
 val micrometerVersion = "1.17.0-RC1"
 val mockOAuth2ServerVersion = "3.0.3"
@@ -98,6 +99,7 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging-jvm:$kotlinLoggingVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     runtimeOnly("net.logstash.logback:logstash-logback-encoder:$logstashVersion")
+    runtimeOnly("de.idealo.whitelabels:logstash-logback-http:$logbackHttpVersion")
 
     // Inntil vi får tenkt gjennom om vi vil gjøre serialization etc. annerledes så henter vi inn Team HAG sine utils
     implementation("no.nav.helsearbeidsgiver:altinn-pdp-client:${pdpClientVersion}")
