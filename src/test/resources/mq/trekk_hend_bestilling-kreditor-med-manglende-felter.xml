@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<hendelseMottaker xmlns:urn="urn:no:nav:maskinelletrekk:trekkhendelser:v1">
+  <malPakke>UR.T12</malPakke>
+  <typeMottaker>kreditor</typeMottaker>
+  <orgNr>859503241</orgNr>
+  <orgNavn>McDuck inkasso AS</orgNavn>
+  <orgAdresse>
+    <adresselinje1>Postboks 313</adresselinje1>
+    <postnr>3158</postnr>
+    <poststed>ANDEBY</poststed>
+  </orgAdresse>
+  <dato>2026-04-21</dato>
+  <trekkhendelse>
+    <kreditorMelding>
+      <namsmannsOrgNr>087453421</namsmannsOrgNr>
+      <namsmannsNavn>NAMSFOGDEN I ANDEBY</namsmannsNavn>
+      <debitorsFnr>18453866986</debitorsFnr>
+      <debitorsNavn>Donald Duck</debitorsNavn>
+      <typeHendelse>Ingen ytelse</typeHendelse>
+    </kreditorMelding>
+    <kreditorMelding>
+      <kreditorsKidRef>0103064541812328464</kreditorsKidRef>
+      <debitorsFnr>22468528375</debitorsFnr>
+      <debitorsNavn>Gulbrand Gråstein</debitorsNavn>
+      <typeHendelse>Opphør ytelse</typeHendelse>
+    </kreditorMelding>
+    <kreditorMelding>
+        <debitorsFnr>28482019570</debitorsFnr>
+        <debitorsNavn>Petter Smart</debitorsNavn>
+        <typeHendelse>Opphør ytelse</typeHendelse>
+    </kreditorMelding>
+  </trekkhendelse>
+</hendelseMottaker>
