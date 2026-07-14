@@ -25,6 +25,25 @@ class TrekkHendCsvTest :
 
             assertThat(faktisk).isEqualTo(forventet)
         }
+        test("Generert CSV for trekk-hend (kreditor) har riktig format selv når noen felter mangler") {
+            val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-kreditor-med-manglende-felter.xml"))
+
+            val forventet =
+                listOf(
+                        "H;kreditor;21.04.2026;859503241;McDuck inkasso AS;Postboks 313;;;3158;ANDEBY;",
+                        "T;087453421;NAMSFOGDEN I ANDEBY;;18453866986;Donald Duck;Ingen ytelse;",
+                        "T;;;0103064541812328464;22468528375;Gulbrand Gråstein;Opphør ytelse;",
+                        "T;;;;28482019570;Petter Smart;Opphør ytelse;",
+                    )
+                    .joinToString("\r\n") + "\r\n"
+            val faktisk = bestilling.toCsv()
+
+            println("Versjon 1 med sumlinjer etter alle enheter")
+            println("------------------------------------------")
+            println(faktisk)
+
+            assertThat(faktisk).isEqualTo(forventet)
+        }
 
         test("Generert CSV for trekk-hend (namsmann) har riktig format") {
             val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-namsmann.xml"))
@@ -35,6 +54,25 @@ class TrekkHendCsvTest :
                         "T;859503241;McDuck inkasso AS;0107036257420540624;18453866986;Donald Duck;Ingen ytelse;",
                         "T;134907843;RIKERUD COLLECTION AS;5900562964792591;24508924131;Guffen Gås;Ingen ytelse;",
                         "T;134907843;RIKERUD COLLECTION AS;01626785861606857982;28482019570;Petter Smart;Opphør ytelse;",
+                    )
+                    .joinToString("\r\n") + "\r\n"
+            val faktisk = bestilling.toCsv()
+
+            println("Versjon 1 med sumlinjer etter alle enheter")
+            println("------------------------------------------")
+            println(faktisk)
+
+            assertThat(faktisk).isEqualTo(forventet)
+        }
+        test("Generert CSV for trekk-hend (namsmann) har riktig format selv når noen felter mangler") {
+            val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-namsmann-med-manglende-felter.xml"))
+
+            val forventet =
+                listOf(
+                        "H;namsmann;21.04.2026;087453421;NAMSFOGDEN I ANDEBY;Postboks 313;;;3158;;",
+                        "T;859503241;McDuck inkasso AS;;18453866986;Donald Duck;Ingen ytelse;",
+                        "T;;;5900562964792591;24508924131;Guffen Gås;Ingen ytelse;",
+                        "T;;;;28482019570;Petter Smart;Opphør ytelse;",
                     )
                     .joinToString("\r\n") + "\r\n"
             val faktisk = bestilling.toCsv()

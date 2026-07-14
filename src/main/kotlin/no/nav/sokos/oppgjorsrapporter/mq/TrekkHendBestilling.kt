@@ -26,15 +26,9 @@ data class TrekkHendBestilling(
     override fun nevntInfo(): List<UlagretRapport.NevntInfo> =
         listOf(UlagretRapport.NevntVersjon(1)) +
             when (typeMottaker) {
-                TypeMottaker.kreditor ->
-                    trekkhendelse.kreditorMelding!!.flatMap {
-                        listOf(UlagretRapport.NevntFnr(it.debitorsFnr), UlagretRapport.NevntUnderenhet(it.namsmannsOrgNr))
-                    }
+                TypeMottaker.kreditor -> trekkhendelse.kreditorMelding!!.flatMap { listOf(UlagretRapport.NevntFnr(it.debitorsFnr)) }
 
-                TypeMottaker.namsmann ->
-                    trekkhendelse.namsmannMelding!!.flatMap {
-                        listOf(UlagretRapport.NevntFnr(it.debitorsFnr), UlagretRapport.NevntUnderenhet(it.kreditorsOrgNr))
-                    }
+                TypeMottaker.namsmann -> trekkhendelse.namsmannMelding!!.flatMap { listOf(UlagretRapport.NevntFnr(it.debitorsFnr)) }
             }.distinct()
 
     // Vi gjør ikke noe validering for trekk-hend bestillinger.
@@ -87,18 +81,18 @@ data class TrekkHendBestilling(
         @JacksonXmlElementWrapper(useWrapping = false) val namsmannMelding: List<NamsmannMelding>? = null,
     ) {
         data class KreditorMelding(
-            @JsonDeserialize(using = OrgnrDeserializer::class) val namsmannsOrgNr: OrgNr,
-            val namsmannsNavn: String,
-            val kreditorsKidRef: String,
+            @JsonDeserialize(using = OrgnrDeserializer::class) val namsmannsOrgNr: OrgNr?,
+            val namsmannsNavn: String?,
+            val kreditorsKidRef: String?,
             val debitorsFnr: Fnr,
             val debitorsNavn: String,
             val typeHendelse: String,
         )
 
         data class NamsmannMelding(
-            @JsonDeserialize(using = OrgnrDeserializer::class) val kreditorsOrgNr: OrgNr,
-            val kreditorsNavn: String,
-            val kreditorsKidRef: String,
+            @JsonDeserialize(using = OrgnrDeserializer::class) val kreditorsOrgNr: OrgNr?,
+            val kreditorsNavn: String?,
+            val kreditorsKidRef: String?,
             val debitorsFnr: Fnr,
             val debitorsNavn: String,
             val typeHendelse: String,

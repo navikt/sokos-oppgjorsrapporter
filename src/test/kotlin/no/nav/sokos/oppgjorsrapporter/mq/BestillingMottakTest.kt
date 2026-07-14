@@ -106,11 +106,49 @@ class BestillingMottakTest :
                 }
             }
 
+            test("BestillingMottak klarer å hente en 'trekk-hend'-melding (til kreditor) med manglende felter fra MQ") {
+                val service: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
+                    val config = application.config()
+                    val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-kreditor-med-manglende-felter.xml")?.readText()!!
+
+                    val applicationState: ApplicationState = application.dependencies.resolve()
+                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!, dokument, config.mq)
+
+                        eventually(5.seconds) {
+                            verify(exactly = 1) {
+                                val _ = service.lagreBestilling(any(), any(), any())
+                            }
+                        }
+                    }
+                }
+            }
+
             test("BestillingMottak klarer å hente en gyldig 'trekk-hend'-melding (til namsmann) fra MQ") {
                 val service: RapportService = mockk(relaxed = true)
                 TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
                     val config = application.config()
                     val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-namsmann.xml")?.readText()!!
+
+                    val applicationState: ApplicationState = application.dependencies.resolve()
+                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!, dokument, config.mq)
+
+                        eventually(5.seconds) {
+                            verify(exactly = 1) {
+                                val _ = service.lagreBestilling(any(), any(), any())
+                            }
+                        }
+                    }
+                }
+            }
+
+            test("BestillingMottak klarer å hente en 'trekk-hend'-melding (til namsmann) med manglende felter fra MQ") {
+                val service: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
+                    val config = application.config()
+                    val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-namsmann-med-manglende-felter.xml")?.readText()!!
 
                     val applicationState: ApplicationState = application.dependencies.resolve()
                     applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {

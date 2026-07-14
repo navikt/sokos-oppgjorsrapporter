@@ -30,9 +30,9 @@ fun TrekkHendBestilling.toCsv(): String {
                     kreditorMelding!!.map { melding ->
                         listOf(
                             "T",
-                            melding.namsmannsOrgNr.raw,
-                            melding.namsmannsNavn,
-                            melding.kreditorsKidRef,
+                            melding.namsmannsOrgNr?.raw ?: "",
+                            melding.namsmannsNavn ?: "",
+                            melding.kreditorsKidRef ?: "",
                             melding.debitorsFnr.raw,
                             melding.debitorsNavn,
                             melding.typeHendelse,
@@ -45,9 +45,9 @@ fun TrekkHendBestilling.toCsv(): String {
                     namsmannMelding!!.map { melding ->
                         listOf(
                             "T",
-                            melding.kreditorsOrgNr.raw,
-                            melding.kreditorsNavn,
-                            melding.kreditorsKidRef,
+                            melding.kreditorsOrgNr?.raw ?: "",
+                            melding.kreditorsNavn ?: "",
+                            melding.kreditorsKidRef ?: "",
                             melding.debitorsFnr.raw,
                             melding.debitorsNavn,
                             melding.typeHendelse,
@@ -104,7 +104,7 @@ fun TrekkHendBestilling.mapTilTrekkHendPdfPayload(): TrekkHendPdfPayload =
                         TrekkHendPdfPayload.Melding(
                             Fodselsnummer(h.debitorsFnr),
                             h.debitorsNavn,
-                            OrgNummer(h.namsmannsOrgNr),
+                            h.namsmannsOrgNr?.let { OrgNummer(it) },
                             h.kreditorsKidRef,
                             h.typeHendelse,
                         )
@@ -122,5 +122,5 @@ data class TrekkHendPdfPayload(
     data class Mottaker(val type: TrekkHendBestilling.TypeMottaker, val orgnr: OrgNummer, val navn: String?, val adresse: String?)
 
     @Serializable
-    data class Melding(val fnr: Fodselsnummer, val navn: String, val namsmannOrgnr: OrgNummer?, val kid: String, val hendelse: String)
+    data class Melding(val fnr: Fodselsnummer, val navn: String, val namsmannOrgnr: OrgNummer?, val kid: String?, val hendelse: String)
 }
