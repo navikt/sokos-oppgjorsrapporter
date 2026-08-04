@@ -21,7 +21,7 @@ jobs:
           echo "Migration files: $modified_migrations"
           echo "file_names=$modified_migrations" >> $GITHUB_OUTPUT
         id: modified-migrations
-      - uses: sbdchd/squawk-action@68d739e098ab69cf46c64fdbf6175bb29d195a16 # v2.0.1
+      - uses: sbdchd/squawk-action@8d113898e16c6cfd417ceba848b0edad97882be3 # v2.1.0
         with:
           files: ${{ steps.modified-migrations.outputs.file_names }}
           config: ".squawk.toml"
