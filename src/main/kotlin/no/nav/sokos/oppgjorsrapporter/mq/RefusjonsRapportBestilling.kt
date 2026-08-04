@@ -40,7 +40,15 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
                 ?.map { it.raw }
                 ?.let { "Ikke gyldig fnr: ${it.sorted().joinToString()}" },
             // bankkonto skal kun inneholde siffer, i riktig antall
-            header.bankkonto.takeUnless { it.erGyldig() }?.let { "Ikke gyldig bankkonto: ${it.raw}" },
+            header.bankkonto
+                .takeUnless {
+                    // Tillat kontonummer 0; brukes av UR-Z hvis Oppdrag ikke lenger kan sende et gyldig kontonr, typisk ved omposteringer
+                    // (som kan komme lang tid etter utbetalingen)
+                    it.raw.matches("^0+$".toRegex()) ||
+                        // For andre kontonr: sjekk at kontrollsiffer stemmer
+                        it.erGyldig()
+                }
+                ?.let { "Ikke gyldig bankkonto: ${it.raw}" },
             // valutert dato kan ikke være for gammel (grense valgt på måfå) eller i fremtiden
             if (header.valutert.isAfter(LocalDate.now())) {
                 "Fremtidig dato for valutering: ${header.valutert}"
