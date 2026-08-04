@@ -33,7 +33,7 @@ object TestContainer {
         }
     }
 
-    private val mqImage = "icr.io/ibm-messaging/mq:9.4.0.6-r1"
+    private val mqImage = "icr.io/ibm-messaging/mq:9.4.0.6-r2"
     val mq: MQContainer by lazy {
         MQContainer(DockerImageName.parse(mqImage))
             .acceptLicense()
