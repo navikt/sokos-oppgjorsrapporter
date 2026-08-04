@@ -25,10 +25,10 @@
         </filter>
     </appender>
 
-    <appender name="real-team-logs" class="de.idealo.whitelabels.logback.HttpAppender">
-        <httpClient class="de.idealo.whitelabels.logback.HttpClient">
-            <destination>http://team-logs.nais-system/</destination>
-        </httpClient>
+    <appender name="real-team-logs" class="tw.kewang.logback.appender.HttpAppender">
+        <url>team-logs.nais-system</url>
+        <port>80</port>
+        <method>POST</method>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${NAIS_POD_NAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
             <includeContext>false</includeContext>
