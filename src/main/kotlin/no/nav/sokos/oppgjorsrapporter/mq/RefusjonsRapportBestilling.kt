@@ -35,6 +35,10 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
             datarec
                 .map { it.fnr }
                 .toSet()
+                // Korrigeringsposteringer kan bli lagt på mottakende orgnr (prefikset med nok 0-er til å se ut som et fnr) i stedet for en
+                // person; i slike tilfeller sendes rapport-mottaker pr. brev en forklaring på hvordan ting egentlig henger sammen.
+                // For valideringen betyr dette at vi ikke skal forsøke å Fnr-validere posteringer der "fnr" egentlig er mottakers orgnr.
+                .filterNot { it.raw.removePrefix("00") == header.orgnr.raw }
                 .filterNot { it.erGyldig() }
                 .takeIf { it.isNotEmpty() }
                 ?.map { it.raw }
