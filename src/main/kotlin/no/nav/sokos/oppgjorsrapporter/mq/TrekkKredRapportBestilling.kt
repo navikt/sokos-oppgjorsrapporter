@@ -74,7 +74,7 @@ data class TrekkKredRapportBestilling(
     companion object {
         val kotlinModule = KotlinModule.Builder().enable(KotlinFeature.StrictNullChecks).build()
 
-        val xmlMapper =
+        private val xmlMapper =
             XmlMapper.builder()
                 .addModule(SimpleModule().apply { addDeserializer(String::class.java, TrimmingDeserializer()) })
                 .addModule(kotlinModule)
