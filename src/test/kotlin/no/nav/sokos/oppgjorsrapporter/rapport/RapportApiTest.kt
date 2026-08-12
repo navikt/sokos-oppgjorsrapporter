@@ -853,6 +853,88 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
     }
 
     @Test
+    fun `GET _api_rapport_v1_$id_utvidet returnerer alle rapporter for orgnr og type med variant-nedlastingsinfo`() {
+        TestUtil.loadDataSet("db/utvidet_rapport.sql", dbContainer.toDataSource())
+        val response =
+            client(validationFilter = null)
+                .get("/api/rapport/v1/2/utvidet")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
+                """
+                {
+                    "forespurtRapportId": 2,
+                    "orgnr": "111222333",
+                    "orgNavn": "Test Org",
+                    "type": "ref-arbg",
+                    "rapporter": [
+                        {
+                            "id": 1,
+                            "datoValutert": "2026-01-31",
+                            "varianterMedNedlastingsinfo": [
+                                {
+                                    "format": "pdf",
+                                    "filnavn": "111222333_ref-arbg_2026-01-31.pdf",
+                                    "sistLastetNed": null,
+                                    "sistLastetNedAv": null
+                                },
+                                {
+                                    "format": "csv",
+                                    "filnavn": "111222333_ref-arbg_2026-01-31.csv",
+                                    "sistLastetNed": null,
+                                    "sistLastetNedAv": null
+                                }
+                            ]
+                        },
+                        {
+                            "id": 2,
+                            "datoValutert": "2026-02-28",
+                            "varianterMedNedlastingsinfo": [
+                                {
+                                    "format": "pdf",
+                                    "filnavn": "111222333_ref-arbg_2026-02-28.pdf",
+                                    "sistLastetNed": "2026-03-01T10:00:00Z",
+                                    "sistLastetNedAv": "tokenx:sub=12345678901"
+                                },
+                                {
+                                    "format": "csv",
+                                    "filnavn": "111222333_ref-arbg_2026-02-28.csv",
+                                    "sistLastetNed": null,
+                                    "sistLastetNedAv": null
+                                }
+                            ]
+                        },
+                        {
+                            "id": 3,
+                            "datoValutert": "2026-03-31",
+                            "varianterMedNedlastingsinfo": [
+                                {
+                                    "format": "pdf",
+                                    "filnavn": "111222333_ref-arbg_2026-03-31.pdf",
+                                    "sistLastetNed": "2026-04-03T11:00:00Z",
+                                    "sistLastetNedAv": "systembruker:system=mitt-system"
+                                },
+                                {
+                                    "format": "csv",
+                                    "filnavn": "111222333_ref-arbg_2026-03-31.csv",
+                                    "sistLastetNed": null,
+                                    "sistLastetNedAv": null
+                                }
+                            ]
+                        }
+                    ]
+                }
+                    
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
     fun `GET _api_rapport_v1_$id_innhold (for id som ikke finnes) gir feilmelding`() {
         TestUtil.loadDataSet("db/multiple.sql", dbContainer.toDataSource())
         val NON_EXISTENT_ID = 4711

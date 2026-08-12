@@ -178,6 +178,12 @@ data class Rapport(
     val erArkivert: Boolean = arkivert != null
 }
 
+data class RapportMedNedlastningsinfo(val rapportId: Rapport.Id, val rapportInfo: RapportInfo, val varianter: List<VariantInfo>) {
+    data class RapportInfo(val orgnr: OrgNr, val orgNavn: OrgNavn?, val type: RapportType, val datoValutert: LocalDate)
+
+    data class VariantInfo(val format: VariantFormat, val filnavn: String, val sistLastetNedAv: String?, val sistLastetNed: Instant?)
+}
+
 enum class VariantFormat(val contentType: String) {
     Pdf("application/pdf"),
     Csv("text/csv");
@@ -188,7 +194,7 @@ enum class VariantFormat(val contentType: String) {
     }
 }
 
-private fun VariantFormat.extension(): String =
+fun VariantFormat.extension(): String =
     when (this) {
         VariantFormat.Csv -> "csv"
         VariantFormat.Pdf -> "pdf"

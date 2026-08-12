@@ -6,6 +6,7 @@ import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 import kotlinx.io.bytestring.ByteString
+import kotliquery.Row
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
@@ -258,6 +259,74 @@ class RapportRepository(private val clock: Clock) {
             .map { row -> Rapport(row) }
             .asList
             .let { tx.run(it) }
+
+    fun listRapporterMedNedlastningsinfo(
+        tx: TransactionalSession,
+        orgNr: OrgNr,
+        type: RapportType,
+        ekskluderteBrukerprefiks: String,
+    ): List<RapportMedNedlastningsinfo> {
+        data class RapportMedVariantInfo(
+            val rapportId: Rapport.Id,
+            val rapportInfo: RapportMedNedlastningsinfo.RapportInfo,
+            val variantInfo: RapportMedNedlastningsinfo.VariantInfo,
+        ) {
+
+            constructor(
+                row: Row
+            ) : this(
+                rapportId = Rapport.Id(row.long("rapport_id")),
+                rapportInfo =
+                    RapportMedNedlastningsinfo.RapportInfo(
+                        orgnr = OrgNr(row.string("orgnr")),
+                        orgNavn = row.stringOrNull("org_navn")?.let { OrgNavn(it) },
+                        datoValutert = row.localDate("dato_valutert"),
+                        type = RapportType.valueOf(row.string("rapport_type")),
+                    ),
+                variantInfo =
+                    RapportMedNedlastningsinfo.VariantInfo(
+                        format = VariantFormat.withContentType(row.string("format")),
+                        filnavn = row.string("filnavn"),
+                        sistLastetNed = row.instantOrNull("tidspunkt"),
+                        sistLastetNedAv = row.stringOrNull("brukernavn"),
+                    ),
+            )
+        }
+
+        // DISTINCT ON (rv.id) sammen med ORDER BY ra.tidspunkt DESC gir oss
+        // siste nedlasting per variant (eller null hvis ingen nedlasting).
+        return queryOf(
+                """
+                SELECT DISTINCT ON (rv.id) r.id    as rapport_id,
+                                           r.orgnr,
+                                           r.org_navn,
+                                           r.dato_valutert,
+                                           r.type   as rapport_type,
+                                           rv.format,
+                                           rv.filnavn,
+                                           ra.tidspunkt,
+                                           ra.brukernavn
+                FROM rapport.rapport r
+                         JOIN rapport.rapport_variant rv ON r.id = rv.rapport_id
+                         LEFT JOIN rapport.rapport_audit ra
+                                   ON rv.id = ra.variant_id AND ra.hendelse = 'VARIANT_NEDLASTET' AND ra.brukernavn NOT LIKE :ekskluderteBrukerprefiks
+                WHERE r.orgnr = :orgnr
+                  AND r.type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
+                ORDER BY rv.id, ra.tidspunkt DESC;
+                """
+                    .trimIndent(),
+                mapOf("orgnr" to orgNr.raw, "rapportType" to arrayOf(type.name), "ekskluderteBrukerprefiks" to "$ekskluderteBrukerprefiks%"),
+            )
+            .map { row -> RapportMedVariantInfo(row) }
+            .asList
+            .let { tx.run(it) }
+            .groupBy { it.rapportId }
+            .mapNotNull { (rapportId, rader) ->
+                val rapportInfo = rader.first().rapportInfo
+                val varianter = rader.map { r -> r.variantInfo }
+                RapportMedNedlastningsinfo(rapportId, rapportInfo, varianter)
+            }
+    }
 
     fun settDialogUuid(tx: TransactionalSession, rapportId: Rapport.Id, uuid: UUID): Int =
         queryOf(

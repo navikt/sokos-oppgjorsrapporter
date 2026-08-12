@@ -32,6 +32,8 @@ import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.Melding
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
+import no.nav.sokos.oppgjorsrapporter.rapport.Api.RapportMedNedlastingsinfoDTO
+import no.nav.sokos.oppgjorsrapporter.rapport.Api.VariantMedNedlastingsinfo
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
@@ -105,6 +107,30 @@ object Api {
             rapport.erArkivert,
         )
     }
+
+    @Serializable
+    data class VariantMedNedlastingsinfo(
+        val format: String,
+        val filnavn: String,
+        @Serializable(with = InstantAsStringSerializer::class) val sistLastetNed: Instant?,
+        val sistLastetNedAv: String?,
+    )
+
+    @Serializable
+    data class RapportMedNedlastingsinfoDTO(
+        val id: Rapport.Id,
+        val datoValutert: LocalDate,
+        val varianterMedNedlastingsinfo: List<VariantMedNedlastingsinfo>,
+    )
+
+    @Serializable
+    data class RapportMedNedlastingsinfoRespons(
+        val forespurtRapportId: Rapport.Id,
+        val orgnr: OrgNr,
+        val orgNavn: OrgNavn?,
+        val type: RapportType,
+        val rapporter: List<RapportMedNedlastingsinfoDTO>,
+    )
 }
 
 fun Route.rapportApi() {
@@ -244,6 +270,51 @@ fun Route.rapportApi() {
                 return@get call.respond(HttpStatusCode.NotFound)
             }
             call.respond(Api.RapportDTO(rapport))
+        }
+    }
+
+    get("/api/rapport/v1/{id}/utvidet") {
+        val id: Long by call.request.pathVariables
+        val rapportId = Rapport.Id(id)
+        autentisertBruker().let { bruker ->
+            val rapport = rapportService.finnRapport(rapportId) ?: return@get call.respond(HttpStatusCode.NotFound)
+            if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
+                return@get call.respond(HttpStatusCode.NotFound)
+            }
+
+            val rapporterMedNedlastningsinfo =
+                rapportService.listRapporterMedEksternNedlastningsinfo(orgnr = rapport.orgnr, type = rapport.type)
+
+            metrics.rapportUtvidetSokReturnertAntall
+                .withTags(listOf(Tag.of("auth_type", bruker.authType), Tag.of("rapporttype", rapport.type.name)))
+                .record(rapporterMedNedlastningsinfo.size.toDouble())
+
+            val foersteRapport = rapporterMedNedlastningsinfo.firstOrNull() ?: return@get call.respond(HttpStatusCode.NotFound)
+
+            call.respond(
+                Api.RapportMedNedlastingsinfoRespons(
+                    forespurtRapportId = rapportId,
+                    orgnr = foersteRapport.rapportInfo.orgnr,
+                    orgNavn = foersteRapport.rapportInfo.orgNavn,
+                    type = foersteRapport.rapportInfo.type,
+                    rapporter =
+                        rapporterMedNedlastningsinfo.map {
+                            RapportMedNedlastingsinfoDTO(
+                                id = it.rapportId,
+                                datoValutert = it.rapportInfo.datoValutert,
+                                varianterMedNedlastingsinfo =
+                                    it.varianter.map { vi ->
+                                        VariantMedNedlastingsinfo(
+                                            format = vi.format.extension(),
+                                            filnavn = vi.filnavn,
+                                            sistLastetNed = vi.sistLastetNed,
+                                            sistLastetNedAv = vi.sistLastetNedAv,
+                                        )
+                                    },
+                            )
+                        },
+                )
+            )
         }
     }
 
