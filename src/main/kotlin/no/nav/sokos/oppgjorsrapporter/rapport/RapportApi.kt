@@ -277,44 +277,50 @@ fun Route.rapportApi() {
         val id: Long by call.request.pathVariables
         val rapportId = Rapport.Id(id)
         autentisertBruker().let { bruker ->
-            val rapport = rapportService.finnRapport(rapportId) ?: return@get call.respond(HttpStatusCode.NotFound)
-            if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
-                return@get call.respond(HttpStatusCode.NotFound)
+            when (bruker) {
+                is EntraId,
+                is Systembruker -> return@get call.respond(HttpStatusCode.Forbidden)
+                else -> {
+                    val rapport = rapportService.finnRapport(rapportId) ?: return@get call.respond(HttpStatusCode.NotFound)
+                    if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
+                        return@get call.respond(HttpStatusCode.NotFound)
+                    }
+
+                    val rapporterMedNedlastningsinfo =
+                        rapportService.listRapporterMedEksternNedlastningsinfo(orgnr = rapport.orgnr, type = rapport.type)
+
+                    metrics.rapportUtvidetSokReturnertAntall
+                        .withTags(listOf(Tag.of("auth_type", bruker.authType), Tag.of("rapporttype", rapport.type.name)))
+                        .record(rapporterMedNedlastningsinfo.size.toDouble())
+
+                    val foersteRapport = rapporterMedNedlastningsinfo.firstOrNull() ?: return@get call.respond(HttpStatusCode.NotFound)
+
+                    call.respond(
+                        Api.RapportMedNedlastingsinfoRespons(
+                            forespurtRapportId = rapportId,
+                            orgnr = foersteRapport.rapportInfo.orgnr,
+                            orgNavn = foersteRapport.rapportInfo.orgNavn,
+                            type = foersteRapport.rapportInfo.type,
+                            rapporter =
+                                rapporterMedNedlastningsinfo.map {
+                                    RapportMedNedlastingsinfoDTO(
+                                        id = it.rapportId,
+                                        datoValutert = it.rapportInfo.datoValutert,
+                                        varianterMedNedlastingsinfo =
+                                            it.varianter.map { vi ->
+                                                VariantMedNedlastingsinfo(
+                                                    format = vi.format.extension(),
+                                                    filnavn = vi.filnavn,
+                                                    sistLastetNed = vi.sistLastetNed,
+                                                    sistLastetNedAv = vi.sistLastetNedAv,
+                                                )
+                                            },
+                                    )
+                                },
+                        )
+                    )
+                }
             }
-
-            val rapporterMedNedlastningsinfo =
-                rapportService.listRapporterMedEksternNedlastningsinfo(orgnr = rapport.orgnr, type = rapport.type)
-
-            metrics.rapportUtvidetSokReturnertAntall
-                .withTags(listOf(Tag.of("auth_type", bruker.authType), Tag.of("rapporttype", rapport.type.name)))
-                .record(rapporterMedNedlastningsinfo.size.toDouble())
-
-            val foersteRapport = rapporterMedNedlastningsinfo.firstOrNull() ?: return@get call.respond(HttpStatusCode.NotFound)
-
-            call.respond(
-                Api.RapportMedNedlastingsinfoRespons(
-                    forespurtRapportId = rapportId,
-                    orgnr = foersteRapport.rapportInfo.orgnr,
-                    orgNavn = foersteRapport.rapportInfo.orgNavn,
-                    type = foersteRapport.rapportInfo.type,
-                    rapporter =
-                        rapporterMedNedlastningsinfo.map {
-                            RapportMedNedlastingsinfoDTO(
-                                id = it.rapportId,
-                                datoValutert = it.rapportInfo.datoValutert,
-                                varianterMedNedlastingsinfo =
-                                    it.varianter.map { vi ->
-                                        VariantMedNedlastingsinfo(
-                                            format = vi.format.extension(),
-                                            filnavn = vi.filnavn,
-                                            sistLastetNed = vi.sistLastetNed,
-                                            sistLastetNedAv = vi.sistLastetNedAv,
-                                        )
-                                    },
-                            )
-                        },
-                )
-            )
         }
     }
 

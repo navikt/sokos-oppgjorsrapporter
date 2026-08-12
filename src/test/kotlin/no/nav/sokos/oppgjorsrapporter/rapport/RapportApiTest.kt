@@ -26,10 +26,13 @@ import no.nav.sokos.oppgjorsrapporter.TestUtil
 import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
 import no.nav.sokos.oppgjorsrapporter.TestUtil.testApplicationConfig
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigSystembrukerAuthToken
+import no.nav.sokos.oppgjorsrapporter.auth.gyldigTokenXAuthToken
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
 import no.nav.sokos.oppgjorsrapporter.module
 import no.nav.sokos.oppgjorsrapporter.toDataSource
+import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.genererGyldig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -856,7 +859,10 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
     fun `GET _api_rapport_v1_$id_utvidet returnerer alle rapporter for orgnr og type med variant-nedlastingsinfo`() {
         TestUtil.loadDataSet("db/utvidet_rapport.sql", dbContainer.toDataSource())
         val response =
-            client(validationFilter = null)
+            client(
+                    validationFilter = null,
+                    authToken = mockOAuth2Server.gyldigTokenXAuthToken(Fnr.genererGyldig().somUvalidert(), "Level3"),
+                )
                 .get("/api/rapport/v1/2/utvidet")
                 .then()
                 .assertThat()
