@@ -177,7 +177,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         if (config.application.profile == PropertiesConfig.Profile.LOCAL) {
             provide<AuthClient> { NoOpAuthClient() }
             provide<PdpService> { LocalhostPdpService }
-	        provide<AltinnTilgangerService> { LocalhostAltinnTilgangerService }
+            provide<AltinnTilgangerService> { LocalhostAltinnTilgangerService }
             provide<InternTilgangService> { LocalhostInternTilgangService }
         } else {
             provide<AuthClient> {
@@ -189,7 +189,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 )
             }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
-	        provide<AltinnTilgangerService> { AltinnTilgangerServiceImpl(config.security, resolve(), resolve()) }
+            provide<AltinnTilgangerService> { AltinnTilgangerServiceImpl(config.security, resolve(), resolve()) }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
         }
         val authClient: AuthClient by this

@@ -1162,54 +1162,52 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
             )
     }
 
-	@Test
-	fun `GET _api_rapport_v1_organisasjoner (innlogget riktig med tokenX) svarer riktig`() {
-		val response =
-			client(
-				validationFilter = null,
-				authToken = mockOAuth2Server.gyldigTokenXAuthToken(pid = Fnr.genererGyldig().somUvalidert(), acr = "Level4"),
-			)
-				.get("/api/rapport/v1/organisasjoner")
-				.then()
-				.assertThat()
-				.statusCode(HttpStatusCode.OK.value)
-				.extract()
-				.response()!!
+    @Test
+    fun `GET _api_rapport_v1_organisasjoner (innlogget riktig med tokenX) svarer riktig`() {
+        val response =
+            client(
+                    validationFilter = null,
+                    authToken = mockOAuth2Server.gyldigTokenXAuthToken(pid = Fnr.genererGyldig().somUvalidert(), acr = "Level4"),
+                )
+                .get("/api/rapport/v1/organisasjoner")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()!!
 
-		assertThatJson(response.body().prettyPrint())
-			.isEqualTo(
-				"""
-                [
-					{
-	                    "tilgang": "nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver",
-	                    "virksomheter": [
-							{
-		                        "orgnr": "987654321",
-		                        "navn": "Organisasjon",
-								"underenheter": [
-									{
-										"orgnr": "123456789",
-										"navn": "Bedrift",
-										"underenheter": null
-									}
-								]
-	                        }
-						]
-	                }
-				]
+        assertThatJson(response.body().prettyPrint())
+            .isEqualTo(
                 """
-					.trimIndent()
-			)
-	}
+                            [
+                	{
+                                 "tilgang": "nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver",
+                                 "virksomheter": [
+                			{
+                                      "orgnr": "987654321",
+                                      "navn": "Organisasjon",
+                				"underenheter": [
+                					{
+                						"orgnr": "123456789",
+                						"navn": "Bedrift",
+                						"underenheter": null
+                					}
+                				]
+                                     }
+                		]
+                             }
+                ]
+                """
+                    .trimIndent()
+            )
+    }
 
-	@Test
-	fun `GET _api_rapport_v1_organisasjoner (dersom man ikke er logget inn med tokenX) gir feilmelding`() {
-			client(
-				validationFilter = null,
-			)
-				.get("/api/rapport/v1/organisasjoner")
-				.then()
-				.assertThat()
-				.statusCode(HttpStatusCode.Unauthorized.value)
-	}
+    @Test
+    fun `GET _api_rapport_v1_organisasjoner (dersom man ikke er logget inn med tokenX) gir feilmelding`() {
+        client(validationFilter = null)
+            .get("/api/rapport/v1/organisasjoner")
+            .then()
+            .assertThat()
+            .statusCode(HttpStatusCode.Unauthorized.value)
+    }
 }

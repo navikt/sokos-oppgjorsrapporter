@@ -149,7 +149,7 @@ object PropertiesConfig {
             tokenX = TokenXProperties(source),
             maskinporten = MaskinportenProperties(source),
             altinn = AltinnProperties(source),
-	        altinnTilganger = AltinnTilgangerProperties(source),
+            altinnTilganger = AltinnTilgangerProperties(source),
             texasTokenEndpoint = source.get("auth.texas.token_endpoint"),
             texasExchangeEndpoint = source.get("auth.texas.token_exchange_endpoint"),
             texasIntrospectionEndpoint = source.get("auth.texas.token_introspection_endpoint"),
@@ -203,14 +203,14 @@ object PropertiesConfig {
         )
     }
 
-	class AltinnTilgangerProperties(val altinnTilgangerProxyUrl: URI, val altinnTilgangerAudience: String) {
-		constructor(
-			source: ConfigSource
-		) : this(
-			altinnTilgangerProxyUrl = URI.create(source.get("altinn_tilganger.proxy_url")),
-			altinnTilgangerAudience = source.get("altinn_tilganger.audience")
-		)
-	}
+    class AltinnTilgangerProperties(val altinnTilgangerProxyUrl: URI, val altinnTilgangerAudience: String) {
+        constructor(
+            source: ConfigSource
+        ) : this(
+            altinnTilgangerProxyUrl = URI.create(source.get("altinn_tilganger.proxy_url")),
+            altinnTilgangerAudience = source.get("altinn_tilganger.audience"),
+        )
+    }
 
     enum class Profile {
         LOCAL,
