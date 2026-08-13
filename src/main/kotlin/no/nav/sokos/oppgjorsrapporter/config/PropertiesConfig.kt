@@ -136,6 +136,7 @@ object PropertiesConfig {
         val tokenX: TokenXProperties,
         val maskinporten: MaskinportenProperties,
         val altinn: AltinnProperties,
+        val altinnTilganger: AltinnTilgangerProperties,
         val texasTokenEndpoint: String,
         val texasExchangeEndpoint: String,
         val texasIntrospectionEndpoint: String,
@@ -148,6 +149,7 @@ object PropertiesConfig {
             tokenX = TokenXProperties(source),
             maskinporten = MaskinportenProperties(source),
             altinn = AltinnProperties(source),
+	        altinnTilganger = AltinnTilgangerProperties(source),
             texasTokenEndpoint = source.get("auth.texas.token_endpoint"),
             texasExchangeEndpoint = source.get("auth.texas.token_exchange_endpoint"),
             texasIntrospectionEndpoint = source.get("auth.texas.token_introspection_endpoint"),
@@ -200,6 +202,15 @@ object PropertiesConfig {
             dialogportenScope = source.get("altinn.dialogporten_scope"),
         )
     }
+
+	class AltinnTilgangerProperties(val altinnTilgangerProxyUrl: URI, val altinnTilgangerAudience: String) {
+		constructor(
+			source: ConfigSource
+		) : this(
+			altinnTilgangerProxyUrl = URI.create(source.get("altinn_tilganger.proxy_url")),
+			altinnTilgangerAudience = source.get("altinn_tilganger.audience")
+		)
+	}
 
     enum class Profile {
         LOCAL,

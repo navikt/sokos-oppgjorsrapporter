@@ -69,6 +69,9 @@ import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.entraid.LocalhostInternTilgangService
 import no.nav.sokos.oppgjorsrapporter.ereg.EregHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
+import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerService
+import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerServiceImpl
+import no.nav.sokos.oppgjorsrapporter.fager.LocalhostAltinnTilgangerService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
@@ -174,6 +177,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
         if (config.application.profile == PropertiesConfig.Profile.LOCAL) {
             provide<AuthClient> { NoOpAuthClient() }
             provide<PdpService> { LocalhostPdpService }
+	        provide<AltinnTilgangerService> { LocalhostAltinnTilgangerService }
             provide<InternTilgangService> { LocalhostInternTilgangService }
         } else {
             provide<AuthClient> {
@@ -185,6 +189,7 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 )
             }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
+	        provide<AltinnTilgangerService> { AltinnTilgangerServiceImpl(config.security, resolve(), resolve()) }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
         }
         val authClient: AuthClient by this
