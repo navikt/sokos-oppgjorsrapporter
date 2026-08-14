@@ -25,10 +25,8 @@
         </filter>
     </appender>
 
-    <appender name="real-team-logs" class="tw.kewang.logback.appender.HttpAppender">
-        <url>team-logs.nais-system</url>
-        <port>80</port>
-        <method>POST</method>
+    <appender name="real-team-logs" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>team-logs.nais-system:5170</destination>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${NAIS_POD_NAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
             <includeContext>false</includeContext>
@@ -53,6 +51,19 @@
                 <pattern>{"message":"%replace(%message){'^(.{8192}).+(.{2048})$', 'TRUNCATED $1 ... $2'}"}</pattern>
             </provider>
         </encoder>
+        <!--
+          Konfigurasjon av TCP-appenderen for å unngå at (Kubernetes-forårsakede) plutselige stopp av "team-logs"-poden fører
+          til at enkelte loggmeldinger aldri når frem til Team Logs
+          (se https://nav-it.slack.com/archives/C05DXMSNSV8/p1786707761909469?thread_ts=1782985002.073549&cid=C05DXMSNSV8)
+        -->
+        <keepAliveDuration>30 seconds</keepAliveDuration>
+        <writeTimeout>1 minute</writeTimeout>
+        <reconnectionDelay>1 second</reconnectionDelay>
+        <connectionStrategy>
+            <roundRobin>
+                <connectionTTL>5 minutes</connectionTTL>
+            </roundRobin>
+        </connectionStrategy>
     </appender>
 
     <appender name="console-json" class="ch.qos.logback.classic.AsyncAppender">
