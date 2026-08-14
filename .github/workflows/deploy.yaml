@@ -24,6 +24,17 @@ on:
 env:
   TZ: Europe/Oslo
 
+# Hvis denne workflowen trigges flere ganger i løpet av kort tid (f.eks. ved at multiple PRs merges kjapt etter
+# hverandre), vil vi at kjøringene [N+1, ...] skal vente med å starte til kjøring N er ferdig.
+# På denne måten kan vi være sikre på at dersom N+1 f.eks. inneholder en sikkerhetsfiks, så risikerer vi ikke at N
+# bruker lang tid på dev-deploy, og så prod-deployes (uten fiksen) etter N+1.
+# Settingen `cancel-in-progress: false` gjør at:
+#  * Hvis jobb N+1 trigges mens N fortsatt kjører, blir *ikke* N avbrutt, men N+1 blir liggende i kø til N er ferdig
+#  * Hvis jobb N+2 også trigges mens N fortsatt kjøres, fjernes N+1, og N+2 legges i kø
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 permissions:
   contents: "write"
   id-token: "write"
