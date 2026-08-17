@@ -856,7 +856,21 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
     }
 
     @Test
-    fun `GET _api_rapport_v1_$id_utvidet returnerer alle rapporter for orgnr og type med variant-nedlastingsinfo`() {
+    fun `GET _api_rapport_v1_$id_utvidet (for id som ikke finnes) gir feilmelding`() {
+        TestUtil.loadDataSet("db/utvidet_rapport.sql", dbContainer.toDataSource())
+        val NON_EXISTENT_ID = 4711
+
+        client(validationFilter = null, authToken = mockOAuth2Server.gyldigTokenXAuthToken(Fnr.genererGyldig().somUvalidert(), "Level3"))
+            .get("/api/rapport/v1/$NON_EXISTENT_ID/utvidet")
+            .then()
+            .assertThat()
+            .statusCode(HttpStatusCode.NotFound.value)
+            .extract()
+            .response()!!
+    }
+
+    @Test
+    fun `GET _api_rapport_v1_$id_utvidet returnerer alle rapporter for orgnr og type med variant-nedlastingsinfo for id som finnes`() {
         TestUtil.loadDataSet("db/utvidet_rapport.sql", dbContainer.toDataSource())
         val response =
             client(
@@ -879,18 +893,18 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     "type": "ref-arbg",
                     "rapporter": [
                         {
-                            "id": 1,
-                            "datoValutert": "2026-01-31",
+                            "id": 3,
+                            "datoValutert": "2026-03-31",
                             "varianterMedNedlastingsinfo": [
                                 {
                                     "format": "pdf",
-                                    "filnavn": "111222333_ref-arbg_2026-01-31.pdf",
-                                    "sistLastetNed": null,
-                                    "sistLastetNedAv": null
+                                    "filnavn": "111222333_ref-arbg_2026-03-31.pdf",
+                                    "sistLastetNed": "2026-04-03T11:00:00Z",
+                                    "sistLastetNedAv": "systembruker:system=mitt-system"
                                 },
                                 {
                                     "format": "csv",
-                                    "filnavn": "111222333_ref-arbg_2026-01-31.csv",
+                                    "filnavn": "111222333_ref-arbg_2026-03-31.csv",
                                     "sistLastetNed": null,
                                     "sistLastetNedAv": null
                                 }
@@ -915,18 +929,18 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                             ]
                         },
                         {
-                            "id": 3,
-                            "datoValutert": "2026-03-31",
+                            "id": 1,
+                            "datoValutert": "2026-01-31",
                             "varianterMedNedlastingsinfo": [
                                 {
                                     "format": "pdf",
-                                    "filnavn": "111222333_ref-arbg_2026-03-31.pdf",
-                                    "sistLastetNed": "2026-04-03T11:00:00Z",
-                                    "sistLastetNedAv": "systembruker:system=mitt-system"
+                                    "filnavn": "111222333_ref-arbg_2026-01-31.pdf",
+                                    "sistLastetNed": null,
+                                    "sistLastetNedAv": null
                                 },
                                 {
                                     "format": "csv",
-                                    "filnavn": "111222333_ref-arbg_2026-03-31.csv",
+                                    "filnavn": "111222333_ref-arbg_2026-01-31.csv",
                                     "sistLastetNed": null,
                                     "sistLastetNedAv": null
                                 }

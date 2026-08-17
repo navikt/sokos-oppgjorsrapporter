@@ -117,8 +117,8 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .publishPercentileHistogram()
             .withRegistry(registry)
 
-    val rapportUtvidetSokReturnertAntall =
-        DistributionSummary.builder("${NAMESPACE}_api_rapport_utvidet_sok_response_count")
+    val rapportUtvidetReturnertAntall =
+        DistributionSummary.builder("${NAMESPACE}_api_rapport_utvidet_response_count")
             .description("Antall rapporter utvidet-APIet returnerer per respons")
             .publishPercentileHistogram()
             .withRegistry(registry)

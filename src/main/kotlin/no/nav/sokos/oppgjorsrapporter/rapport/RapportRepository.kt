@@ -264,12 +264,12 @@ class RapportRepository(private val clock: Clock) {
         tx: TransactionalSession,
         orgNr: OrgNr,
         type: RapportType,
-        ekskluderteBrukerprefiks: String,
-    ): List<RapportMedNedlastningsinfo> {
+        ekskludertAuthType: String,
+    ): List<RapportMedNedlastingsinfo> {
         data class RapportMedVariantInfo(
             val rapportId: Rapport.Id,
-            val rapportInfo: RapportMedNedlastningsinfo.RapportInfo,
-            val variantInfo: RapportMedNedlastningsinfo.VariantInfo,
+            val rapportInfo: RapportMedNedlastingsinfo.RapportInfo,
+            val variantInfo: RapportMedNedlastingsinfo.VariantInfo,
         ) {
 
             constructor(
@@ -277,18 +277,22 @@ class RapportRepository(private val clock: Clock) {
             ) : this(
                 rapportId = Rapport.Id(row.long("rapport_id")),
                 rapportInfo =
-                    RapportMedNedlastningsinfo.RapportInfo(
+                    RapportMedNedlastingsinfo.RapportInfo(
                         orgnr = OrgNr(row.string("orgnr")),
                         orgNavn = row.stringOrNull("org_navn")?.let { OrgNavn(it) },
                         datoValutert = row.localDate("dato_valutert"),
                         type = RapportType.valueOf(row.string("rapport_type")),
                     ),
                 variantInfo =
-                    RapportMedNedlastningsinfo.VariantInfo(
+                    RapportMedNedlastingsinfo.VariantInfo(
                         format = VariantFormat.withContentType(row.string("format")),
                         filnavn = row.string("filnavn"),
-                        sistLastetNed = row.instantOrNull("tidspunkt"),
-                        sistLastetNedAv = row.stringOrNull("brukernavn"),
+                        nedlastingsinfo =
+                            row.instantOrNull("tidspunkt")?.let { tidspunkt ->
+                                row.stringOrNull("brukernavn")?.let { brukernavn ->
+                                    RapportMedNedlastingsinfo.VariantInfo.Nedlastingsinfo(tidspunkt, brukernavn)
+                                }
+                            },
                     ),
             )
         }
@@ -309,13 +313,18 @@ class RapportRepository(private val clock: Clock) {
                 FROM rapport.rapport r
                          JOIN rapport.rapport_variant rv ON r.id = rv.rapport_id
                          LEFT JOIN rapport.rapport_audit ra
-                                   ON rv.id = ra.variant_id AND ra.hendelse = 'VARIANT_NEDLASTET' AND ra.brukernavn NOT LIKE :ekskluderteBrukerprefiks
+                                   ON rv.id = ra.variant_id AND ra.hendelse = :hendelse AND ra.brukernavn NOT LIKE :ekskludertAuthType
                 WHERE r.orgnr = :orgnr
-                  AND r.type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
+                  AND r.type = CAST(:rapportType AS rapport.rapport_type)
                 ORDER BY rv.id, ra.tidspunkt DESC;
                 """
                     .trimIndent(),
-                mapOf("orgnr" to orgNr.raw, "rapportType" to arrayOf(type.name), "ekskluderteBrukerprefiks" to "$ekskluderteBrukerprefiks%"),
+                mapOf(
+                    "orgnr" to orgNr.raw,
+                    "rapportType" to type.name,
+                    "ekskludertAuthType" to "${ekskludertAuthType}%",
+                    "hendelse" to RapportAudit.Hendelse.VARIANT_NEDLASTET.name,
+                ),
             )
             .map { row -> RapportMedVariantInfo(row) }
             .asList
@@ -324,8 +333,9 @@ class RapportRepository(private val clock: Clock) {
             .mapNotNull { (rapportId, rader) ->
                 val rapportInfo = rader.first().rapportInfo
                 val varianter = rader.map { r -> r.variantInfo }
-                RapportMedNedlastningsinfo(rapportId, rapportInfo, varianter)
+                RapportMedNedlastingsinfo(rapportId, rapportInfo, varianter)
             }
+            .sortedByDescending { it.rapportInfo.datoValutert }
     }
 
     fun settDialogUuid(tx: TransactionalSession, rapportId: Rapport.Id, uuid: UUID): Int =

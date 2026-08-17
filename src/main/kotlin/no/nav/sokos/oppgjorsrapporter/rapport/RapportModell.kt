@@ -178,10 +178,13 @@ data class Rapport(
     val erArkivert: Boolean = arkivert != null
 }
 
-data class RapportMedNedlastningsinfo(val rapportId: Rapport.Id, val rapportInfo: RapportInfo, val varianter: List<VariantInfo>) {
+data class RapportMedNedlastingsinfo(val rapportId: Rapport.Id, val rapportInfo: RapportInfo, val varianter: List<VariantInfo>) {
     data class RapportInfo(val orgnr: OrgNr, val orgNavn: OrgNavn?, val type: RapportType, val datoValutert: LocalDate)
 
-    data class VariantInfo(val format: VariantFormat, val filnavn: String, val sistLastetNedAv: String?, val sistLastetNed: Instant?)
+    data class VariantInfo(val format: VariantFormat, val filnavn: String, val nedlastingsinfo: Nedlastingsinfo?) {
+
+        data class Nedlastingsinfo(val sistLastetNed: Instant, val sistLastetNedAv: String)
+    }
 }
 
 enum class VariantFormat(val contentType: String) {

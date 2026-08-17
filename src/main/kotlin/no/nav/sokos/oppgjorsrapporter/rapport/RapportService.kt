@@ -132,8 +132,10 @@ class RapportService(
 
     fun listRapporter(kriterier: RapportKriterier): List<Rapport> = withTransaction { repository.listRapporter(it, kriterier) }
 
-    fun listRapporterMedEksternNedlastningsinfo(orgnr: OrgNr, type: RapportType): List<RapportMedNedlastningsinfo> = withTransaction {
-        repository.listRapporterMedNedlastningsinfo(it, orgnr, type, EntraId.authType)
+    fun listRapporterMedEksternNedlastningsinfo(id: Rapport.Id): List<RapportMedNedlastingsinfo> = withTransaction {
+        repository.finnRapport(it, id)?.let { rapport ->
+            repository.listRapporterMedNedlastningsinfo(it, rapport.orgnr, rapport.type, EntraId.authType)
+        } ?: emptyList()
     }
 
     fun markerRapportArkivert(
