@@ -899,14 +899,15 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                                 {
                                     "format": "pdf",
                                     "filnavn": "111222333_ref-arbg_2026-03-31.pdf",
-                                    "sistLastetNed": "2026-04-03T11:00:00Z",
-                                    "sistLastetNedAv": "systembruker:system=mitt-system"
+                                    "nedlastingsinfo": {
+                                        "sistLastetNed": "2026-04-03T11:00:00Z",
+                                        "sistLastetNedAv": "systembruker:system=mitt-system"
+                                    }
                                 },
                                 {
                                     "format": "csv",
                                     "filnavn": "111222333_ref-arbg_2026-03-31.csv",
-                                    "sistLastetNed": null,
-                                    "sistLastetNedAv": null
+                                    "nedlastingsinfo": null
                                 }
                             ]
                         },
@@ -917,14 +918,15 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                                 {
                                     "format": "pdf",
                                     "filnavn": "111222333_ref-arbg_2026-02-28.pdf",
-                                    "sistLastetNed": "2026-03-01T10:00:00Z",
-                                    "sistLastetNedAv": "tokenx:sub=12345678901"
+                                    "nedlastingsinfo": {
+                                        "sistLastetNed": "2026-03-01T10:00:00Z",
+                                        "sistLastetNedAv": "tokenx:sub=12345678901"
+                                    }
                                 },
                                 {
                                     "format": "csv",
                                     "filnavn": "111222333_ref-arbg_2026-02-28.csv",
-                                    "sistLastetNed": null,
-                                    "sistLastetNedAv": null
+                                    "nedlastingsinfo": null
                                 }
                             ]
                         },
@@ -935,20 +937,18 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                                 {
                                     "format": "pdf",
                                     "filnavn": "111222333_ref-arbg_2026-01-31.pdf",
-                                    "sistLastetNed": null,
-                                    "sistLastetNedAv": null
+                                    "nedlastingsinfo": null
                                 },
                                 {
                                     "format": "csv",
                                     "filnavn": "111222333_ref-arbg_2026-01-31.csv",
-                                    "sistLastetNed": null,
-                                    "sistLastetNedAv": null
+                                    "nedlastingsinfo": null
                                 }
                             ]
                         }
                     ]
                 }
-                    
+
                 """
                     .trimIndent()
             )

@@ -14,6 +14,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNames
 import kotliquery.Row
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
+import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
@@ -178,12 +179,15 @@ data class Rapport(
     val erArkivert: Boolean = arkivert != null
 }
 
-data class RapportMedNedlastingsinfo(val rapportId: Rapport.Id, val rapportInfo: RapportInfo, val varianter: List<VariantInfo>) {
+data class RapportMedNedlastingsinfo(val rapportId: Rapport.Id, val rapportInfo: RapportInfo, val varianter: List<Variantinfo>) {
     data class RapportInfo(val orgnr: OrgNr, val orgNavn: OrgNavn?, val type: RapportType, val datoValutert: LocalDate)
 
-    data class VariantInfo(val format: VariantFormat, val filnavn: String, val nedlastingsinfo: Nedlastingsinfo?) {
-
-        data class Nedlastingsinfo(val sistLastetNed: Instant, val sistLastetNedAv: String)
+    data class Variantinfo(val format: VariantFormat, val filnavn: String, val nedlastingsinfo: Nedlastingsinfo?) {
+        @Serializable
+        data class Nedlastingsinfo(
+            @Serializable(with = InstantAsStringSerializer::class) val sistLastetNed: Instant,
+            val sistLastetNedAv: String,
+        )
     }
 }
 

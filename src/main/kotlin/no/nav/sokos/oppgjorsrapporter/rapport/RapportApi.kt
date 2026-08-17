@@ -112,47 +112,43 @@ object Api {
         val orgnr: OrgNr,
         val orgNavn: OrgNavn?,
         val type: RapportType,
-        val rapporter: List<RapportMedNedlastingsinfoDTO>,
+        val rapporter: List<Rapport>,
     ) {
         constructor(
             rapportId: Rapport.Id,
-            rapporterMedNedlastningsinfo: List<RapportMedNedlastingsinfo>,
+            rapporterMedNedlastingsinfo: List<RapportMedNedlastingsinfo>,
         ) : this(
             forespurtRapportId = rapportId,
-            orgnr = rapporterMedNedlastningsinfo.first().rapportInfo.orgnr,
-            orgNavn = rapporterMedNedlastningsinfo.first().rapportInfo.orgNavn,
-            type = rapporterMedNedlastningsinfo.first().rapportInfo.type,
-            rapporter =
-                rapporterMedNedlastningsinfo.map {
-                    RapportMedNedlastingsinfoDTO(
-                        id = it.rapportId,
-                        datoValutert = it.rapportInfo.datoValutert,
-                        varianterMedNedlastingsinfo =
-                            it.varianter.map { vi ->
-                                RapportMedNedlastingsinfoDTO.VariantMedNedlastingsinfo(
-                                    format = vi.format.extension(),
-                                    filnavn = vi.filnavn,
-                                    sistLastetNed = vi.nedlastingsinfo?.sistLastetNed,
-                                    sistLastetNedAv = vi.nedlastingsinfo?.sistLastetNedAv,
-                                )
-                            },
-                    )
-                },
+            orgnr = rapporterMedNedlastingsinfo.first().rapportInfo.orgnr,
+            orgNavn = rapporterMedNedlastingsinfo.first().rapportInfo.orgNavn,
+            type = rapporterMedNedlastingsinfo.first().rapportInfo.type,
+            rapporter = rapporterMedNedlastingsinfo.map { Rapport(it) },
         )
 
         @Serializable
-        data class RapportMedNedlastingsinfoDTO(
-            val id: Rapport.Id,
-            val datoValutert: LocalDate,
-            val varianterMedNedlastingsinfo: List<VariantMedNedlastingsinfo>,
-        ) {
+        data class Rapport(val id: Rapport.Id, val datoValutert: LocalDate, val varianterMedNedlastingsinfo: List<Variant>) {
+            constructor(
+                rapporterMedNedlastingsinfo: RapportMedNedlastingsinfo
+            ) : this(
+                id = rapporterMedNedlastingsinfo.rapportId,
+                datoValutert = rapporterMedNedlastingsinfo.rapportInfo.datoValutert,
+                varianterMedNedlastingsinfo = rapporterMedNedlastingsinfo.varianter.map { Variant(it) },
+            )
+
             @Serializable
-            data class VariantMedNedlastingsinfo(
+            data class Variant(
                 val format: String,
                 val filnavn: String,
-                @Serializable(with = InstantAsStringSerializer::class) val sistLastetNed: Instant?,
-                val sistLastetNedAv: String?,
-            )
+                val nedlastingsinfo: RapportMedNedlastingsinfo.Variantinfo.Nedlastingsinfo?,
+            ) {
+                constructor(
+                    variantinfo: RapportMedNedlastingsinfo.Variantinfo
+                ) : this(
+                    format = variantinfo.format.extension(),
+                    filnavn = variantinfo.filnavn,
+                    nedlastingsinfo = variantinfo.nedlastingsinfo,
+                )
+            }
         }
     }
 }
@@ -305,14 +301,20 @@ fun Route.rapportApi() {
                 is Systembruker -> return@get call.respond(HttpStatusCode.Forbidden)
                 else -> {
 
-                    val rapporterMedNedlastningsinfo = rapportService.listRapporterMedEksternNedlastningsinfo(rapportId)
-                    if (rapporterMedNedlastningsinfo.isEmpty()) {
+                    val rapporterMedNedlastingsinfo = rapportService.listRapporterMedEksternNedlastingsinfo(rapportId)
+                    if (rapporterMedNedlastingsinfo.isEmpty()) {
                         return@get call.respond(HttpStatusCode.NotFound)
                     }
 
-                    val forespurtRapport = rapporterMedNedlastningsinfo.first { it.rapportId == rapportId }
-                    val orgnr = forespurtRapport.rapportInfo.orgnr
-                    val type = forespurtRapport.rapportInfo.type
+                    val (orgnr, type) =
+                        runCatching { rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single() }
+                            .getOrElse {
+                                val feil =
+                                    "Oppslag etter tilgrensende rapporter for $rapportId returnerte rapporter for andre orgnr eller rapport-typer"
+                                logger.error(feil)
+                                logger.error(TEAM_LOGS_MARKER) { "$feil: $rapporterMedNedlastingsinfo" }
+                                return@get call.respond(HttpStatusCode.InternalServerError)
+                            }
 
                     if (!harTilgangTilRessurs(bruker, type, orgnr)) {
                         return@get call.respond(HttpStatusCode.NotFound)
@@ -320,9 +322,9 @@ fun Route.rapportApi() {
 
                     metrics.rapportUtvidetReturnertAntall
                         .withTags(listOf(Tag.of("auth_type", bruker.authType), Tag.of("rapporttype", type.name)))
-                        .record(rapporterMedNedlastningsinfo.size.toDouble())
+                        .record(rapporterMedNedlastingsinfo.size.toDouble())
 
-                    call.respond(Api.TilgrensendeRapporterDTO(rapportId, rapporterMedNedlastningsinfo))
+                    call.respond(Api.TilgrensendeRapporterDTO(rapportId, rapporterMedNedlastingsinfo))
                 }
             }
         }

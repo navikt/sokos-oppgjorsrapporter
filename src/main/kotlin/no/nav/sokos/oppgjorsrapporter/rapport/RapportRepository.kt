@@ -260,16 +260,16 @@ class RapportRepository(private val clock: Clock) {
             .asList
             .let { tx.run(it) }
 
-    fun listRapporterMedNedlastningsinfo(
+    fun listRapporterMedNedlastingsinfo(
         tx: TransactionalSession,
         orgNr: OrgNr,
         type: RapportType,
         ekskludertAuthType: String,
     ): List<RapportMedNedlastingsinfo> {
-        data class RapportMedVariantInfo(
+        data class RapportMedVariantinfo(
             val rapportId: Rapport.Id,
             val rapportInfo: RapportMedNedlastingsinfo.RapportInfo,
-            val variantInfo: RapportMedNedlastingsinfo.VariantInfo,
+            val variantinfo: RapportMedNedlastingsinfo.Variantinfo,
         ) {
 
             constructor(
@@ -283,14 +283,14 @@ class RapportRepository(private val clock: Clock) {
                         datoValutert = row.localDate("dato_valutert"),
                         type = RapportType.valueOf(row.string("rapport_type")),
                     ),
-                variantInfo =
-                    RapportMedNedlastingsinfo.VariantInfo(
+                variantinfo =
+                    RapportMedNedlastingsinfo.Variantinfo(
                         format = VariantFormat.withContentType(row.string("format")),
                         filnavn = row.string("filnavn"),
                         nedlastingsinfo =
                             row.instantOrNull("tidspunkt")?.let { tidspunkt ->
                                 row.stringOrNull("brukernavn")?.let { brukernavn ->
-                                    RapportMedNedlastingsinfo.VariantInfo.Nedlastingsinfo(tidspunkt, brukernavn)
+                                    RapportMedNedlastingsinfo.Variantinfo.Nedlastingsinfo(tidspunkt, brukernavn)
                                 }
                             },
                     ),
@@ -326,13 +326,13 @@ class RapportRepository(private val clock: Clock) {
                     "hendelse" to RapportAudit.Hendelse.VARIANT_NEDLASTET.name,
                 ),
             )
-            .map { row -> RapportMedVariantInfo(row) }
+            .map { row -> RapportMedVariantinfo(row) }
             .asList
             .let { tx.run(it) }
             .groupBy { it.rapportId }
             .mapNotNull { (rapportId, rader) ->
                 val rapportInfo = rader.first().rapportInfo
-                val varianter = rader.map { r -> r.variantInfo }
+                val varianter = rader.map { r -> r.variantinfo }
                 RapportMedNedlastingsinfo(rapportId, rapportInfo, varianter)
             }
             .sortedByDescending { it.rapportInfo.datoValutert }
