@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter
 
+import ch.qos.logback.classic.LoggerContext
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache5.Apache5
@@ -86,12 +87,23 @@ import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
+import org.slf4j.LoggerFactory
 
 private val logger = KotlinLogging.logger {}
 
 fun main() {
+    logger.info { "Applikasjonen starter opp" }
+    logger.info(TEAM_LOGS_MARKER) { "Applikasjonen starter opp" }
     embeddedServer(Netty, port = 8080, module = Application::module)
-        .also { it.addShutdownHook { it.stop(shutdownGracePeriod = 3, shutdownTimeout = 5, timeUnit = TimeUnit.SECONDS) } }
+        .also {
+            it.addShutdownHook {
+                logger.info { "Applikasjonen avslutter" }
+                logger.info(TEAM_LOGS_MARKER) { "Applikasjonen avslutter" }
+                it.stop(shutdownGracePeriod = 3, shutdownTimeout = 5, timeUnit = TimeUnit.SECONDS)
+                // Lukk LoggerContext (og dermed alle log-appendere) så vi ikke mister bufrede logg-linjer
+                (LoggerFactory.getILoggerFactory() as LoggerContext).stop()
+            }
+        }
         .start(true)
 }
 
