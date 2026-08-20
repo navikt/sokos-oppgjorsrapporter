@@ -134,7 +134,7 @@ class RapportService(
 
     fun listRapporterMedEksternNedlastingsinfo(id: Rapport.Id): List<RapportMedNedlastingsinfo> = withTransaction {
         repository.finnRapport(it, id)?.let { rapport ->
-            repository.listRapporterMedNedlastingsinfo(it, rapport.orgnr, rapport.type, EntraId.authType)
+            repository.listRapporterMedNedlastingsinfo(it, rapport.orgnr, rapport.type, EntraId)
         } ?: emptyList()
     }
 

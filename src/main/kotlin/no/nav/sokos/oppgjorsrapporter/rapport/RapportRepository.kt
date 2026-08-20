@@ -10,6 +10,7 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.auth.HasAuthType
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.LocalDateRange
@@ -264,7 +265,7 @@ class RapportRepository(private val clock: Clock) {
         tx: TransactionalSession,
         orgNr: OrgNr,
         type: RapportType,
-        ekskludertAuthType: String,
+        ignorerNedlastingerAvBrukerType: HasAuthType,
     ): List<RapportMedNedlastingsinfo> {
         data class RapportMedVariantinfo(
             val rapportId: Rapport.Id,
@@ -322,7 +323,7 @@ class RapportRepository(private val clock: Clock) {
                 mapOf(
                     "orgnr" to orgNr.raw,
                     "rapportType" to type.name,
-                    "ekskludertAuthType" to "${ekskludertAuthType}%",
+                    "ekskludertAuthType" to "${ignorerNedlastingerAvBrukerType.authType}:%",
                     "hendelse" to RapportAudit.Hendelse.VARIANT_NEDLASTET.name,
                 ),
             )
