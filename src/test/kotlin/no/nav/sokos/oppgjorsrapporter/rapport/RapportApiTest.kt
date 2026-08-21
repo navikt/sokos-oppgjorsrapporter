@@ -901,7 +901,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                                     "filnavn": "111222333_ref-arbg_2026-03-31.pdf",
                                     "nedlastingsinfo": {
                                         "sistLastetNed": "2026-04-03T11:00:00Z",
-                                        "sistLastetNedAv": "systembruker:system=mitt-system"
+                                        "sistLastetNedAv": "systembruker"
                                     }
                                 },
                                 {
@@ -920,7 +920,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                                     "filnavn": "111222333_ref-arbg_2026-02-28.pdf",
                                     "nedlastingsinfo": {
                                         "sistLastetNed": "2026-03-01T10:00:00Z",
-                                        "sistLastetNedAv": "tokenx:sub=12345678901"
+                                        "sistLastetNedAv": "tokenx"
                                     }
                                 },
                                 {

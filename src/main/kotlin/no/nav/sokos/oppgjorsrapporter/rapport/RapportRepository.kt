@@ -291,7 +291,7 @@ class RapportRepository(private val clock: Clock) {
                         nedlastingsinfo =
                             row.instantOrNull("tidspunkt")?.let { tidspunkt ->
                                 row.stringOrNull("brukernavn")?.let { brukernavn ->
-                                    RapportMedNedlastingsinfo.Variantinfo.Nedlastingsinfo(tidspunkt, brukernavn)
+                                    RapportMedNedlastingsinfo.Variantinfo.Nedlastingsinfo(tidspunkt, brukernavn.split(":").first())
                                 }
                             },
                     ),
