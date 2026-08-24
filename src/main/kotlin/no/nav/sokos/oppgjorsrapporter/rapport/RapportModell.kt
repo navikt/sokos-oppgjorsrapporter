@@ -14,6 +14,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNames
 import kotliquery.Row
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
+import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
@@ -178,6 +179,18 @@ data class Rapport(
     val erArkivert: Boolean = arkivert != null
 }
 
+data class RapportMedNedlastingsinfo(val rapportId: Rapport.Id, val rapportInfo: RapportInfo, val varianter: List<Variantinfo>) {
+    data class RapportInfo(val orgnr: OrgNr, val orgNavn: OrgNavn?, val type: RapportType, val datoValutert: LocalDate)
+
+    data class Variantinfo(val format: VariantFormat, val filnavn: String, val nedlastingsinfo: Nedlastingsinfo?) {
+        @Serializable
+        data class Nedlastingsinfo(
+            @Serializable(with = InstantAsStringSerializer::class) val sistLastetNed: Instant,
+            val sistLastetNedAv: String,
+        )
+    }
+}
+
 enum class VariantFormat(val contentType: String) {
     Pdf("application/pdf"),
     Csv("text/csv");
@@ -188,7 +201,7 @@ enum class VariantFormat(val contentType: String) {
     }
 }
 
-private fun VariantFormat.extension(): String =
+fun VariantFormat.extension(): String =
     when (this) {
         VariantFormat.Csv -> "csv"
         VariantFormat.Pdf -> "pdf"

@@ -105,6 +105,52 @@ object Api {
             rapport.erArkivert,
         )
     }
+
+    @Serializable
+    data class TilgrensendeRapporterDTO(
+        val forespurtRapportId: Rapport.Id,
+        val orgnr: OrgNr,
+        val orgNavn: OrgNavn?,
+        val type: RapportType,
+        val rapporter: List<Rapport>,
+    ) {
+        constructor(
+            rapportId: Rapport.Id,
+            rapporterMedNedlastingsinfo: List<RapportMedNedlastingsinfo>,
+        ) : this(
+            forespurtRapportId = rapportId,
+            orgnr = rapporterMedNedlastingsinfo.first().rapportInfo.orgnr,
+            orgNavn = rapporterMedNedlastingsinfo.first().rapportInfo.orgNavn,
+            type = rapporterMedNedlastingsinfo.first().rapportInfo.type,
+            rapporter = rapporterMedNedlastingsinfo.map { Rapport(it) },
+        )
+
+        @Serializable
+        data class Rapport(val id: Rapport.Id, val datoValutert: LocalDate, val varianterMedNedlastingsinfo: List<Variant>) {
+            constructor(
+                rapporterMedNedlastingsinfo: RapportMedNedlastingsinfo
+            ) : this(
+                id = rapporterMedNedlastingsinfo.rapportId,
+                datoValutert = rapporterMedNedlastingsinfo.rapportInfo.datoValutert,
+                varianterMedNedlastingsinfo = rapporterMedNedlastingsinfo.varianter.map { Variant(it) },
+            )
+
+            @Serializable
+            data class Variant(
+                val format: String,
+                val filnavn: String,
+                val nedlastingsinfo: RapportMedNedlastingsinfo.Variantinfo.Nedlastingsinfo?,
+            ) {
+                constructor(
+                    variantinfo: RapportMedNedlastingsinfo.Variantinfo
+                ) : this(
+                    format = variantinfo.format.extension(),
+                    filnavn = variantinfo.filnavn,
+                    nedlastingsinfo = variantinfo.nedlastingsinfo,
+                )
+            }
+        }
+    }
 }
 
 fun Route.rapportApi() {
@@ -244,6 +290,43 @@ fun Route.rapportApi() {
                 return@get call.respond(HttpStatusCode.NotFound)
             }
             call.respond(Api.RapportDTO(rapport))
+        }
+    }
+
+    get("/api/rapport/v1/{id}/utvidet") {
+        val id: Long by call.request.pathVariables
+        val rapportId = Rapport.Id(id)
+        autentisertBruker().let { bruker ->
+            when (bruker) {
+                is Systembruker -> return@get call.respond(HttpStatusCode.Forbidden)
+                else -> {
+
+                    val rapporterMedNedlastingsinfo = rapportService.listRapporterMedEksternNedlastingsinfo(rapportId)
+                    if (rapporterMedNedlastingsinfo.isEmpty()) {
+                        return@get call.respond(HttpStatusCode.NotFound)
+                    }
+
+                    val (orgnr, type) =
+                        runCatching { rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single() }
+                            .getOrElse {
+                                val feil =
+                                    "Oppslag etter tilgrensende rapporter for $rapportId returnerte rapporter for andre orgnr eller rapport-typer"
+                                logger.error(feil)
+                                logger.error(TEAM_LOGS_MARKER) { "$feil: $rapporterMedNedlastingsinfo" }
+                                return@get call.respond(HttpStatusCode.InternalServerError)
+                            }
+
+                    if (!harTilgangTilRessurs(bruker, type, orgnr)) {
+                        return@get call.respond(HttpStatusCode.NotFound)
+                    }
+
+                    metrics.rapportUtvidetReturnertAntall
+                        .withTags(listOf(Tag.of("auth_type", bruker.authType), Tag.of("rapporttype", type.name)))
+                        .record(rapporterMedNedlastingsinfo.size.toDouble())
+
+                    call.respond(Api.TilgrensendeRapporterDTO(rapportId, rapporterMedNedlastingsinfo))
+                }
+            }
         }
     }
 

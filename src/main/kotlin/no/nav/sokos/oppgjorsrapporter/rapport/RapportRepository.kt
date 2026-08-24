@@ -6,9 +6,11 @@ import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 import kotlinx.io.bytestring.ByteString
+import kotliquery.Row
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.auth.HasAuthType
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.LocalDateRange
@@ -258,6 +260,84 @@ class RapportRepository(private val clock: Clock) {
             .map { row -> Rapport(row) }
             .asList
             .let { tx.run(it) }
+
+    fun listRapporterMedNedlastingsinfo(
+        tx: TransactionalSession,
+        orgNr: OrgNr,
+        type: RapportType,
+        ignorerNedlastingerAvBrukerType: HasAuthType,
+    ): List<RapportMedNedlastingsinfo> {
+        data class RapportMedVariantinfo(
+            val rapportId: Rapport.Id,
+            val rapportInfo: RapportMedNedlastingsinfo.RapportInfo,
+            val variantinfo: RapportMedNedlastingsinfo.Variantinfo,
+        ) {
+
+            constructor(
+                row: Row
+            ) : this(
+                rapportId = Rapport.Id(row.long("rapport_id")),
+                rapportInfo =
+                    RapportMedNedlastingsinfo.RapportInfo(
+                        orgnr = OrgNr(row.string("orgnr")),
+                        orgNavn = row.stringOrNull("org_navn")?.let { OrgNavn(it) },
+                        datoValutert = row.localDate("dato_valutert"),
+                        type = RapportType.valueOf(row.string("rapport_type")),
+                    ),
+                variantinfo =
+                    RapportMedNedlastingsinfo.Variantinfo(
+                        format = VariantFormat.withContentType(row.string("format")),
+                        filnavn = row.string("filnavn"),
+                        nedlastingsinfo =
+                            row.instantOrNull("tidspunkt")?.let { tidspunkt ->
+                                row.stringOrNull("brukernavn")?.let { brukernavn ->
+                                    RapportMedNedlastingsinfo.Variantinfo.Nedlastingsinfo(tidspunkt, brukernavn.split(":").first())
+                                }
+                            },
+                    ),
+            )
+        }
+
+        // DISTINCT ON (rv.id) sammen med ORDER BY ra.tidspunkt DESC gir oss
+        // siste nedlasting per variant (eller null hvis ingen nedlasting).
+        return queryOf(
+                """
+                SELECT DISTINCT ON (rv.id) r.id    as rapport_id,
+                                           r.orgnr,
+                                           r.org_navn,
+                                           r.dato_valutert,
+                                           r.type   as rapport_type,
+                                           rv.format,
+                                           rv.filnavn,
+                                           ra.tidspunkt,
+                                           ra.brukernavn
+                FROM rapport.rapport r
+                         JOIN rapport.rapport_variant rv ON r.id = rv.rapport_id
+                         LEFT JOIN rapport.rapport_audit ra
+                                   ON rv.id = ra.variant_id AND ra.hendelse = :hendelse AND ra.brukernavn NOT LIKE :ekskludertAuthType
+                WHERE r.orgnr = :orgnr
+                  AND r.type = CAST(:rapportType AS rapport.rapport_type)
+                ORDER BY rv.id, ra.tidspunkt DESC;
+                """
+                    .trimIndent(),
+                mapOf(
+                    "orgnr" to orgNr.raw,
+                    "rapportType" to type.name,
+                    "ekskludertAuthType" to "${ignorerNedlastingerAvBrukerType.authType}:%",
+                    "hendelse" to RapportAudit.Hendelse.VARIANT_NEDLASTET.name,
+                ),
+            )
+            .map { row -> RapportMedVariantinfo(row) }
+            .asList
+            .let { tx.run(it) }
+            .groupBy { it.rapportId }
+            .mapNotNull { (rapportId, rader) ->
+                val rapportInfo = rader.first().rapportInfo
+                val varianter = rader.map { r -> r.variantinfo }
+                RapportMedNedlastingsinfo(rapportId, rapportInfo, varianter)
+            }
+            .sortedByDescending { it.rapportInfo.datoValutert }
+    }
 
     fun settDialogUuid(tx: TransactionalSession, rapportId: Rapport.Id, uuid: UUID): Int =
         queryOf(
