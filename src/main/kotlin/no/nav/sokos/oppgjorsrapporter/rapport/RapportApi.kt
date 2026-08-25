@@ -111,53 +111,54 @@ object Api {
             rapport.erArkivert,
         )
     }
-	@Serializable
-	data class TilgrensendeRapporterDTO(
-		val forespurtRapportId: Rapport.Id,
-		val orgnr: OrgNr,
-		val orgNavn: OrgNavn?,
-		val type: RapportType,
-		val rapporter: List<Rapport>,
-	) {
-		constructor(
-			rapportId: Rapport.Id,
-			rapporterMedNedlastingsinfo: List<RapportMedNedlastingsinfo>,
-		) : this(
-			forespurtRapportId = rapportId,
-			orgnr = rapporterMedNedlastingsinfo.first().rapportInfo.orgnr,
-			orgNavn = rapporterMedNedlastingsinfo.first().rapportInfo.orgNavn,
-			type = rapporterMedNedlastingsinfo.first().rapportInfo.type,
-			rapporter = rapporterMedNedlastingsinfo.map { Rapport(it) },
-		)
 
-		@Serializable
-		data class Rapport(val id: Rapport.Id, val datoValutert: LocalDate,val belop: String?,
+    @Serializable
+    data class TilgrensendeRapporterDTO(
+        val forespurtRapportId: Rapport.Id,
+        val orgnr: OrgNr,
+        val orgNavn: OrgNavn?,
+        val type: RapportType,
+        val rapporter: List<Rapport>,
+    ) {
+        constructor(
+            rapportId: Rapport.Id,
+            rapporterMedNedlastingsinfo: List<RapportMedNedlastingsinfo>,
+        ) : this(
+            forespurtRapportId = rapportId,
+            orgnr = rapporterMedNedlastingsinfo.first().rapportInfo.orgnr,
+            orgNavn = rapporterMedNedlastingsinfo.first().rapportInfo.orgNavn,
+            type = rapporterMedNedlastingsinfo.first().rapportInfo.type,
+            rapporter = rapporterMedNedlastingsinfo.map { Rapport(it) },
+        )
+
+        @Serializable
+        data class Rapport(val id: Rapport.Id, val datoValutert: LocalDate, val belop: String?,
             val varianterMedNedlastingsinfo: List<Variant>,) {
-			constructor(
-				rapport: RapportMedNedlastingsinfo
-			) : this(
-				id = rapport.rapportId,
-				datoValutert = rapport.rapportInfo.datoValutert,
+            constructor(
+                rapport: RapportMedNedlastingsinfo
+            ) : this(
+                id = rapport.rapportId,
+                datoValutert = rapport.rapportInfo.datoValutert,
                 belop = rapport.rapportInfo.belop?.toString(),
 				varianterMedNedlastingsinfo = rapport.varianter.map { Variant(it) },
-			)
+            )
 
-			@Serializable
-			data class Variant(
-				val format: String,
-				val filnavn: String,
-				val nedlastingsinfo: RapportMedNedlastingsinfo.Variantinfo.Nedlastingsinfo?,
-			) {
-				constructor(
-					variantinfo: RapportMedNedlastingsinfo.Variantinfo
-				) : this(
-					format = variantinfo.format.extension(),
-					filnavn = variantinfo.filnavn,
-					nedlastingsinfo = variantinfo.nedlastingsinfo,
-				)
-			}
-		}
-	}
+            @Serializable
+            data class Variant(
+                val format: String,
+                val filnavn: String,
+                val nedlastingsinfo: RapportMedNedlastingsinfo.Variantinfo.Nedlastingsinfo?,
+            ) {
+                constructor(
+                    variantinfo: RapportMedNedlastingsinfo.Variantinfo
+                ) : this(
+                    format = variantinfo.format.extension(),
+                    filnavn = variantinfo.filnavn,
+                    nedlastingsinfo = variantinfo.nedlastingsinfo,
+                )
+            }
+        }
+    }
 
     @Serializable data class TilgangTilVirksomheterDto(val tilgang: String, val virksomheter: List<VirksomhetDto>)
 
