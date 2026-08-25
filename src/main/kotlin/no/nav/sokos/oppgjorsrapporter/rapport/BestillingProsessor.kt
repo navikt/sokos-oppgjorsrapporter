@@ -83,6 +83,7 @@ class BestillingProsessor(
                                 antallRader = refusjonsRapportBestilling.datarec.size,
                                 antallUnderenheter = refusjonsRapportBestilling.datarec.distinctBy { it.bedriftsnummer }.size,
                                 antallPersoner = refusjonsRapportBestilling.datarec.distinctBy { it.fnr }.size,
+                                belop = refusjonsRapportBestilling.header.sumBelop,
                                 nevntInfo = refusjonsRapportBestilling.nevntInfo(),
                             ),
                             suspend { variant: VariantFormat ->
@@ -119,6 +120,7 @@ class BestillingProsessor(
                                         .map { it.fnr }
                                         .distinct()
                                         .size,
+                                belop = trekkKredRapportBestilling.brukerData.brevinfo.variableFelter.ur.sumTotal.belop,
                                 nevntInfo = trekkKredRapportBestilling.nevntInfo(),
                             ),
                             suspend { variant: VariantFormat ->
@@ -151,6 +153,7 @@ class BestillingProsessor(
                                             .distinct()
                                             .size
                                     },
+                                belop = null,
                                 nevntInfo = trekkHendRapportBestilling.nevntInfo(),
                             ),
                             suspend { variant: VariantFormat ->

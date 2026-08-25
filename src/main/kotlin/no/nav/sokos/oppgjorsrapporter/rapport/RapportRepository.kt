@@ -91,12 +91,12 @@ class RapportRepository(private val clock: Clock) {
         queryOf(
                 """
                 INSERT INTO rapport.rapport(bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
-                                            antall_rader, antall_underenheter, antall_personer, nevnt_info)
+                                            antall_rader, antall_underenheter, antall_personer, belop, nevnt_info)
                 VALUES (:bestilling_id, :orgnr, :org_navn, CAST(:type AS rapport.rapport_type), :dato_valutert, :bankkonto,
-                        :antall_rader, :antall_underenheter, :antall_personer,
+                        :antall_rader, :antall_underenheter, :antall_personer, :belop,
                         CAST(:nevnt_info AS jsonb))
                 RETURNING id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
-                          antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
+                          antall_rader, antall_underenheter, antall_personer, belop, opprettet, arkivert, dialogporten_uuid
                 """
                     .trimIndent(),
                 mapOf(
@@ -109,6 +109,7 @@ class RapportRepository(private val clock: Clock) {
                     "antall_rader" to rapport.antallRader,
                     "antall_underenheter" to rapport.antallUnderenheter,
                     "antall_personer" to rapport.antallPersoner,
+                    "belop" to rapport.belop,
                     "nevnt_info" to UlagretRapport.NevntInfo.serialize(rapport.nevntInfo),
                 ),
             )
@@ -120,7 +121,7 @@ class RapportRepository(private val clock: Clock) {
         queryOf(
                 """
                 SELECT r.id, r.uuid, r.bestilling_id, r.orgnr, r.org_navn, r.type, r.dato_valutert, r.bankkonto,
-                       r.antall_rader, r.antall_underenheter, r.antall_personer, r.opprettet, r.arkivert, r.dialogporten_uuid
+                       r.antall_rader, r.antall_underenheter, r.antall_personer, r.belop, r.opprettet, r.arkivert, r.dialogporten_uuid
                 FROM rapport.rapport r
                 JOIN rapport.rapport_bestilling b ON b.id = r.bestilling_id
                 WHERE r.nevnt_info IS NULL
@@ -171,7 +172,7 @@ class RapportRepository(private val clock: Clock) {
         queryOf(
                 """
                 SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
-                       antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
+                       antall_rader, antall_underenheter, antall_personer, belop, opprettet, arkivert, dialogporten_uuid
                 FROM rapport.rapport
                 WHERE id = :id
                 """
@@ -198,7 +199,7 @@ class RapportRepository(private val clock: Clock) {
                     queryOf(
                         """
                             SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
-                                   antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
+                                   antall_rader, antall_underenheter, antall_personer, belop, opprettet, arkivert, dialogporten_uuid
                             FROM rapport.rapport
                             WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                               AND (arkivert IS NULL OR :inkluderArkiverte)
@@ -222,7 +223,7 @@ class RapportRepository(private val clock: Clock) {
                     queryOf(
                         """
                         SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
-                               antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
+                               antall_rader, antall_underenheter, antall_personer, belop, opprettet, arkivert, dialogporten_uuid
                         FROM rapport.rapport
                         WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                           AND (arkivert IS NULL OR :inkluderArkiverte)
@@ -243,7 +244,7 @@ class RapportRepository(private val clock: Clock) {
                     queryOf(
                         """
                         SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
-                               antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
+                               antall_rader, antall_underenheter, antall_personer, belop, opprettet, arkivert, dialogporten_uuid
                         FROM rapport.rapport
                         WHERE type = ANY(CAST(:rapportType AS rapport.rapport_type[]))
                           AND (arkivert IS NULL OR :inkluderArkiverte)
@@ -626,7 +627,7 @@ class RapportRepository(private val clock: Clock) {
         queryOf(
                 """
                 SELECT id, uuid, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto,
-                       antall_rader, antall_underenheter, antall_personer, opprettet, arkivert, dialogporten_uuid
+                       antall_rader, antall_underenheter, antall_personer, belop, opprettet, arkivert, dialogporten_uuid
                 FROM rapport.rapport
                 WHERE type = CAST(:rapportType AS rapport.rapport_type)
                   AND (arkivert IS NULL OR :inkluderArkiverte)

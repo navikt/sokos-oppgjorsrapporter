@@ -32,6 +32,7 @@ object TestData {
             antallRader = 3,
             antallUnderenheter = 1,
             antallPersoner = 2,
+            belop = BigDecimal("8273.50"),
             opprettet = Instant.parse("2024-11-01T12:15:02Z"),
             arkivert = null,
             uuid = UUID.fromString("8facc803-4212-4c2c-896d-faae65b467bd"),

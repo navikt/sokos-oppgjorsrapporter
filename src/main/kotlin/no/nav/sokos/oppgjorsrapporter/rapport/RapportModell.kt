@@ -2,6 +2,7 @@
 
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -106,6 +107,7 @@ sealed interface RapportFelter {
     val antallRader: Int
     val antallUnderenheter: Int?
     val antallPersoner: Int?
+    val belop: BigDecimal?
 }
 
 data class UlagretRapport(
@@ -118,6 +120,7 @@ data class UlagretRapport(
     override val antallRader: Int,
     override val antallUnderenheter: Int?,
     override val antallPersoner: Int?,
+    override val belop: BigDecimal?,
     val nevntInfo: List<NevntInfo>,
 ) : RapportFelter {
     @Serializable
@@ -147,6 +150,7 @@ data class Rapport(
     override val antallRader: Int,
     override val antallUnderenheter: Int?,
     override val antallPersoner: Int?,
+    override val belop: BigDecimal?,
     val opprettet: Instant,
     val arkivert: Instant? = null,
     val uuid: UUID,
@@ -170,6 +174,7 @@ data class Rapport(
         antallRader = row.int("antall_rader"),
         antallUnderenheter = row.intOrNull("antall_underenheter"),
         antallPersoner = row.intOrNull("antall_personer"),
+        belop = row.bigDecimalOrNull("belop"),
         opprettet = row.instant("opprettet"),
         arkivert = row.instantOrNull("arkivert"),
         uuid = UUID.fromString(row.string("uuid")),
