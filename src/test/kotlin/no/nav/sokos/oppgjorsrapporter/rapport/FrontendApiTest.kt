@@ -161,6 +161,7 @@ class FrontendApiTest :
                                                 "type": "ref-arbg",
                                                 "datoValutert": "2023-11-01",
                                                 "bankkonto": "23456789012",
+                                                "belop": 3.14,
                                                 "opprettet": "2023-11-01T10:57:21Z",
                                                 "arkivert": false
                                             }
@@ -175,6 +176,7 @@ class FrontendApiTest :
                                                 "type": "trekk-kred",
                                                 "datoValutert": "2023-01-01",
                                                 "bankkonto": "12345678901",
+                                                "belop": 911.00,
                                                 "opprettet": "2023-01-01T08:37:52Z",
                                                 "arkivert": false
                                             }
@@ -189,6 +191,7 @@ class FrontendApiTest :
                                                 "type": "ref-arbg",
                                                 "datoValutert": "2023-01-01",
                                                 "bankkonto": "12345678901",
+                                                "belop": 42.00,
                                                 "opprettet": "2022-12-31T23:45:15Z",
                                                 "arkivert": false
                                             }
@@ -536,6 +539,7 @@ class FrontendApiTest :
                                         "type": "ref-arbg",
                                         "datoValutert": "2024-11-01",
                                         "bankkonto": "12345678901",
+                                        "belop": 8273.50,
                                         "opprettet": "2024-11-01T12:15:02Z",
                                         "arkivert": false
                                       }
@@ -581,6 +585,7 @@ class FrontendApiTest :
                                         "type": "ref-arbg",
                                         "datoValutert": "2024-11-01",
                                         "bankkonto": "12345678901",
+                                        "belop": 8273.50,
                                         "opprettet": "2024-11-01T12:15:02Z",
                                         "arkivert": false
                                       }

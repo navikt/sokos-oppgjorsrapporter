@@ -1,4 +1,4 @@
-@file:UseSerializers(LocalDateAsStringSerializer::class)
+@file:UseSerializers(LocalDateAsStringSerializer::class, BigDecimalSerializer::class)
 
 package no.nav.sokos.oppgjorsrapporter.rapport
 
@@ -14,6 +14,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.util.getValue
 import io.micrometer.core.instrument.Tag
+import java.math.BigDecimal
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -33,6 +34,7 @@ import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.Melding
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
@@ -89,6 +91,7 @@ object Api {
         val type: RapportType,
         val datoValutert: LocalDate,
         val bankkonto: Bankkonto?,
+        val belop: BigDecimal?,
         @Serializable(with = InstantAsStringSerializer::class) val opprettet: Instant,
         val arkivert: Boolean,
     ) {
@@ -101,6 +104,7 @@ object Api {
             rapport.type,
             rapport.datoValutert,
             rapport.bankkonto,
+            rapport.belop,
             rapport.opprettet,
             rapport.erArkivert,
         )
@@ -126,13 +130,19 @@ object Api {
         )
 
         @Serializable
-        data class Rapport(val id: Rapport.Id, val datoValutert: LocalDate, val varianterMedNedlastingsinfo: List<Variant>) {
+        data class Rapport(
+            val id: Rapport.Id,
+            val datoValutert: LocalDate,
+            val belop: BigDecimal?,
+            val varianterMedNedlastingsinfo: List<Variant>,
+        ) {
             constructor(
-                rapporterMedNedlastingsinfo: RapportMedNedlastingsinfo
+                rapport: RapportMedNedlastingsinfo
             ) : this(
-                id = rapporterMedNedlastingsinfo.rapportId,
-                datoValutert = rapporterMedNedlastingsinfo.rapportInfo.datoValutert,
-                varianterMedNedlastingsinfo = rapporterMedNedlastingsinfo.varianter.map { Variant(it) },
+                id = rapport.rapportId,
+                datoValutert = rapport.rapportInfo.datoValutert,
+                belop = rapport.rapportInfo.belop,
+                varianterMedNedlastingsinfo = rapport.varianter.map { Variant(it) },
             )
 
             @Serializable

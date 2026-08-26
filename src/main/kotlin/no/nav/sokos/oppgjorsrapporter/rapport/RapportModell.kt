@@ -185,7 +185,13 @@ data class Rapport(
 }
 
 data class RapportMedNedlastingsinfo(val rapportId: Rapport.Id, val rapportInfo: RapportInfo, val varianter: List<Variantinfo>) {
-    data class RapportInfo(val orgnr: OrgNr, val orgNavn: OrgNavn?, val type: RapportType, val datoValutert: LocalDate)
+    data class RapportInfo(
+        val orgnr: OrgNr,
+        val orgNavn: OrgNavn?,
+        val type: RapportType,
+        val datoValutert: LocalDate,
+        val belop: BigDecimal?,
+    )
 
     data class Variantinfo(val format: VariantFormat, val filnavn: String, val nedlastingsinfo: Nedlastingsinfo?) {
         @Serializable

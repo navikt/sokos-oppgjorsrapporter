@@ -282,8 +282,9 @@ class RapportRepository(private val clock: Clock) {
                     RapportMedNedlastingsinfo.RapportInfo(
                         orgnr = OrgNr(row.string("orgnr")),
                         orgNavn = row.stringOrNull("org_navn")?.let { OrgNavn(it) },
-                        datoValutert = row.localDate("dato_valutert"),
                         type = RapportType.valueOf(row.string("rapport_type")),
+                        datoValutert = row.localDate("dato_valutert"),
+                        belop = row.bigDecimalOrNull("belop"),
                     ),
                 variantinfo =
                     RapportMedNedlastingsinfo.Variantinfo(
@@ -308,6 +309,7 @@ class RapportRepository(private val clock: Clock) {
                                            r.org_navn,
                                            r.dato_valutert,
                                            r.type   as rapport_type,
+                                           r.belop,
                                            rv.format,
                                            rv.filnavn,
                                            ra.tidspunkt,
