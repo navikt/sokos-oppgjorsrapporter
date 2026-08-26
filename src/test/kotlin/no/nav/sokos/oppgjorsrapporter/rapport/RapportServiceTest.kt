@@ -19,6 +19,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.util.*
@@ -140,6 +141,7 @@ class RapportServiceTest :
                                         antallRader = grunnlag.datarec.size,
                                         antallUnderenheter = grunnlag.datarec.distinctBy { it.bedriftsnummer }.size,
                                         antallPersoner = grunnlag.datarec.distinctBy { it.fnr }.size,
+                                        belop = grunnlag.header.sumBelop,
                                         nevntInfo = grunnlag.nevntInfo(),
                                     ),
                                 )
@@ -211,6 +213,7 @@ class RapportServiceTest :
                             antallRader = 3,
                             antallUnderenheter = 1,
                             antallPersoner = 2,
+                            belop = BigDecimal("47.11"),
                             nevntInfo =
                                 listOf(
                                     UlagretRapport.NevntVersjon(1),
@@ -230,6 +233,7 @@ class RapportServiceTest :
                     rapport.antallRader shouldBe 3
                     rapport.antallUnderenheter shouldBe 1
                     rapport.antallPersoner shouldBe 2
+                    rapport.belop?.toString() shouldBe "47.11"
 
                     val auditLog = sut.hentAuditLog(RapportAuditKriterier(rapport.id))
                     auditLog shouldHaveSize (2)
@@ -263,6 +267,7 @@ class RapportServiceTest :
                             antallRader = 3,
                             antallUnderenheter = 1,
                             antallPersoner = 2,
+                            belop = BigDecimal("125.00"),
                             nevntInfo = listOf(UlagretRapport.NevntVersjon(1)) + nevnteFnr + nevntUnderenhet,
                         )
                     val rapport =
@@ -320,6 +325,7 @@ class RapportServiceTest :
                             antallRader = 3,
                             antallUnderenheter = 1,
                             antallPersoner = 2,
+                            belop = BigDecimal("42.00"),
                             nevntInfo = listOf(UlagretRapport.NevntVersjon(1)) + nevnteFnr + nevntUnderenhet,
                         )
                     val rapport =
@@ -511,6 +517,7 @@ class RapportServiceTest :
                             antallRader = 3,
                             antallUnderenheter = 1,
                             antallPersoner = 2,
+                            belop = BigDecimal("00.01"),
                             nevntInfo =
                                 listOf(
                                     UlagretRapport.NevntVersjon(1),

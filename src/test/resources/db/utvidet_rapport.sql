@@ -13,12 +13,12 @@ VALUES
 -- Rapport 2: én nedlasting (tokenx) på pdf, ingen på csv
 -- Rapport 3: flere nedlastinger på pdf (velg siste), entraid-nedlasting ignoreres
 -- Rapport 4: annen type (trekk-kred) for samme orgnr – skal ikke dukke opp i ref-arbg-søk
-INSERT INTO rapport (id, bestilling_id, orgnr, org_navn, type, dato_valutert, antall_rader)
+INSERT INTO rapport (id, bestilling_id, orgnr, org_navn, type, belop, dato_valutert, antall_rader)
 VALUES
-    (1, 1, '111222333', 'Test Org', 'ref-arbg',   '2026-01-31', 1),
-    (2, 2, '111222333', 'Test Org', 'ref-arbg',   '2026-02-28', 1),
-    (3, 3, '111222333', 'Test Org', 'ref-arbg',   '2026-03-31', 1),
-    (4, 4, '111222333', 'Test Org', 'trekk-kred', '2026-01-31', 1)
+    (1, 1, '111222333', 'Test Org', 'ref-arbg',   101.01, '2026-01-31', 1),
+    (2, 2, '111222333', 'Test Org', 'ref-arbg',   527.00, '2026-02-28', 1),
+    (3, 3, '111222333', 'Test Org', 'ref-arbg',   400.00, '2026-03-31', 1),
+    (4, 4, '111222333', 'Test Org', 'trekk-kred', 182.67, '2026-01-31', 1)
 ;
 
 INSERT INTO rapport_variant (id, rapport_id, format, filnavn, innhold)

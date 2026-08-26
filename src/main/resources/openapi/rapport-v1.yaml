@@ -11,7 +11,7 @@ info:
     * [Oppgjørsrapport arbeidsgiver - refusjoner fra Nav](https://tjenesteoversikten.no/resource/nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver) (tidl. K27),
     * [Trekkoppgjør kreditor](https://tjenesteoversikten.no/resource/nav_utbetaling_oppgjorsrapport-trekkoppgjor) (tidl. T14), og
     * [Trekkhendelser](https://tjenesteoversikten.no/resource/nav_utbetaling_oppgjorsrapport-trekkhendelser) (tidl. T12)
-  version: 1.1.2
+  version: 1.2.0
 
 servers:
   - url: https://sokos-oppgjorsrapporter.ekstern.dev.nav.no/
@@ -366,6 +366,17 @@ components:
 
             Satt for `ref-arbg` og `trekk-kred`. Ikke satt for `trekk-hend` (T12).
           example: "12345678901"
+        belop:
+          type: "string"
+          description: |
+            Utbetalt beløp, i norske kroner.
+            
+            Returneres som en string som inneholder et tall med 2 desimaler,
+            slik at JSON-parsing ikke uforvarende konverterer tallet til et
+            flyttall og mister presisjon.
+            
+            Satt for `ref-arbg` og `trekk-kred`. Ikke satt for `trekk-hend` (T12).
+          example: "1000.00"
         opprettet:
           $ref: "#/components/schemas/Instant"
           description: Tidspunktet rapporten ble opprettet/tilgjengeliggjort i systemet.

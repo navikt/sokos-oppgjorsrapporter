@@ -121,6 +121,7 @@ object FrontendApi {
                 }
             }
         }
+
         post("/api/rapport/frontend/nevnt-sok") {
             val reqBody = call.receive<RapportSoek>()
             autentisertBruker().let { bruker ->

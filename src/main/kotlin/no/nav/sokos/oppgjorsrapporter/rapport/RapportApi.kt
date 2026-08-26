@@ -1,4 +1,4 @@
-@file:UseSerializers(LocalDateAsStringSerializer::class)
+@file:UseSerializers(LocalDateAsStringSerializer::class, BigDecimalSerializer::class)
 
 package no.nav.sokos.oppgjorsrapporter.rapport
 
@@ -33,6 +33,7 @@ import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.Melding
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
@@ -89,6 +90,7 @@ object Api {
         val type: RapportType,
         val datoValutert: LocalDate,
         val bankkonto: Bankkonto?,
+        val belop: String?,
         @Serializable(with = InstantAsStringSerializer::class) val opprettet: Instant,
         val arkivert: Boolean,
     ) {
@@ -101,6 +103,7 @@ object Api {
             rapport.type,
             rapport.datoValutert,
             rapport.bankkonto,
+            rapport.belop?.toString(),
             rapport.opprettet,
             rapport.erArkivert,
         )
@@ -126,13 +129,19 @@ object Api {
         )
 
         @Serializable
-        data class Rapport(val id: Rapport.Id, val datoValutert: LocalDate, val varianterMedNedlastingsinfo: List<Variant>) {
+        data class Rapport(
+            val id: Rapport.Id,
+            val datoValutert: LocalDate,
+            val belop: String?,
+            val varianterMedNedlastingsinfo: List<Variant>,
+        ) {
             constructor(
-                rapporterMedNedlastingsinfo: RapportMedNedlastingsinfo
+                rapport: RapportMedNedlastingsinfo
             ) : this(
-                id = rapporterMedNedlastingsinfo.rapportId,
-                datoValutert = rapporterMedNedlastingsinfo.rapportInfo.datoValutert,
-                varianterMedNedlastingsinfo = rapporterMedNedlastingsinfo.varianter.map { Variant(it) },
+                id = rapport.rapportId,
+                datoValutert = rapport.rapportInfo.datoValutert,
+                belop = rapport.rapportInfo.belop?.toString(),
+                varianterMedNedlastingsinfo = rapport.varianter.map { Variant(it) },
             )
 
             @Serializable
