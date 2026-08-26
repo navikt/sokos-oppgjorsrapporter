@@ -367,12 +367,16 @@ components:
             Satt for `ref-arbg` og `trekk-kred`. Ikke satt for `trekk-hend` (T12).
           example: "12345678901"
         belop:
-          type: "number"
+          type: "string"
           description: |
             Utbetalt beløp, i norske kroner.
             
+            Returneres som en string som inneholder et tall med 2 desimaler,
+            slik at JSON-parsing ikke uforvarende konverterer tallet til et
+            flyttall og mister presisjon.
+            
             Satt for `ref-arbg` og `trekk-kred`. Ikke satt for `trekk-hend` (T12).
-          example: 1000.00
+          example: "1000.00"
         opprettet:
           $ref: "#/components/schemas/Instant"
           description: Tidspunktet rapporten ble opprettet/tilgjengeliggjort i systemet.

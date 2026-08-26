@@ -14,7 +14,6 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.util.getValue
 import io.micrometer.core.instrument.Tag
-import java.math.BigDecimal
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -91,7 +90,7 @@ object Api {
         val type: RapportType,
         val datoValutert: LocalDate,
         val bankkonto: Bankkonto?,
-        val belop: BigDecimal?,
+        val belop: String?,
         @Serializable(with = InstantAsStringSerializer::class) val opprettet: Instant,
         val arkivert: Boolean,
     ) {
@@ -104,7 +103,7 @@ object Api {
             rapport.type,
             rapport.datoValutert,
             rapport.bankkonto,
-            rapport.belop,
+            rapport.belop?.toString(),
             rapport.opprettet,
             rapport.erArkivert,
         )
@@ -133,7 +132,7 @@ object Api {
         data class Rapport(
             val id: Rapport.Id,
             val datoValutert: LocalDate,
-            val belop: BigDecimal?,
+            val belop: String?,
             val varianterMedNedlastingsinfo: List<Variant>,
         ) {
             constructor(
@@ -141,7 +140,7 @@ object Api {
             ) : this(
                 id = rapport.rapportId,
                 datoValutert = rapport.rapportInfo.datoValutert,
-                belop = rapport.rapportInfo.belop,
+                belop = rapport.rapportInfo.belop?.toString(),
                 varianterMedNedlastingsinfo = rapport.varianter.map { Variant(it) },
             )
 

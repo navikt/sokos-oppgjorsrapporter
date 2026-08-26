@@ -337,7 +337,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2024-01-01",
                         "bankkonto": "45678901234",
-                        "belop": 101.01,
+                        "belop": "101.01",
                         "opprettet": "2023-12-31T23:13:54Z",
                         "arkivert": false
                     }
@@ -378,7 +378,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2023-01-01",
                         "bankkonto": "12345678901",
-                        "belop": 42.00,
+                        "belop": "42.00",
                         "opprettet": "2022-12-31T23:45:15Z",
                         "arkivert": false
                     },
@@ -389,7 +389,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
                         "bankkonto": "12345678901",
-                        "belop": 911.00,
+                        "belop": "911.00",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": false
                     }
@@ -430,7 +430,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2023-01-01",
                         "bankkonto": "12345678901",
-                        "belop": 42.00,
+                        "belop": "42.00",
                         "opprettet": "2022-12-31T23:45:15Z",
                         "arkivert": false
                     },
@@ -441,7 +441,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
                         "bankkonto": "12345678901",
-                        "belop": 911.00,
+                        "belop": "911.00",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": false
                     },
@@ -451,7 +451,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "orgnr": "234567890",
                         "type": "ref-arbg",
                         "bankkonto": "23456789012",
-                        "belop": 3.14,
+                        "belop": "3.14",
                         "datoValutert": "2023-11-01",
                         "opprettet": "2023-11-01T10:57:21Z",
                         "arkivert": false
@@ -463,7 +463,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2023-12-31",
                         "bankkonto": "45678901234",
-                        "belop": 47.11,
+                        "belop": "47.11",
                         "opprettet": "2023-12-31T22:58:27Z",
                         "arkivert": false
                     }
@@ -505,7 +505,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2023-11-01",
                         "bankkonto": "23456789012",
-                        "belop": 3.14,
+                        "belop": "3.14",
                         "opprettet": "2023-11-01T10:57:21Z",
                         "arkivert": false
                     },
@@ -516,7 +516,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2023-11-01",
                         "bankkonto": "34567890123",
-                        "belop": 1000.00,
+                        "belop": "1000.00",
                         "opprettet": "2023-11-01T10:57:21Z",
                         "arkivert": true
                     },
@@ -527,7 +527,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2023-12-31",
                         "bankkonto": "45678901234",
-                        "belop": 47.11,
+                        "belop": "47.11",
                         "opprettet": "2023-12-31T22:58:27Z",
                         "arkivert": false
                     }
@@ -568,7 +568,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2024-01-01",
                         "bankkonto": "45678901234",
-                        "belop": 101.01,
+                        "belop": "101.01",
                         "opprettet": "2023-12-31T23:13:54Z",
                         "arkivert": false
                     }
@@ -608,7 +608,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2024-01-01",
                         "bankkonto": "45678901234",
-                        "belop": 101.01,
+                        "belop": "101.01",
                         "opprettet": "2023-12-31T23:13:54Z",
                         "arkivert": false
                     }
@@ -649,7 +649,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2023-11-01",
                         "bankkonto": "23456789012",
-                        "belop": 3.14,
+                        "belop": "3.14",
                         "opprettet": "2023-11-01T10:57:21Z",
                         "arkivert": false
                     }
@@ -690,7 +690,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
                         "bankkonto": "12345678901",
-                        "belop": 911.00,
+                        "belop": "911.00",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": false
                     }
@@ -731,7 +731,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
                         "bankkonto": "12345678901",
-                        "belop": 911.00,
+                        "belop": "911.00",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": false
                     }
@@ -794,7 +794,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "ref-arbg",
                         "datoValutert": "2023-01-01",
                         "bankkonto": "12345678901",
-                        "belop": 42.00,
+                        "belop": "42.00",
                         "opprettet": "2022-12-31T23:45:15Z",
                         "arkivert": false
                     },
@@ -805,7 +805,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "type": "trekk-kred",
                         "datoValutert": "2023-01-01",
                         "bankkonto": "12345678901",
-                        "belop": 911.00,
+                        "belop": "911.00",
                         "opprettet": "2023-01-01T08:37:52Z",
                         "arkivert": false
                     }
@@ -842,7 +842,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     "type": "trekk-kred",
                     "datoValutert": "2023-01-01",
                     "bankkonto": "12345678901",
-                    "belop": 911.00,
+                    "belop": "911.00",
                     "opprettet": "2023-01-01T08:37:52Z",
                     "arkivert": false
                 }
@@ -914,7 +914,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 3,
                             "datoValutert": "2026-03-31",
-                            "belop": 400.00,
+                            "belop": "400.00",
                             "varianterMedNedlastingsinfo": [
                                 {
                                     "format": "pdf",
@@ -934,7 +934,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 2,
                             "datoValutert": "2026-02-28",
-                            "belop": 527.00,
+                            "belop": "527.00",
                             "varianterMedNedlastingsinfo": [
                                 {
                                     "format": "pdf",
@@ -954,7 +954,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         {
                             "id": 1,
                             "datoValutert": "2026-01-31",
-                            "belop": 101.01,
+                            "belop": "101.01",
                             "varianterMedNedlastingsinfo": [
                                 {
                                     "format": "pdf",
@@ -1086,7 +1086,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     "type": "trekk-kred",
                     "datoValutert": "2023-01-01",
                     "bankkonto": "12345678901",
-                    "belop": 911.00,
+                    "belop": "911.00",
                     "opprettet": "2023-01-01T08:37:52Z",
                     "arkivert": false
                 }
@@ -1116,7 +1116,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     "type": "trekk-kred",
                     "datoValutert": "2023-01-01",
                     "bankkonto": "12345678901",
-                    "belop": 911.00,
+                    "belop": "911.00",
                     "opprettet": "2023-01-01T08:37:52Z",
                     "arkivert": true
                 }
@@ -1153,7 +1153,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     "type": "trekk-kred",
                     "datoValutert": "2023-01-01",
                     "bankkonto": "12345678901",
-                    "belop": 911.00,
+                    "belop": "911.00",
                     "opprettet": "2023-01-01T08:37:52Z",
                     "arkivert": false
                 }
