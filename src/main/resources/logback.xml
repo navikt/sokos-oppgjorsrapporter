@@ -59,11 +59,6 @@
         <keepAliveDuration>30 seconds</keepAliveDuration>
         <writeTimeout>1 minute</writeTimeout>
         <reconnectionDelay>1 second</reconnectionDelay>
-        <connectionStrategy>
-            <roundRobin>
-                <connectionTTL>5 minutes</connectionTTL>
-            </roundRobin>
-        </connectionStrategy>
     </appender>
 
     <appender name="console-json" class="ch.qos.logback.classic.AsyncAppender">
