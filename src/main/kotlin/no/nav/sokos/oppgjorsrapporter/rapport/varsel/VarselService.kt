@@ -3,8 +3,6 @@ package no.nav.sokos.oppgjorsrapporter.rapport.varsel
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.UUID
 import javax.sql.DataSource
 import kotlin.math.pow
@@ -150,16 +148,22 @@ class VarselService(
         }
     }
 
-    private fun etterAltinn2(type: RapportType): Boolean =
-        when (type) {
-            RapportType.`ref-arbg` -> LocalDateTime.now(clock).isAfter(LocalDateTime.parse("2026-06-15T12:00"))
-            RapportType.`trekk-kred` -> LocalDate.now(clock).isAfter(LocalDate.parse("2026-05-31"))
-            RapportType.`trekk-hend` ->
-                // Vi planlegger ikke å ha parallell-drift for denne rapport-typen.
-                // Så snart vi begynner å produsere slike rapporter og varsler her, vil man allerede ha omkonfigurert hvor
-                // Oppdrag sender bestillingsmeldingene - så da er vi "etter altinn2".
-                true
-        }
+    private fun merinfo(rapport: Rapport): String =
+        listOfNotNull(
+                """
+                Du kan oppleve å få flere rapporter enn før.
+                Tidligere ble alle utbetalinger til samme organisasjonsnummer samlet i én rapport. 
+                Fremover vil rapportene deles opp per utbetaling, slik at beløpet i rapporten stemmer med det enkelte beløp utbetalt til kontoen.
+                """
+                    .trimIndent()
+                    .takeIf { rapport.type == RapportType.`trekk-kred` },
+                """
+                Les mer om *${rapport.type.fulltNavn}* (tidligere kalt ${rapport.type.gammelKode}) på
+                [Navs infoside om oppgjørsrapporten](${rapport.type.infoSide}).
+                """
+                    .trimIndent(),
+            )
+            .joinToString("\n\n")
 
     private suspend fun opprettDialog(rapport: Rapport): UUID =
         dialogportenClient.opprettDialog(
@@ -167,35 +171,13 @@ class VarselService(
                 rapportType = rapport.type,
                 orgnr = rapport.orgnr,
                 title =
-                    (if (etterAltinn2(rapport.type)) "" else "Ny Altinn3 - ") +
-                        when (rapport.type) {
-                            RapportType.`ref-arbg` -> "${rapport.type.fulltNavn} (utbetalt ${rapport.datoValutert.tilNorskFormat()})"
-                            RapportType.`trekk-hend` -> "${rapport.type.fulltNavn} (generert ${rapport.datoValutert.tilNorskFormat()})"
-                            RapportType.`trekk-kred` -> "${rapport.type.fulltNavn} (generert ${rapport.datoValutert.tilNorskFormat()})"
-                        },
-                summary =
-                    if (etterAltinn2(rapport.type)) "Ny rapport for utbetaling er tilgjengelig for nedlasting."
-                    else
-                        when (rapport.type) {
-                            // UR genererer kun bestillinger på kveldstid.  I denne sammenhengen ignorerer vi derfor tidsrommet mellom
-                            // midnatt og 12.00 den 15. juni (bl.a. fordi summary i en dialog maks kan være 255 tegn langt)
-                            RapportType.`ref-arbg` -> "Til og med 14. juni 2026"
-                            RapportType.`trekk-kred`,
-                            RapportType.`trekk-hend` -> "Til og med mai 2026"
-                        }.let { tilOgMedGrense ->
-                            """
-                            OBS, unngå doble nedlastinger!
-                            Rapporten kommer fra Navs nye system for oppgjørsrapporter.
-                            $tilOgMedGrense vil den gamle meldingen "${rapport.type.gammelTittel}" komme som duplikat.
-                            """
-                                .trimIndent()
-                        },
-                additionalInfo =
-                    """
-                    Les mer om *${rapport.type.fulltNavn}* (tidligere kalt ${rapport.type.gammelKode}) på
-                    [Navs infoside om oppgjørsrapporten](${rapport.type.infoSide}).
-                    """
-                        .trimIndent(),
+                    when (rapport.type) {
+                        RapportType.`ref-arbg` -> "${rapport.type.fulltNavn} (utbetalt ${rapport.datoValutert.tilNorskFormat()})"
+                        RapportType.`trekk-hend` -> "${rapport.type.fulltNavn} (generert ${rapport.datoValutert.tilNorskFormat()})"
+                        RapportType.`trekk-kred` -> "${rapport.type.fulltNavn} (generert ${rapport.datoValutert.tilNorskFormat()})"
+                    },
+                summary = "Ny rapport for utbetaling er tilgjengelig for nedlasting.",
+                additionalInfo = merinfo(rapport),
                 externalReference = rapport.uuid.toString(),
                 idempotentKey = rapport.uuid.toString(),
                 isApiOnly = false,
