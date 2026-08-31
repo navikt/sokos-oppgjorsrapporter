@@ -158,9 +158,9 @@ class VarselService(
                     .trimIndent()
                     .takeIf { rapport.type == RapportType.`trekk-kred` },
                 """
-                    Les mer om *${rapport.type.fulltNavn}* (tidligere kalt ${rapport.type.gammelKode}) på
-                    [Navs infoside om oppgjørsrapporten](${rapport.type.infoSide}).
-                    """
+                Les mer om *${rapport.type.fulltNavn}* (tidligere kalt ${rapport.type.gammelKode}) på
+                [Navs infoside om oppgjørsrapporten](${rapport.type.infoSide}).
+                """
                     .trimIndent(),
             )
             .joinToString("\n\n")
