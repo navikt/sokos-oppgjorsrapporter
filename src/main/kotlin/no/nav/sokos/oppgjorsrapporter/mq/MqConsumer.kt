@@ -3,6 +3,7 @@ package no.nav.sokos.oppgjorsrapporter.mq
 import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import com.ibm.msg.client.wmq.WMQConstants
+import java.time.Duration
 import javax.jms.Connection
 import javax.jms.MessageConsumer
 import javax.jms.Session
@@ -83,6 +84,11 @@ fun PropertiesConfig.MqProperties.connect(): Connection =
                 queueManager = cfg.managerName
                 targetClientMatching = true
                 userAuthenticationMQCSP = true
+                // Hvis MQ-forbindelsen går i stykker, forsøk å koble opp igjen mot samme queueManager
+                clientReconnectOptions = WMQConstants.WMQ_CLIENT_RECONNECT_Q_MGR
+                // Gi opp reconnect hvis det ikke går i orden innen 5 minutter.
+                // I praksis vil "gi opp" bety "kræsj", slik at Kubernetes kan starte en ny instans som forhåpentligvis klarer å connecte.
+                clientReconnectTimeout = Duration.ofMinutes(5).seconds.toInt()
             }
             .createConnection(username, password)
     }
