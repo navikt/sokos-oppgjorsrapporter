@@ -174,7 +174,7 @@ class VarselService(
                     when (rapport.type) {
                         RapportType.`ref-arbg` -> "${rapport.type.fulltNavn} (utbetalt ${rapport.datoValutert.tilNorskFormat()})"
                         RapportType.`trekk-hend` -> "${rapport.type.fulltNavn} (generert ${rapport.datoValutert.tilNorskFormat()})"
-                        RapportType.`trekk-kred` -> "${rapport.type.fulltNavn} (generert ${rapport.datoValutert.tilNorskFormat()})"
+                        RapportType.`trekk-kred` -> "${rapport.type.fulltNavn} (utbetalt ${rapport.datoValutert.tilNorskFormat()})"
                     },
                 summary = "Ny rapport for utbetaling er tilgjengelig for nedlasting.",
                 additionalInfo = merinfo(rapport),
