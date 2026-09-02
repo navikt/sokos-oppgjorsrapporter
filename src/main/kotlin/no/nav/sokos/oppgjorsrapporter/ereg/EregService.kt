@@ -17,6 +17,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.ApiError
 import no.nav.sokos.oppgjorsrapporter.rapport.generator.eregErrorMessage
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.Tegnvask
 import org.slf4j.MDC
 
 class EregService(private val baseUrl: URI, private val client: HttpClient, private val metrics: Metrics) {
@@ -73,7 +74,11 @@ data class Organisasjon(
         } ?: "Ingen adresse"
 
     fun tilOrganisasjonsNavnOgAdresse() =
-        OrganisasjonsNavnOgAdresse(organisasjonsnummer = organisasjonsnummer, navn = navn.sammensattnavn, adresse = formatterAdresse())
+        OrganisasjonsNavnOgAdresse(
+            organisasjonsnummer = organisasjonsnummer,
+            navn = Tegnvask.reparerFeiltolkedeTegn(navn.sammensattnavn),
+            adresse = Tegnvask.reparerFeiltolkedeTegn(formatterAdresse()),
+        )
 }
 
 @Serializable data class Navn(val sammensattnavn: String)
