@@ -297,7 +297,7 @@ val eregResponseMedFeiltolketTegn =
       },
       "enhetstype": "BEDR",
       "adresse": {
-        "adresselinje1": "Juhána Rástto geaidnu 2",
+        "adresselinje1": "Juhána Rástto\u009A geaidnu 2",
         "adresselinje2": "",
         "adresselinje3": "",
         "postnummer": "",
