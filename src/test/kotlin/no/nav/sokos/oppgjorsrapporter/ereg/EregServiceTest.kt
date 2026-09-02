@@ -46,7 +46,7 @@ class EregServiceTest {
     }
 
     @Test
-    fun `hentOrganisasjonsNavnOgAdresse bør returnere organisasjonens navn og adresse reparerer feiltolkede tegn fra Ereg`() = runTest {
+    fun `hentOrganisasjonsNavnOgAdresse bør returnere organisasjonens navn og adresse med reparert feiltolkede tegn`() = runTest {
         val mockEngine = MockEngine {
             respond(
                 content = ByteReadChannel(eregResponseMedFeiltolketTegn),
