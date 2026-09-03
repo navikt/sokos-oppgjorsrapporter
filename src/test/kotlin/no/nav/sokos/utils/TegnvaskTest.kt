@@ -3,11 +3,13 @@ package no.nav.sokos.utils
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-class TegnvaskTest :
+class TegnvaskingTest :
     FunSpec({
-        context("reparerFeiltolkedeTegn") {
-            test("oversetter CP1252-tegn til riktig bokstav") { Tegnvask.reparerFeiltolkedeTegn("Foo\u009Akoda") shouldBe "Fooškoda" }
-            test("fjerner tegn som er udefinert i CP1252") { Tegnvask.reparerFeiltolkedeTegn("Foo\u0081bar") shouldBe "Foobar" }
-            test("beholder linjeskift og tabulator") { Tegnvask.reparerFeiltolkedeTegn("Foo\nbar\tbaz") shouldBe "Foo\nbar\tbaz" }
+        context("vaskTegnUtenGlyf") {
+            test("erstatter C1-kontrolltegn") { "Fáoo\u009A".vaskTegnUtenGlyf() shouldBe "Fáoo?" }
+            test("erstatter C0-kontrolltegn") { "a\u0007b".vaskTegnUtenGlyf() shouldBe "a?b" }
+            test("erstatter usynlige formateringstegn") { "a\u200Bb".vaskTegnUtenGlyf() shouldBe "a?b" }
+            test("beholder norske og samiske bokstaver") { "Fáo Bárš æøå".vaskTegnUtenGlyf() shouldBe "Fáo Bárš æøå" }
+            test("lar tekst uten slike tegn stå urørt") { "Veien 24".vaskTegnUtenGlyf() shouldBe "Veien 24" }
         }
     })

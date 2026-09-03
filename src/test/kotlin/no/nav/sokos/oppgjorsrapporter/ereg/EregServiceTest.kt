@@ -63,7 +63,7 @@ class EregServiceTest {
                 OrganisasjonsNavnOgAdresse(
                     organisasjonsnummer = "990983777",
                     navn = "NAV FAMILIE- OG PENSJONSYTELSER OSL",
-                    adresse = "Juhána Rásttoš geaidnu 2",
+                    adresse = "Fáo Bár? 2",
                 )
             )
     }
