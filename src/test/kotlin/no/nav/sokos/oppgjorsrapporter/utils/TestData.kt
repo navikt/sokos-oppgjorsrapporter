@@ -274,3 +274,47 @@ val eregResponse =
     }
     """
         .trimIndent()
+
+val eregResponseMedFeiltolketTegn =
+    """
+    {
+      "organisasjonsnummer": "990983777",
+      "navn": {
+        "sammensattnavn": "NAV FAMILIE- OG PENSJONSYTELSER OSL",
+        "navnelinje1": "",
+        "navnelinje2": "",
+        "navnelinje3": "",
+        "navnelinje4": "",
+        "navnelinje5": "",
+        "bruksperiode": {
+          "fom": "2015-01-06T21:44:04.748",
+          "tom": "2015-12-06T19:45:04"
+        },
+        "gyldighetsperiode": {
+          "fom": "2014-07-01",
+          "tom": "2015-12-31"
+        }
+      },
+      "enhetstype": "BEDR",
+      "adresse": {
+        "adresselinje1": "Fáo Bár\u009A 2",
+        "adresselinje2": "",
+        "adresselinje3": "",
+        "postnummer": "",
+        "poststed": "",
+        "landkode": "JPN",
+        "kommunenummer": "0301",
+        "bruksperiode": {
+          "fom": "2015-01-06T21:44:04.748",
+          "tom": "2015-12-06T19:45:04"
+        },
+        "gyldighetsperiode": {
+          "fom": "2014-07-01",
+          "tom": "2015-12-31"
+        },
+        "type": "string"
+      },
+      "opphoersdato": "2016-12-31"
+    }
+    """
+        .trimIndent()

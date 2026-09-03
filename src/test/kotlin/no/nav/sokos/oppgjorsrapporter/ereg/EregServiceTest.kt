@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.utils.eregResponse
+import no.nav.sokos.oppgjorsrapporter.utils.eregResponseMedFeiltolketTegn
 import no.nav.sokos.utils.OrgNr
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -40,6 +41,29 @@ class EregServiceTest {
                     organisasjonsnummer = "990983666",
                     navn = "NAV FAMILIE- OG PENSJONSYTELSER OSL",
                     adresse = "Sannergata 2, 0557 Oslo",
+                )
+            )
+    }
+
+    @Test
+    fun `hentOrganisasjonsNavnOgAdresse bør returnere organisasjonens navn og adresse med reparert feiltolkede tegn`() = runTest {
+        val mockEngine = MockEngine {
+            respond(
+                content = ByteReadChannel(eregResponseMedFeiltolketTegn),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+        val mockHttpClient = HttpClient(mockEngine) { install(ContentNegotiation) { json(commonJsonConfig) } }
+
+        val eregService = EregService(URI("http://dummy-ereg-url"), mockHttpClient, mockk(relaxed = true))
+
+        assertThat(eregService.hentOrganisasjonsNavnOgAdresse(OrgNr("990983777")))
+            .isEqualTo(
+                OrganisasjonsNavnOgAdresse(
+                    organisasjonsnummer = "990983777",
+                    navn = "NAV FAMILIE- OG PENSJONSYTELSER OSL",
+                    adresse = "Fáo Bár? 2",
                 )
             )
     }
