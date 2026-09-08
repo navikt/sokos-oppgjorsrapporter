@@ -132,15 +132,19 @@ object Api {
         )
 
         @Serializable
-        data class Rapport(val id: Rapport.Id, val datoValutert: LocalDate, val belop: String?,
-            val varianterMedNedlastingsinfo: List<Variant>,) {
+        data class Rapport(
+            val id: Rapport.Id,
+            val datoValutert: LocalDate,
+            val belop: String?,
+            val varianterMedNedlastingsinfo: List<Variant>,
+        ) {
             constructor(
                 rapport: RapportMedNedlastingsinfo
             ) : this(
                 id = rapport.rapportId,
                 datoValutert = rapport.rapportInfo.datoValutert,
                 belop = rapport.rapportInfo.belop?.toString(),
-				varianterMedNedlastingsinfo = rapport.varianter.map { Variant(it) },
+                varianterMedNedlastingsinfo = rapport.varianter.map { Variant(it) },
             )
 
             @Serializable
@@ -162,13 +166,13 @@ object Api {
 
     @Serializable data class TilgangTilVirksomheterDto(val tilgang: String, val virksomheter: List<VirksomhetDto>)
 
-    @Serializable data class VirksomhetDto(val orgnr: String, val navn: String, val underenheter: List<VirksomhetDto>?)
+    @Serializable data class VirksomhetDto(val orgnr: String, val navn: String, val underenheter: List<VirksomhetDto>)
 }
 
 fun AltinnTilganger.tilgangTilVirksomheterDto(): List<Api.TilgangTilVirksomheterDto> {
     // 1. Rekursiv hjelpefunksjon for å mappe hierarkiet til DTO-formatet
     fun mapVirksomhet(tilgang: AltinnTilgang): Api.VirksomhetDto {
-        val underenheterMapped = tilgang.underenheter.map { mapVirksomhet(it) }.takeIf { it.isNotEmpty() }
+        val underenheterMapped = tilgang.underenheter.map { mapVirksomhet(it) }
 
         return Api.VirksomhetDto(orgnr = tilgang.orgnr, navn = tilgang.navn, underenheter = underenheterMapped)
     }

@@ -1190,7 +1190,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                 					{
                 						"orgnr": "123456789",
                 						"navn": "Bedrift",
-                						"underenheter": null
+                						"underenheter": []
                 					}
                 				]
                                      }
