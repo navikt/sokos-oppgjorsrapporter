@@ -28,9 +28,6 @@ import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
-import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgang
-import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilganger
-import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.Melding
@@ -163,31 +160,6 @@ object Api {
             }
         }
     }
-
-    @Serializable data class TilgangTilVirksomheterDto(val tilgang: String, val virksomheter: List<VirksomhetDto>)
-
-    @Serializable data class VirksomhetDto(val orgnr: String, val navn: String, val underenheter: List<VirksomhetDto>)
-}
-
-fun AltinnTilganger.tilgangTilVirksomheterDto(): List<Api.TilgangTilVirksomheterDto> {
-    // 1. Rekursiv hjelpefunksjon for å mappe hierarkiet til DTO-formatet
-    fun mapVirksomhet(tilgang: AltinnTilgang): Api.VirksomhetDto {
-        val underenheterMapped = tilgang.underenheter.map { mapVirksomhet(it) }
-
-        return Api.VirksomhetDto(orgnr = tilgang.orgnr, navn = tilgang.navn, underenheter = underenheterMapped)
-    }
-
-    // 2. Flat ut par av (tilgang, virksomhet) fra hele toppnivå-hierarkiet
-    val flattedePar =
-        hierarki.flatMap { toppNivaa ->
-            val virksomhetDto = mapVirksomhet(toppNivaa)
-            toppNivaa.altinn3Tilganger.map { tilgang -> tilgang to virksomhetDto }
-        }
-
-    // 3. Grupper på tilgang-strengen og transformer til den endelige DTO-listen
-    return flattedePar
-        .groupBy({ it.first }, { it.second }) // Grupperer List<Pair<String, VirksomhetDto>> til Map<String, List<VirksomhetDto>>
-        .map { (tilgang, virksomheter) -> Api.TilgangTilVirksomheterDto(tilgang = tilgang, virksomheter = virksomheter) }
 }
 
 fun Route.rapportApi() {
@@ -196,7 +168,6 @@ fun Route.rapportApi() {
     val config: PropertiesConfig.Configuration by application.dependencies
     val metrics: Metrics by application.dependencies
     val pdpService: PdpService by application.dependencies
-    val altinnTilgangerService: AltinnTilgangerService by application.dependencies
     val internTilgangService: InternTilgangService by application.dependencies
     val rapportService: RapportService by application.dependencies
     val varselService: VarselService by application.dependencies
@@ -232,22 +203,6 @@ fun Route.rapportApi() {
             }
         }
         return true
-    }
-
-    get("/api/rapport/v1/organisasjoner") {
-        autentisertBruker().let { bruker ->
-            when (bruker) {
-                is TokenX -> {
-                    val token = hentJwtToken(AuthenticationType.EKSTERNE_BRUKERE_TOKENX)
-                    val altinnTilganger = altinnTilgangerService.hentAltinnTilganger(token.encodedToken)
-                    val tilgangTilVirksomheter = altinnTilganger?.tilgangTilVirksomheterDto() ?: listOf()
-                    call.respond(tilgangTilVirksomheter)
-                }
-                else -> {
-                    call.respond(HttpStatusCode.Unauthorized)
-                }
-            }
-        }
     }
 
     post("/api/rapport/v1") {
