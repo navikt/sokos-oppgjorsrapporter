@@ -166,6 +166,6 @@ spec:
     - name: TILGANGSMASKINEN_AUDIENCE
       value: api://prod-gcp.tilgangsmaskin.populasjonstilgangskontroll/.default
     - name: ALTINN_TILGANGER_PROXY_URL
-      value: https://arbeidsgiver-altinn-tilganger.intern.nav.no
+      value: https://arbeidsgiver-altinn-tilganger.intern.nav.no/altinn-tilganger
     - name: ALTINN_TILGANGER_AUDIENCE
       value: prod-gcp:fager:arbeidsgiver-altinn-tilganger
