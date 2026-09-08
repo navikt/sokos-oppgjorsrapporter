@@ -12,10 +12,12 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
+import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClientIdentityProvider
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
+import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
 interface AltinnTilgangerService {
@@ -33,7 +35,7 @@ class AltinnTilgangerServiceImpl(
 
     override suspend fun hentAltinnTilganger(token: String): AltinnTilganger? {
         try {
-            logger.debug("henter Altinn tilganger på URL $altinnTilgangerProxyUrl")
+            logger.debug("henter Altinn tilganger på URL {}", altinnTilgangerProxyUrl)
             val exchangedToken =
                 authClient
                     .exchange(provider = AuthClientIdentityProvider.TOKEN_X, target = altinnTilgangerAudience, userToken = token)
@@ -92,4 +94,8 @@ object LocalhostAltinnTilgangerService : AltinnTilgangerService {
             isError = false,
         )
     }
+}
+
+object AltinnTilgangerHttpClientSetup : HttpClientSetup {
+    override val jsonConfig: Json = Json(commonJsonConfig) { prettyPrint = false }
 }

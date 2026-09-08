@@ -69,6 +69,7 @@ import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.entraid.LocalhostInternTilgangService
 import no.nav.sokos.oppgjorsrapporter.ereg.EregHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
+import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerService
 import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerServiceImpl
 import no.nav.sokos.oppgjorsrapporter.fager.LocalhostAltinnTilgangerService
@@ -189,7 +190,8 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 )
             }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
-            provide<AltinnTilgangerService> { AltinnTilgangerServiceImpl(config.security, resolve(), resolve()) }
+            val client = httpClient("altinn-tilganger", AltinnTilgangerHttpClientSetup)
+            provide<AltinnTilgangerService> { AltinnTilgangerServiceImpl(config.security, resolve(), client) }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
         }
         val authClient: AuthClient by this
