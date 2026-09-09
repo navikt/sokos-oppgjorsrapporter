@@ -29,12 +29,12 @@ import no.nav.sokos.oppgjorsrapporter.auth.hentJwtToken
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
-import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.rapport.Api.RapportDTO
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.Varsel
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
+import no.nav.sokos.oppgjorsrapporter.tilgang.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.UnexpectedResponseException
 import no.nav.sokos.utils.Fnr

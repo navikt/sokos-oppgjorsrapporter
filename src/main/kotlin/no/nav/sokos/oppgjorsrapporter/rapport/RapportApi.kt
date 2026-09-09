@@ -27,15 +27,14 @@ import no.nav.sokos.oppgjorsrapporter.auth.*
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
-import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.Melding
-import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
+import no.nav.sokos.oppgjorsrapporter.tilgang.TilgangService
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.OrgNr
@@ -167,43 +166,9 @@ fun Route.rapportApi() {
     val clock: Clock by application.dependencies
     val config: PropertiesConfig.Configuration by application.dependencies
     val metrics: Metrics by application.dependencies
-    val pdpService: PdpService by application.dependencies
-    val internTilgangService: InternTilgangService by application.dependencies
     val rapportService: RapportService by application.dependencies
+    val tilgangService: TilgangService by application.dependencies
     val varselService: VarselService by application.dependencies
-
-    suspend fun harTilgangTilRessurs(bruker: AutentisertBruker, rapportType: RapportType, orgnr: OrgNr): Boolean {
-        logger.debug(TEAM_LOGS_MARKER) { "Skal sjekke om $bruker har tilgang til $rapportType for $orgnr" }
-        when (bruker) {
-            is Systembruker -> {
-                if (!pdpService.harTilgang(bruker, setOf(orgnr), rapportType.altinnRessurs)) {
-                    logger.info(TEAM_LOGS_MARKER) {
-                        "Systembruker $bruker har forsøkt å aksessere rapport $rapportType for $orgnr, men PDP gir ikke tilgang"
-                    }
-                    return false
-                }
-            }
-
-            is EntraId -> {
-                if (!internTilgangService.harTilgangTilRessurs(bruker, orgnr, rapportType)) {
-                    logger.info(TEAM_LOGS_MARKER) {
-                        "Internbruker $bruker har forsøkt å aksessere rapport $rapportType for $orgnr, men hadde ikke riktig tilgang"
-                    }
-                    return false
-                }
-            }
-
-            is TokenX -> {
-                if (!pdpService.harTilgang(bruker, setOf(orgnr), rapportType.altinnRessurs)) {
-                    logger.info(TEAM_LOGS_MARKER) {
-                        "Personbruker $bruker har forsøkt å aksessere rapport $rapportType for $orgnr, men PDP gir ikke tilgang"
-                    }
-                    return false
-                }
-            }
-        }
-        return true
-    }
 
     post("/api/rapport/v1") {
         val reqBody = call.receive<Api.RapportListeRequest>()
@@ -225,7 +190,7 @@ fun Route.rapportApi() {
             }
             val orgnr = reqBody.orgnr ?: (bruker as? Systembruker)?.userOrg
             // TODO: Hvordan skal "egne ansatte" håndteres?  Både her (for å ikke hente ut unødvendig mye data fra databasen) og i
-            //       harTilgangTilRessurs() (for å begrense søk med eksplisitt orgnr)?
+            //       tilgangService.harTilgangTilRessurs() (for å begrense søk med eksplisitt orgnr)?
             val kriterier =
                 if (reqBody.etterId != null) {
                     if (orgnr == null) {
@@ -263,7 +228,11 @@ fun Route.rapportApi() {
 
             val rapporter = rapportService.listRapporter(kriterier)
             val rapportTyperMedTilgang =
-                rapporter.map { it.orgnr to it.type }.toSet().filter { (orgnr, type) -> harTilgangTilRessurs(bruker, type, orgnr) }.toSet()
+                rapporter
+                    .map { it.orgnr to it.type }
+                    .toSet()
+                    .filter { (orgnr, type) -> tilgangService.harTilgangTilRessurs(bruker, type, orgnr) }
+                    .toSet()
             val filtrerteRapporter =
                 rapporter.filter { r ->
                     val key = r.orgnr to r.type
@@ -295,7 +264,7 @@ fun Route.rapportApi() {
         val rapportId = Rapport.Id(id)
         autentisertBruker().let { bruker ->
             val rapport = rapportService.finnRapport(rapportId) ?: return@get call.respond(HttpStatusCode.NotFound)
-            if (!harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
+            if (!tilgangService.harTilgangTilRessurs(bruker, rapport.type, rapport.orgnr)) {
                 return@get call.respond(HttpStatusCode.NotFound)
             }
             call.respond(Api.RapportDTO(rapport))
@@ -325,7 +294,7 @@ fun Route.rapportApi() {
                                 return@get call.respond(HttpStatusCode.InternalServerError)
                             }
 
-                    if (!harTilgangTilRessurs(bruker, type, orgnr)) {
+                    if (!tilgangService.harTilgangTilRessurs(bruker, type, orgnr)) {
                         return@get call.respond(HttpStatusCode.NotFound)
                     }
 
@@ -338,7 +307,6 @@ fun Route.rapportApi() {
             }
         }
     }
-
     get("/api/rapport/v1/{id}/innhold") {
         val id: Long by call.request.pathVariables
         val rapportId = Rapport.Id(id)
@@ -352,7 +320,7 @@ fun Route.rapportApi() {
                     bruker = bruker,
                     rapportId = rapportId,
                     format = format,
-                    harTilgang = { harTilgangTilRessurs(bruker, it.type, it.orgnr) },
+                    harTilgang = { tilgangService.harTilgangTilRessurs(bruker, it.type, it.orgnr) },
                     process = { variant, innhold ->
                         call.response.header(
                             HttpHeaders.ContentDisposition,
@@ -376,7 +344,7 @@ fun Route.rapportApi() {
                 .markerRapportArkivert(
                     bruker = bruker,
                     id = rapportId,
-                    harTilgang = { harTilgangTilRessurs(bruker, it.type, it.orgnr) },
+                    harTilgang = { tilgangService.harTilgangTilRessurs(bruker, it.type, it.orgnr) },
                     skalArkiveres = skalArkiveres,
                 )
                 ?.let { call.respond(HttpStatusCode.NoContent) } ?: call.respond(HttpStatusCode.NotFound)

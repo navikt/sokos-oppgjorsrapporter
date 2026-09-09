@@ -64,9 +64,6 @@ import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
 import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenClient
 import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenHttpClientSetup
-import no.nav.sokos.oppgjorsrapporter.entraid.EntraIdTilgangService
-import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
-import no.nav.sokos.oppgjorsrapporter.entraid.LocalhostInternTilgangService
 import no.nav.sokos.oppgjorsrapporter.ereg.EregHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
 import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerHttpClientSetup
@@ -88,6 +85,10 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.tilgang.EntraIdTilgangService
+import no.nav.sokos.oppgjorsrapporter.tilgang.InternTilgangService
+import no.nav.sokos.oppgjorsrapporter.tilgang.LocalhostInternTilgangService
+import no.nav.sokos.oppgjorsrapporter.tilgang.TilgangService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
@@ -194,6 +195,9 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             provide<AltinnTilgangerService> { AltinnTilgangerServiceImpl(config.security, resolve(), client) }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
         }
+
+        provide<TilgangService> { TilgangService(resolve(), resolve()) }
+
         val authClient: AuthClient by this
 
         provide<DialogportenClient> {
