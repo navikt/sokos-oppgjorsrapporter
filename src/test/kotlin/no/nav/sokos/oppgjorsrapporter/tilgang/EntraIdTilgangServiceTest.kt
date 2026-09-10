@@ -1,4 +1,4 @@
-package no.nav.sokos.oppgjorsrapporter.entraid
+package no.nav.sokos.oppgjorsrapporter.tilgang
 
 import io.kotest.matchers.shouldBe
 import io.mockk.every

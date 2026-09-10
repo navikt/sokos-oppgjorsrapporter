@@ -5,7 +5,9 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.routing.routing
+import no.nav.sokos.oppgjorsrapporter.fager.altinnTilgangerApi
 import no.nav.sokos.oppgjorsrapporter.rapport.FrontendApi.rapportApi as frontendApi
+import no.nav.sokos.oppgjorsrapporter.rapport.eksternApi
 import no.nav.sokos.oppgjorsrapporter.rapport.rapportApi
 
 val SWAGGER_DOC_PATH = "api/rapport/v1/docs"
@@ -21,6 +23,10 @@ fun Application.routingConfig() {
             AuthenticationType.EKSTERNE_BRUKERE_TOKENX.name,
         ) {
             rapportApi()
+        }
+        authenticate(AuthenticationType.EKSTERNE_BRUKERE_TOKENX.name) {
+            altinnTilgangerApi()
+            eksternApi()
         }
         authenticate(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT.name) { frontendApi() }
     }
