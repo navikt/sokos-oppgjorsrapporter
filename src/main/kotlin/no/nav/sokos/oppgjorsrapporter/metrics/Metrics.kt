@@ -123,6 +123,12 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .publishPercentileHistogram()
             .withRegistry(registry)
 
+    val rapportPrOrgReturnertAntall =
+        DistributionSummary.builder("${NAMESPACE}_api_rapport_org_sok_response_count")
+            .description("Antall rapporter returnert per response for orgnummer-API")
+            .publishPercentileHistogram()
+            .withRegistry(registry)
+
     // Siden Timer måler i nanosekunder, brukes den ikke her; det kunne gitt overflow-trøbbel når summen av alle timer-registreringer når
     // Long.MAX_VALUE (eller ~292.3 år)
     val rapportAlderVedForsteNedlasting =

@@ -138,6 +138,10 @@ class RapportService(
         } ?: emptyList()
     }
 
+    fun listRapporterMedEksternNedlastingsinfo(orgnr: OrgNr, rapportType: RapportType) = withTransaction { tx ->
+        repository.listRapporterMedNedlastingsinfo(tx = tx, orgNr = orgnr, type = rapportType, ignorerNedlastingerAvBrukerType = EntraId)
+    }
+
     fun markerRapportArkivert(
         bruker: AutentisertBruker,
         id: Rapport.Id,
