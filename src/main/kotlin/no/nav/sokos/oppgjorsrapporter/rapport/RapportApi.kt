@@ -127,6 +127,18 @@ object Api {
             rapporter = rapporterMedNedlastingsinfo.map { Rapport(it) },
         )
 
+        constructor(
+            orgnr: OrgNr,
+            type: RapportType,
+            rapporterMedNedlastingsinfo: List<RapportMedNedlastingsinfo>,
+        ) : this(
+            forespurtRapportId = no.nav.sokos.oppgjorsrapporter.rapport.Rapport.Id(0),
+            orgnr = orgnr,
+            orgNavn = rapporterMedNedlastingsinfo.firstOrNull()?.rapportInfo?.orgNavn,
+            type = type,
+            rapporter = rapporterMedNedlastingsinfo.map { Rapport(it) },
+        )
+
         @Serializable
         data class Rapport(
             val id: Rapport.Id,

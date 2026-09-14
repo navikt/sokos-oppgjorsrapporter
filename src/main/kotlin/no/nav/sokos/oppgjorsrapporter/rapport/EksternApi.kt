@@ -76,15 +76,13 @@ fun Route.eksternApi() {
                     }
 
                     val rapporter = rapportService.listRapporterMedEksternNedlastingsinfo(body.orgnr, body.rapportType)
-                    if (rapporter.isEmpty()) {
-                        return@post call.respond(HttpStatusCode.NotFound)
-                    }
-
                     metrics.rapportPrOrgReturnertAntall
                         .withTags(listOf(Tag.of("auth_type", bruker.authType), Tag.of("rapporttype", body.rapportType.name)))
                         .record(rapporter.size.toDouble())
 
-                    call.respond(Api.TilgrensendeRapporterDTO(rapportId = Rapport.Id(0), rapporterMedNedlastingsinfo = rapporter))
+                    call.respond(
+                        Api.TilgrensendeRapporterDTO(orgnr = body.orgnr, type = body.rapportType, rapporterMedNedlastingsinfo = rapporter)
+                    )
                 }
                 else -> {
                     logger.debug { "En ikke-TokenX bruker forsøkte å nå orgnr-API" }

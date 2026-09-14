@@ -1,5 +1,6 @@
 package no.nav.sokos.oppgjorsrapporter.rapport
 
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.ktor.http.ContentType
@@ -157,30 +158,44 @@ class EksternApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
     }
 
     @Test
-    fun `POST _api_ekstern_v1 (finnes rapporter for orgnr, men ikke med rapporttype) returnerer NotFound`() {
+    fun `POST _api_ekstern_v1 (finnes rapporter for orgnr, men ikke med rapporttype) returnerer tom liste`() {
         TestUtil.loadDataSet("db/utvidet_rapport.sql", dbContainer.toDataSource())
 
-        client(authToken = mockOAuth2Server.gyldigTokenXAuthToken(Fnr.genererGyldig().somUvalidert(), "Level3"))
-            .body(EksternApi.EksternRapportListeFilterRequest(orgnr = OrgNr("111222333"), rapportType = RapportType.`trekk-hend`))
-            .post("/api/ekstern/v1")
-            .then()
-            .assertThat()
-            .statusCode(HttpStatusCode.NotFound.value)
-            .extract()
-            .response()
+        val response =
+            client(authToken = mockOAuth2Server.gyldigTokenXAuthToken(Fnr.genererGyldig().somUvalidert(), "Level3"))
+                .body(EksternApi.EksternRapportListeFilterRequest(orgnr = OrgNr("111222333"), rapportType = RapportType.`trekk-hend`))
+                .post("/api/ekstern/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()
+
+        val rapporter = response.body().`as`(Api.TilgrensendeRapporterDTO::class.java) as Api.TilgrensendeRapporterDTO
+        rapporter.forespurtRapportId shouldBe Rapport.Id(0)
+        rapporter.orgnr shouldBe OrgNr("111222333")
+        rapporter.type shouldBe RapportType.`trekk-hend`
+        rapporter.rapporter.shouldBeEmpty()
     }
 
     @Test
-    fun `POST _api_ekstern_v1 (finnes ikke rapporter for orgnr) returnerer NotFound`() {
+    fun `POST _api_ekstern_v1 (finnes ikke rapporter for orgnr) returnerer tom liste`() {
         TestUtil.loadDataSet("db/utvidet_rapport.sql", dbContainer.toDataSource())
 
-        client(authToken = mockOAuth2Server.gyldigTokenXAuthToken(Fnr.genererGyldig().somUvalidert(), "Level3"))
-            .body(EksternApi.EksternRapportListeFilterRequest(orgnr = OrgNr("333222111"), rapportType = RapportType.`trekk-hend`))
-            .post("/api/ekstern/v1")
-            .then()
-            .assertThat()
-            .statusCode(HttpStatusCode.NotFound.value)
-            .extract()
-            .response()
+        val response =
+            client(authToken = mockOAuth2Server.gyldigTokenXAuthToken(Fnr.genererGyldig().somUvalidert(), "Level3"))
+                .body(EksternApi.EksternRapportListeFilterRequest(orgnr = OrgNr("333222111"), rapportType = RapportType.`trekk-hend`))
+                .post("/api/ekstern/v1")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatusCode.OK.value)
+                .extract()
+                .response()
+
+        val rapporter = response.body().`as`(Api.TilgrensendeRapporterDTO::class.java) as Api.TilgrensendeRapporterDTO
+        rapporter.forespurtRapportId shouldBe Rapport.Id(0)
+        rapporter.orgnr shouldBe OrgNr("333222111")
+        rapporter.type shouldBe RapportType.`trekk-hend`
+        rapporter.rapporter.shouldBeEmpty()
     }
 }
