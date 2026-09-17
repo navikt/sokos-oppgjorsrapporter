@@ -33,10 +33,8 @@ import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -239,36 +237,26 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 applicationState.alive = false
             }
 
-            provideJob<BestillingMottak>(
-                with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                    launch { resolve<BestillingMottak>().run() }
-                }
-            )
+            provideJob<BestillingMottak>(launch(Dispatchers.IO + exceptionHandler + MDCContext()) { resolve<BestillingMottak>().run() })
         }
 
         if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += BestillingProsessor::class
         }
         provide(BestillingProsessor::class)
-        provideJob<BestillingProsessor>(
-            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
-        )
+        provideJob<BestillingProsessor>(launch(Dispatchers.IO + MDCContext()) { resolve<BestillingProsessor>().run() })
 
         if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += RapportBackFiller::class
         }
         provide(RapportBackFiller::class)
-        provideJob<RapportBackFiller>(
-            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<RapportBackFiller>().run() } }
-        )
+        provideJob<RapportBackFiller>(launch(Dispatchers.IO + MDCContext()) { resolve<RapportBackFiller>().run() })
 
         if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += VarselProsessor::class
         }
         provide(VarselProsessor::class)
-        provideJob<VarselProsessor>(
-            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<VarselProsessor>().run() } }
-        )
+        provideJob<VarselProsessor>(launch(Dispatchers.IO + MDCContext()) { resolve<VarselProsessor>().run() })
     }
 
     // Flyttet ned hit, siden vi trenger en DataSource dersom install(MicrometerMetrics) skal inneholde PostgreSQLDatabaseMetrics
