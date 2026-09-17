@@ -30,6 +30,7 @@ import no.nav.sokos.oppgjorsrapporter.auth.getBruker
 import no.nav.sokos.oppgjorsrapporter.auth.getConsumerOrgnr
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
 import org.slf4j.LoggerFactory
 import org.slf4j.Marker
 import org.slf4j.MarkerFactory
@@ -73,6 +74,7 @@ fun Application.commonConfig() {
                                 }
                         }
                     }
+                    .rethrowCancellationException()
                     .getOrNull()
             }
         }

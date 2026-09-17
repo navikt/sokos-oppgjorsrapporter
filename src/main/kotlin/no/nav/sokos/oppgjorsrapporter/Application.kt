@@ -312,6 +312,7 @@ private fun httpClient(
         try {
             execute(request)
         } catch (e: Exception) {
+            currentCoroutineContext().ensureActive() // handle CancellationException
             httpLogger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall mot $loggerName: $e" }
             throw e
         }
@@ -332,7 +333,7 @@ abstract class BakgrunnsJobb(private val applicationState: ApplicationState) {
     @WithSpan
     suspend fun whenEnabled(block: suspend () -> Unit) {
         handleSpanException {
-            currentCoroutineContext().ensureActive()
+            currentCoroutineContext().ensureActive() // handle CancellationException
             if (applicationState.disabledBackgroundJobs.contains(this::class)) {
                 logger.trace { "${javaClass.simpleName}.run() disablet" }
                 delay(1.seconds)

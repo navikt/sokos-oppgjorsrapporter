@@ -37,6 +37,7 @@ import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
+import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.LocalDateRange
@@ -317,6 +318,7 @@ fun Route.rapportApi() {
 
                     val (orgnr, type) =
                         runCatching { rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single() }
+                            .rethrowCancellationException()
                             .getOrElse {
                                 val feil =
                                     "Oppslag etter tilgrensende rapporter for $rapportId returnerte rapporter for andre orgnr eller rapport-typer"
@@ -393,6 +395,7 @@ fun Route.rapportApi() {
                     when (val bruker = autentisertBruker()) {
                         is EntraId ->
                             runCatching { bestillingMottak.process(Melding("REST auth=${bruker.navIdent}", rType, call.receiveText())) }
+                                .rethrowCancellationException()
                                 .fold(
                                     onSuccess = {
                                         return@post call.respond(HttpStatusCode.NoContent)

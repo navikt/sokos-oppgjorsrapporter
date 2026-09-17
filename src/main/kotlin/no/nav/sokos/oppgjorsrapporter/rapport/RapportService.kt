@@ -22,6 +22,7 @@ import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.VariantFormatSerializer
+import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
@@ -70,6 +71,7 @@ class RapportService(
                     metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, kilde = bestilling.mottattFra, feilet = false)
                     res
                 }
+                .rethrowCancellationException()
                 .onFailure { e ->
                     logger.error { "Prosessering av '${bestilling.genererSom}'-bestilling #${bestilling.id.raw} feilet" }
                     logger.error(TEAM_LOGS_MARKER, e) { "Prosessering av $bestilling feilet: $e" }
@@ -265,6 +267,7 @@ class RapportService(
                         val bestilling = repository.finnBestilling(tx, rapport.bestillingId)!!
                         process(tx, rapport, bestilling)
                     }
+                    .rethrowCancellationException()
                     .onFailure { e ->
                         logger.error { "Feil under backfilling av nevnt_info for $rapport" }
                         logger.error(TEAM_LOGS_MARKER, e) { "Feil under backfilling av nevnt_info for $rapport: $e" }
