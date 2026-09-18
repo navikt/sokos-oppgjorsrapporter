@@ -12,17 +12,28 @@ spec:
     min: 2
     max: 2
     cpuThresholdPercentage: 75
-  liveness:
+  startup:
     path: /internal/isAlive
     initialDelay: 5
     timeout: 5
+    # Når Kubernetes drainer bort alt som kjører på en host, vil underdimensjonerte resource-requests (enten i vår app eller
+    # andre apper som starter opp/kjører på samme nye host som vår) kunne gi underskudd på CPU/minne, slik at oppstart kan ta
+    # lang tid. Vi gir derfor Kubernetes god tid:
+    # Den vil først restarte en nystartet container dersom applikasjonen bruker mer enn (60 * 5s) 5 minutter før isAlive svarer OK
     periodSeconds: 5
-    failureThreshold: 30
+    failureThreshold: 60
+  liveness:
+    path: /internal/isAlive
+    timeout: 5
+    # Når applikasjonen først har kommet opp, reduserer vi hvor lang "nedetid" vi krever før Kubernetes automatisk restarter
+    # containeren til "negativt svar på isAlive" sammenhengende i minst (6 * 5s) 30 sekunder
+    periodSeconds: 5
+    failureThreshold: 6
   readiness:
     path: /internal/isReady
     initialDelay: 5
-    periodSeconds: 5
     timeout: 5
+    periodSeconds: 5
   resources:
     limits:
       memory: 4096Mi
