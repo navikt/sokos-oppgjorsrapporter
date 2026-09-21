@@ -164,8 +164,8 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
             val client =
                 httpClient("pdfgen", PdfgenHttpClientSetup) {
                     install(HttpTimeout) {
-                        socketTimeoutMillis = 60_000
-                        requestTimeoutMillis = 60_000
+                        socketTimeoutMillis = 10 * 60_000
+                        requestTimeoutMillis = 10 * 60_000
                     }
                 }
             RapportGenerator(pdfgenBaseUrl = config.restEndpoint.pdfgenBaseUrl, client = client, resolve(), resolve())
