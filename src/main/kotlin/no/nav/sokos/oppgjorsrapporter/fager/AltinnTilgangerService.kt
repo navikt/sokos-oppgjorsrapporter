@@ -10,6 +10,9 @@ import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlin.math.pow
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
@@ -44,21 +47,49 @@ class AltinnTilgangerServiceImpl(
             val body =
                 AltinnTilgangerRequest(filter = AltinnTilgangerFilter(altinn3Tilganger = RapportType.entries.map { it.altinnRessurs }))
 
-            val response: HttpResponse =
-                client.post {
-                    url(altinnTilgangerProxyUrl.toURL())
-                    bearerAuth(exchangedToken)
-                    contentType(ContentType.Application.Json)
-                    accept(ContentType.Application.Json)
-                    setBody(body)
+            return retry {
+                val response: HttpResponse =
+                    client.post {
+                        url(altinnTilgangerProxyUrl.toURL())
+                        bearerAuth(exchangedToken)
+                        contentType(ContentType.Application.Json)
+                        accept(ContentType.Application.Json)
+                        setBody(body)
+                    }
+                val decoder = Json { ignoreUnknownKeys = true }
+                val altinnTilganger = decoder.decodeFromString<AltinnTilganger>(response.body())
+
+                if (altinnTilganger.isError) {
+                    throw AltinnTilgangerRetryableException("Fikk isError=true fra altinn-tilganger")
                 }
-            val decoder = Json { ignoreUnknownKeys = true }
-            return decoder.decodeFromString<AltinnTilganger>(response.body())
+                altinnTilganger
+            }
         } catch (e: Exception) {
             logger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall til Altinn tilganger $e" }
             logger.error("Feil ved kall til Altinn tilganger. Sjekk sensitiv logg for mer info")
             return null
         }
+    }
+
+    private suspend fun retry(
+        antallForsøk: Int = 3,
+        forsinkelse: Long = 500,
+        forsinkelseFaktor: Double = 2.0,
+        block: suspend () -> AltinnTilganger,
+    ): AltinnTilganger {
+        repeat(antallForsøk - 1) { forsøk ->
+            try {
+                return block()
+            } catch (_: AltinnTilgangerRetryableException) {
+                logger.debug { "Feil i retry på forsøk $forsøk. Prøver på nytt." }
+            }
+            val multiplikator = forsinkelseFaktor.pow(forsøk).toLong()
+            val beregnetForsinkelse = forsinkelse * multiplikator
+
+            delay(beregnetForsinkelse.milliseconds)
+        }
+
+        return block()
     }
 }
 
@@ -95,6 +126,8 @@ object LocalhostAltinnTilgangerService : AltinnTilgangerService {
         )
     }
 }
+
+class AltinnTilgangerRetryableException(message: String) : RuntimeException(message)
 
 object AltinnTilgangerHttpClientSetup : HttpClientSetup {
     override val jsonConfig: Json = Json(commonJsonConfig) { prettyPrint = false }

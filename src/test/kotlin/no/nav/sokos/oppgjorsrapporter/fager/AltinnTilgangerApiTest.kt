@@ -26,7 +26,7 @@ class AltinnTilgangerApiTest : FullTestServer(MutableClock.of(Instant.parse("202
     fun `GET _api_organisasjoner (innlogget riktig med tokenX) svarer riktig`() {
         val response =
             client(authToken = mockOAuth2Server.gyldigTokenXAuthToken(pid = Fnr.genererGyldig().somUvalidert(), acr = "Level4"))
-                .get("/api/organisasjoner")
+                .get("/api/organisasjoner/v1")
                 .then()
                 .assertThat()
                 .statusCode(HttpStatusCode.OK.value)
@@ -62,9 +62,9 @@ class AltinnTilgangerApiTest : FullTestServer(MutableClock.of(Instant.parse("202
     @Test
     fun `GET _api_organisasjoner (dersom man ikke er logget inn med tokenX) gir feilmelding`() {
         client(authToken = tokenFromDefaultProvider())
-            .get("/api/organisasjoner")
+            .get("/api/organisasjoner/v1")
             .then()
             .assertThat()
-            .statusCode(HttpStatusCode.Unauthorized.value)
+            .statusCode(HttpStatusCode.Unauthorized.value) // -- ktor svarer 401 pga authenticated oppsettet.
     }
 }

@@ -21,17 +21,17 @@ object Api {
 fun Route.altinnTilgangerApi() {
     val altinnTilgangerService: AltinnTilgangerService by application.dependencies
 
-    get("/api/organisasjoner") {
+    get("/api/organisasjoner/v1") {
         autentisertBruker().let { bruker ->
             when (bruker) {
                 is TokenX -> {
                     val token = hentJwtToken(AuthenticationType.EKSTERNE_BRUKERE_TOKENX)
                     val altinnTilganger = altinnTilgangerService.hentAltinnTilganger(token.encodedToken)
-                    val tilgangTilVirksomheter = altinnTilganger?.tilgangTilVirksomheterDto() ?: listOf()
+                    val tilgangTilVirksomheter = altinnTilganger?.tilgangTilVirksomheterDto() ?: emptyList()
                     call.respond(tilgangTilVirksomheter)
                 }
                 else -> {
-                    call.respond(HttpStatusCode.Unauthorized)
+                    call.respond(HttpStatusCode.Forbidden)
                 }
             }
         }
