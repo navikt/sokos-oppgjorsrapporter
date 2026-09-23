@@ -43,19 +43,22 @@ fun Route.eksternApi() {
                         return@get call.respond(HttpStatusCode.NotFound)
                     }
 
-                    val (orgnr, type) = try {
-	                    rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single()
-                    } catch (e: Exception) {
-						when (e) {
-							is NoSuchElementException, is IllegalArgumentException -> {
-								val feil =
-									"Oppslag etter tilgrensende rapporter for $rapportId returnerte rapporter for andre orgnr eller rapport-typer"
-								logger.error(feil)
-								logger.error(TEAM_LOGS_MARKER) { "$feil: $rapporterMedNedlastingsinfo" }
-								return@get call.respond(HttpStatusCode.InternalServerError)
-							} else -> throw e
-						}
-					}
+                    val (orgnr, type) =
+                        try {
+                            rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single()
+                        } catch (e: Exception) {
+                            when (e) {
+                                is NoSuchElementException,
+                                is IllegalArgumentException -> {
+                                    val feil =
+                                        "Oppslag etter tilgrensende rapporter for $rapportId returnerte rapporter for andre orgnr eller rapport-typer"
+                                    logger.error(feil)
+                                    logger.error(TEAM_LOGS_MARKER) { "$feil: $rapporterMedNedlastingsinfo" }
+                                    return@get call.respond(HttpStatusCode.InternalServerError)
+                                }
+                                else -> throw e
+                            }
+                        }
 
                     if (!tilgangService.harTilgangTilRessurs(bruker, type, orgnr)) {
                         return@get call.respond(HttpStatusCode.NotFound)

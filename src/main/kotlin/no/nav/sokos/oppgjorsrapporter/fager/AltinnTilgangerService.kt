@@ -10,11 +10,11 @@ import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.utils.io.CancellationException
 import kotlin.math.pow
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
-import io.ktor.utils.io.CancellationException
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.auth.AuthClient
@@ -66,8 +66,8 @@ class AltinnTilgangerServiceImpl(
                 altinnTilganger
             }
         } catch (e: CancellationException) {
-			throw e
-		} catch (e: Exception) {
+            throw e
+        } catch (e: Exception) {
             logger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall til Altinn tilganger $e" }
             logger.error("Feil ved kall til Altinn tilganger. Sjekk sensitiv logg for mer info")
             return null
