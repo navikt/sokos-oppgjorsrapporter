@@ -32,17 +32,15 @@ import java.time.Clock
 import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.slf4j.MDCContext
 import kotlinx.serialization.json.Json
 import mu.KLogger
@@ -87,6 +85,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
+import no.nav.sokos.utils.runBlockingIgnoringRogueCancellationException
 import org.slf4j.LoggerFactory
 
 private val logger = KotlinLogging.logger {}
@@ -107,7 +106,7 @@ fun main() {
         .start(true)
 }
 
-fun Application.module(appConfig: ApplicationConfig = environment.config, clock: Clock = Clock.systemUTC()) {
+suspend fun Application.module(appConfig: ApplicationConfig = environment.config, clock: Clock = Clock.systemUTC()) {
     // For å tillate tester å overstyre dependencies, bør man først
     // 1. gjøre `provide` av en instans med passende type og evt. navn,
     // for så evt.
@@ -239,36 +238,26 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 applicationState.alive = false
             }
 
-            provideJob<BestillingMottak>(
-                with(CoroutineScope(Dispatchers.IO + exceptionHandler + MDCContext() + SupervisorJob())) {
-                    launch { resolve<BestillingMottak>().run() }
-                }
-            )
+            provideJob<BestillingMottak>(launch(Dispatchers.IO + exceptionHandler + MDCContext()) { resolve<BestillingMottak>().run() })
         }
 
         if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += BestillingProsessor::class
         }
         provide(BestillingProsessor::class)
-        provideJob<BestillingProsessor>(
-            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<BestillingProsessor>().run() } }
-        )
+        provideJob<BestillingProsessor>(launch(Dispatchers.IO + MDCContext()) { resolve<BestillingProsessor>().run() })
 
         if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += RapportBackFiller::class
         }
         provide(RapportBackFiller::class)
-        provideJob<RapportBackFiller>(
-            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<RapportBackFiller>().run() } }
-        )
+        provideJob<RapportBackFiller>(launch(Dispatchers.IO + MDCContext()) { resolve<RapportBackFiller>().run() })
 
         if (config.application.disableBackgroundJobs) {
             applicationState.disabledBackgroundJobs += VarselProsessor::class
         }
         provide(VarselProsessor::class)
-        provideJob<VarselProsessor>(
-            with(CoroutineScope(Dispatchers.IO + MDCContext() + SupervisorJob())) { launch { resolve<VarselProsessor>().run() } }
-        )
+        provideJob<VarselProsessor>(launch(Dispatchers.IO + MDCContext()) { resolve<VarselProsessor>().run() })
     }
 
     // Flyttet ned hit, siden vi trenger en DataSource dersom install(MicrometerMetrics) skal inneholde PostgreSQLDatabaseMetrics
@@ -324,6 +313,9 @@ private fun httpClient(
         try {
             execute(request)
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                currentCoroutineContext().ensureActive()
+            }
             httpLogger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall mot $loggerName: $e" }
             throw e
         }
@@ -344,7 +336,7 @@ abstract class BakgrunnsJobb(private val applicationState: ApplicationState) {
     @WithSpan
     suspend fun whenEnabled(block: suspend () -> Unit) {
         handleSpanException {
-            currentCoroutineContext().ensureActive()
+            currentCoroutineContext().ensureActive() // Stopp hvis corutine-treet vi er en del av har blitt kansellert
             if (applicationState.disabledBackgroundJobs.contains(this::class)) {
                 logger.trace { "${javaClass.simpleName}.run() disablet" }
                 delay(1.seconds)
@@ -362,8 +354,8 @@ private inline fun <reified T : BakgrunnsJobb> DependencyRegistry.provideJob(job
             // Merk at .cancel() ikke er nok her, da det bare vil sende et signal om at jobben skal kanselleres.
             // Vi vil at cleanup-prosessen skal vente til jobben (og dermed alle barne-jobber den evt. har spawnet) er ferdig
             // kansellert.
-            runBlocking { it.cancelAndJoin() }
+            runBlockingIgnoringRogueCancellationException { it.cancelAndJoin() }
         }
     // Sikre at jobName-dependencyen faktisk har blitt resolvet minst en gang, slik at cleanup ikke vil bli skippet
-    runBlocking { resolve<Job>(jobName) }
+    val _ = runBlockingIgnoringRogueCancellationException { resolve<Job>(jobName) }
 }
