@@ -18,10 +18,13 @@ class RogueCancellationException(message: String, cause: CancellationException) 
 
 // Bruk denne i stedet for vanlig `runBlocking()`, slik at evt. `CancellationException` som kastes derfra ikke propagerer (og potensielt
 // stille dreper en ikke-kansellert korutine).
+// I likhet med `runBlocking()` er use-caset for denne funksjonen "jeg trenger å kalle suspend-funksjoner fra en ikke-suspend-kontekst".
 fun <T> runBlockingIgnoringRogueCancellationException(block: suspend CoroutineScope.() -> T): T =
     try {
         runBlocking(block = block)
     } catch (e: CancellationException) {
+        // Under antagelsen om at `runBlockingIgnoringRogueCansellationException()` ble kalt fra en ikke-suspend-kontekst, vil en
+        // `CancellationException` som dukker opp her nødvendigvis måtte være en "rogue"-variant.
         throw RogueCancellationException("runBlocking -> 'rogue' CancellationException", e)
     }
 
