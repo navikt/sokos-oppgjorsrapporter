@@ -25,7 +25,7 @@ import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
 interface AltinnTilgangerService {
-    suspend fun hentAltinnTilganger(token: String): AltinnTilganger?
+    suspend fun hentAltinnTilganger(rapportType: RapportType, token: String): AltinnTilganger?
 }
 
 class AltinnTilgangerServiceImpl(
@@ -37,7 +37,7 @@ class AltinnTilgangerServiceImpl(
     private val altinnTilgangerProxyUrl = securityProperties.altinnTilganger.altinnTilgangerProxyUrl
     private val altinnTilgangerAudience = securityProperties.altinnTilganger.altinnTilgangerAudience
 
-    override suspend fun hentAltinnTilganger(token: String): AltinnTilganger? {
+    override suspend fun hentAltinnTilganger(rapportType: RapportType, token: String): AltinnTilganger? {
         try {
             logger.debug("henter Altinn tilganger på URL {}", altinnTilgangerProxyUrl)
             val exchangedToken =
@@ -45,8 +45,7 @@ class AltinnTilgangerServiceImpl(
                     .exchange(provider = AuthClientIdentityProvider.TOKEN_X, target = altinnTilgangerAudience, userToken = token)
                     .accessToken
 
-            val body =
-                AltinnTilgangerRequest(filter = AltinnTilgangerFilter(altinn3Tilganger = RapportType.entries.map { it.altinnRessurs }))
+            val body = AltinnTilgangerRequest(filter = AltinnTilgangerFilter(altinn3Tilganger = listOf(rapportType.altinnRessurs)))
 
             return retry {
                 val response: HttpResponse =
@@ -99,20 +98,20 @@ class AltinnTilgangerServiceImpl(
 object LocalhostAltinnTilgangerService : AltinnTilgangerService {
     private val logger = KotlinLogging.logger {}
 
-    override suspend fun hentAltinnTilganger(token: String): AltinnTilganger {
+    override suspend fun hentAltinnTilganger(rapportType: RapportType, token: String): AltinnTilganger {
         logger.info(TEAM_LOGS_MARKER) { "Lokal mocket altinntilganger" }
         return AltinnTilganger(
             hierarki =
                 listOf(
                     AltinnTilgang(
                         orgnr = "987654321",
-                        altinn3Tilganger = setOf(RapportType.`ref-arbg`.altinnRessurs),
+                        altinn3Tilganger = setOf(rapportType.altinnRessurs),
                         altinn2Tilganger = setOf(),
                         underenheter =
                             listOf(
                                 AltinnTilgang(
                                     orgnr = "123456789",
-                                    altinn3Tilganger = setOf(RapportType.`ref-arbg`.altinnRessurs),
+                                    altinn3Tilganger = setOf(rapportType.altinnRessurs),
                                     altinn2Tilganger = setOf(),
                                     underenheter = listOf(),
                                     navn = "Bedrift",

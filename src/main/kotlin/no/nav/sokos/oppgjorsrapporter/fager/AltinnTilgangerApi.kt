@@ -11,22 +11,28 @@ import no.nav.sokos.oppgjorsrapporter.auth.TokenX
 import no.nav.sokos.oppgjorsrapporter.auth.autentisertBruker
 import no.nav.sokos.oppgjorsrapporter.auth.hentJwtToken
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 
 object Api {
-    @Serializable data class TilgangTilVirksomheterDto(val tilgang: String, val virksomheter: List<VirksomhetDto>)
-
     @Serializable data class VirksomhetDto(val orgnr: String, val navn: String, val underenheter: List<VirksomhetDto>)
 }
 
 fun Route.altinnTilgangerApi() {
     val altinnTilgangerService: AltinnTilgangerService by application.dependencies
 
-    get("/api/organisasjoner/v1") {
+    get("/api/organisasjoner/v1/{rapportType}") {
+        val rapportType =
+            try {
+                call.pathParameters["rapportType"]?.let { RapportType.valueOf(it) } ?: return@get call.respond(HttpStatusCode.BadRequest)
+            } catch (_: IllegalArgumentException) {
+                return@get call.respond(HttpStatusCode.BadRequest)
+            }
+
         autentisertBruker().let { bruker ->
             when (bruker) {
                 is TokenX -> {
                     val token = hentJwtToken(AuthenticationType.EKSTERNE_BRUKERE_TOKENX)
-                    val altinnTilganger = altinnTilgangerService.hentAltinnTilganger(token.encodedToken)
+                    val altinnTilganger = altinnTilgangerService.hentAltinnTilganger(rapportType, token.encodedToken)
                     val tilgangTilVirksomheter = altinnTilganger?.tilgangTilVirksomheterDto() ?: emptyList()
                     call.respond(tilgangTilVirksomheter)
                 }
@@ -38,7 +44,7 @@ fun Route.altinnTilgangerApi() {
     }
 }
 
-fun AltinnTilganger.tilgangTilVirksomheterDto(): List<Api.TilgangTilVirksomheterDto> {
+fun AltinnTilganger.tilgangTilVirksomheterDto(): List<Api.VirksomhetDto> {
     // 1. Rekursiv hjelpefunksjon for å mappe hierarkiet til DTO-formatet
     fun mapVirksomhet(tilgang: AltinnTilgang): Api.VirksomhetDto {
         val underenheterMapped = tilgang.underenheter.map { mapVirksomhet(it) }
@@ -47,14 +53,5 @@ fun AltinnTilganger.tilgangTilVirksomheterDto(): List<Api.TilgangTilVirksomheter
     }
 
     // 2. Flat ut par av (tilgang, virksomhet) fra hele toppnivå-hierarkiet
-    val flattedePar =
-        hierarki.flatMap { toppNivaa ->
-            val virksomhetDto = mapVirksomhet(toppNivaa)
-            toppNivaa.altinn3Tilganger.map { tilgang -> tilgang to virksomhetDto }
-        }
-
-    // 3. Grupper på tilgang-strengen og transformer til den endelige DTO-listen
-    return flattedePar
-        .groupBy({ it.first }, { it.second }) // Grupperer List<Pair<String, VirksomhetDto>> til Map<String, List<VirksomhetDto>>
-        .map { (tilgang, virksomheter) -> Api.TilgangTilVirksomheterDto(tilgang = tilgang, virksomheter = virksomheter) }
+    return hierarki.map { toppNivaa -> mapVirksomhet(toppNivaa) }
 }

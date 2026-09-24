@@ -10,6 +10,7 @@ import java.time.ZoneOffset
 import net.javacrumbs.jsonunit.assertj.assertThatJson
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigTokenXAuthToken
 import no.nav.sokos.oppgjorsrapporter.rapport.FullTestServer
+import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.genererGyldig
 import org.junit.jupiter.api.Test
@@ -26,7 +27,7 @@ class AltinnTilgangerApiTest : FullTestServer(MutableClock.of(Instant.parse("202
     fun `GET _api_organisasjoner (innlogget riktig med tokenX) svarer riktig`() {
         val response =
             client(authToken = mockOAuth2Server.gyldigTokenXAuthToken(pid = Fnr.genererGyldig().somUvalidert(), acr = "Level4"))
-                .get("/api/organisasjoner/v1")
+                .get("/api/organisasjoner/v1/${RapportType.`ref-arbg`.name}")
                 .then()
                 .assertThat()
                 .statusCode(HttpStatusCode.OK.value)
@@ -36,23 +37,18 @@ class AltinnTilgangerApiTest : FullTestServer(MutableClock.of(Instant.parse("202
         assertThatJson(response.body().prettyPrint())
             .isEqualTo(
                 """
-                            [
-                	{
-                                 "tilgang": "nav_utbetaling_oppgjorsrapport-refusjon-arbeidsgiver",
-                                 "virksomheter": [
-                			{
-                                      "orgnr": "987654321",
-                                      "navn": "Organisasjon",
-                				"underenheter": [
-                					{
-                						"orgnr": "123456789",
-                						"navn": "Bedrift",
-                						"underenheter": []
-                					}
-                				]
-                                     }
-                		]
-                             }
+                [
+                  {
+                    "orgnr": "987654321",
+                    "navn": "Organisasjon",
+                    "underenheter": [
+                      {
+                        "orgnr": "123456789",
+                        "navn": "Bedrift",
+                        "underenheter": []
+                      }
+                    ]
+                  }
                 ]
                 """
                     .trimIndent()
@@ -62,7 +58,7 @@ class AltinnTilgangerApiTest : FullTestServer(MutableClock.of(Instant.parse("202
     @Test
     fun `GET _api_organisasjoner (dersom man ikke er logget inn med tokenX) gir feilmelding`() {
         client(authToken = tokenFromDefaultProvider())
-            .get("/api/organisasjoner/v1")
+            .get("/api/organisasjoner/v1/${RapportType.`ref-arbg`.name}")
             .then()
             .assertThat()
             .statusCode(HttpStatusCode.Unauthorized.value) // -- ktor svarer 401 pga authenticated oppsettet.
