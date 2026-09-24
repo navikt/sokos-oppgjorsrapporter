@@ -10,6 +10,7 @@ import io.ktor.http.isSuccess
 import java.net.URI
 import java.time.Clock
 import java.time.LocalDate
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.io.bytestring.ByteString
@@ -101,7 +102,9 @@ class RapportGenerator(
                     setBody(pdfgenPayload)
                 }
             } catch (e: Exception) {
-                currentCoroutineContext().ensureActive() // handle CancellationException
+                if (e is CancellationException) {
+                    currentCoroutineContext().ensureActive()
+                }
 
                 logger.error(TEAM_LOGS_MARKER, e) {
                     "PDF-generering for ${bestilling.javaClass.simpleName} feilet; payload-lengde=${pdfgenPayload.length}, json='$pdfgenPayload'"

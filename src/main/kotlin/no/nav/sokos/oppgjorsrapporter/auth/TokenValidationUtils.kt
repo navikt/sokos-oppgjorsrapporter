@@ -13,8 +13,8 @@ import no.nav.security.token.support.core.jwt.JwtTokenClaims
 import no.nav.security.token.support.v3.TokenValidationContextPrincipal
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
-import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
 import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.handleCancellationException
 
 private val logger = KotlinLogging.logger {}
 
@@ -30,15 +30,15 @@ suspend fun RoutingContext.tokenValidationContext(): TokenValidationContext {
 
 fun TokenValidationContext.claimsFor(authType: AuthenticationType): JwtTokenClaims = this.getClaims(authType.name)
 
-fun TokenValidationContext.maskinportenAuthDetails() =
+suspend fun TokenValidationContext.maskinportenAuthDetails() =
     runCatching {
             (this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("authorization_details") as? List<*>)
                 ?.filterIsInstance<Map<*, *>>()
                 ?.single { it["type"] == "urn:altinn:systemuser" } ?: throw BrukerIkkeFunnet()
         }
-        .rethrowCancellationException()
+        .handleCancellationException()
 
-fun TokenValidationContext.getSystembruker(): Result<Systembruker> =
+suspend fun TokenValidationContext.getSystembruker(): Result<Systembruker> =
     this.maskinportenAuthDetails()
         .mapCatching { authDetails ->
             val systemBrukerId =
@@ -48,12 +48,12 @@ fun TokenValidationContext.getSystembruker(): Result<Systembruker> =
             val systemId = authDetails["system_id"] as? String ?: throw BrukerIkkeFunnet()
             Systembruker(systemBrukerId, systemBrukerOrgnr, systemId)
         }
-        .rethrowCancellationException()
+        .handleCancellationException()
 
 fun TokenValidationContext.gyldigScope(scope: String): Boolean =
     this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("scope").toString() == scope
 
-fun TokenValidationContext.gyldigSystembrukerOgConsumer(): Boolean =
+suspend fun TokenValidationContext.gyldigSystembrukerOgConsumer(): Boolean =
     getSystembruker().getOrThrow().userOrg.delvisValidert() && getConsumerOrgnr().delvisValidert()
 
 fun OrgNr.delvisValidert(): Boolean = OrgNr.Validert.regex.matches(this.raw)
@@ -65,30 +65,30 @@ fun TokenValidationContext.getConsumerOrgnr(): OrgNr {
 
 private fun Map<*, *>.extractOrgnummer(): OrgNr? = (get("ID") as? String)?.split(":")?.get(1)?.let(::OrgNr)
 
-fun TokenValidationContext.getEntraId(): Result<EntraId> =
+suspend fun TokenValidationContext.getEntraId(): Result<EntraId> =
     runCatching {
             val claims = this.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)
             val navIdent = (claims.get("NAVident") as? String) ?: throw BrukerIkkeFunnet()
             val groups = (claims.get("groups") as? List<*>)?.filterIsInstance<String>() ?: throw BrukerIkkeFunnet()
             EntraId(navIdent, groups.map { UUID.fromString(it) })
         }
-        .rethrowCancellationException()
+        .handleCancellationException()
 
-fun TokenValidationContext.getTokenX(): Result<TokenX> =
+suspend fun TokenValidationContext.getTokenX(): Result<TokenX> =
     runCatching {
             val claims = this.claimsFor(AuthenticationType.EKSTERNE_BRUKERE_TOKENX)
             val pid = (claims.get("pid") as? String) ?: throw BrukerIkkeFunnet()
             val acr = (claims.get("acr") as? String) ?: throw BrukerIkkeFunnet()
             TokenX(pid, acr)
         }
-        .rethrowCancellationException()
+        .handleCancellationException()
 
-fun TokenValidationContext.getBruker(): Result<AutentisertBruker> =
+suspend fun TokenValidationContext.getBruker(): Result<AutentisertBruker> =
     getSystembruker()
         .recoverCatching { getEntraId().getOrThrow() }
-        .rethrowCancellationException()
+        .handleCancellationException()
         .recoverCatching { getTokenX().getOrThrow() }
-        .rethrowCancellationException()
+        .handleCancellationException()
 
 // Exception-klasse som ikke fyller inn stacktrace, da Failure-caset for e.g. getBruker ikke trenger full stacktrace.
 internal class BrukerIkkeFunnet : RuntimeException() {

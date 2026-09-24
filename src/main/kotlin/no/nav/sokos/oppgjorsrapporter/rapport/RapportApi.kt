@@ -37,9 +37,9 @@ import no.nav.sokos.oppgjorsrapporter.serialization.BigDecimalSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.LocalDateAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
-import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.handleCancellationException
 import org.threeten.extra.LocalDateRange
 
 private val logger = KotlinLogging.logger {}
@@ -318,7 +318,7 @@ fun Route.rapportApi() {
 
                     val (orgnr, type) =
                         runCatching { rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single() }
-                            .rethrowCancellationException()
+                            .handleCancellationException()
                             .getOrElse {
                                 val feil =
                                     "Oppslag etter tilgrensende rapporter for $rapportId returnerte rapporter for andre orgnr eller rapport-typer"
@@ -395,7 +395,7 @@ fun Route.rapportApi() {
                     when (val bruker = autentisertBruker()) {
                         is EntraId ->
                             runCatching { bestillingMottak.process(Melding("REST auth=${bruker.navIdent}", rType, call.receiveText())) }
-                                .rethrowCancellationException()
+                                .handleCancellationException()
                                 .fold(
                                     onSuccess = {
                                         return@post call.respond(HttpStatusCode.NoContent)

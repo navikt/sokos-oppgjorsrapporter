@@ -21,7 +21,7 @@ import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.Content
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.CreateDialogRequest
 import no.nav.sokos.oppgjorsrapporter.dialogporten.domene.Dialog
-import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
+import no.nav.sokos.utils.handleCancellationException
 
 class DialogportenClient(baseUrl: URI, private val httpClient: HttpClient) {
     private val dialogportenUrl = baseUrl.resolve("/dialogporten/api/v1/serviceowner/dialogs").toString()
@@ -40,7 +40,7 @@ class DialogportenClient(baseUrl: URI, private val httpClient: HttpClient) {
                         .body<String>()
                 UUID.fromString(response.removeSurrounding("\""))
             }
-            .rethrowCancellationException()
+            .handleCancellationException()
             .getOrElse { e -> logAndThrow("Feil ved oppretting av dialog", e) }
     }
 
@@ -52,7 +52,7 @@ class DialogportenClient(baseUrl: URI, private val httpClient: HttpClient) {
                     httpClient.post("$dialogportenUrl/$dialogId/actions/restore") { accept(ContentType.Application.ProblemJson) }
                 }
             }
-            .rethrowCancellationException()
+            .handleCancellationException()
             .onFailure { e ->
                 val handling = if (arkivert) "arkivering" else "dearkivering"
                 logAndThrow("Feil ved $handling av dialog", e)

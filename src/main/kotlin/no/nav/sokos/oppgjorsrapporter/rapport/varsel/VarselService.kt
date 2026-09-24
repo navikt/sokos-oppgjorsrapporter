@@ -26,8 +26,8 @@ import no.nav.sokos.oppgjorsrapporter.rapport.RapportAudit
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.rapport.SpesifikkeIderKriterier
-import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
 import no.nav.sokos.oppgjorsrapporter.util.tilNorskFormat
+import no.nav.sokos.utils.handleCancellationException
 
 enum class VarselSystem {
     dialogporten
@@ -85,7 +85,7 @@ class VarselService(
                     }
                     varsel
                 }
-                .rethrowCancellationException()
+                .handleCancellationException()
                 .onSuccess { v ->
                     metrics.tellVarselProsessering(varsel.system, rapportType, operasjon, feilet = false)
                     repository.slett(tx, v.id)

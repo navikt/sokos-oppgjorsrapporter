@@ -4,7 +4,6 @@ import java.time.LocalDate
 import java.time.Year
 import java.time.format.DateTimeFormatter
 import kotlin.random.Random
-import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
 
 private fun <T> genererMedKontrollsiffer(ctor: (String) -> T, genererBase: () -> List<Int>, vararg sifferVekter: List<Int>): T {
     while (true) {
@@ -17,9 +16,8 @@ private fun <T> genererMedKontrollsiffer(ctor: (String) -> T, genererBase: () ->
         if (10 !in sifre) {
             try {
                 return ctor(sifre.joinToString(""))
-            } catch (e: Exception) {
-                rethrowCancellationException(e)
-                // ... men ignorer alle andre exceptions
+            } catch (_: Exception) {
+                // ignorer alle exceptions
             }
         }
     }

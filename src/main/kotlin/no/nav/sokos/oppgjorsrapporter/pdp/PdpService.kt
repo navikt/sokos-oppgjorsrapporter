@@ -9,8 +9,8 @@ import no.nav.sokos.oppgjorsrapporter.auth.pdpTokenGetter
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
-import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
 import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.handleCancellationException
 
 interface PdpService {
     suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean
@@ -47,7 +47,7 @@ class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, 
                     )
                 }
             }
-            .rethrowCancellationException()
+            .handleCancellationException()
             .getOrElse {
                 // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
                 return false
@@ -67,7 +67,7 @@ class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, 
                     pdpClient.personHarRettighetForOrganisasjoner(fnr = tokenX.pid, orgnumre = orgnummerSet, ressurs = ressurs)
                 }
             }
-            .rethrowCancellationException()
+            .handleCancellationException()
             .getOrElse {
                 // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
                 return false

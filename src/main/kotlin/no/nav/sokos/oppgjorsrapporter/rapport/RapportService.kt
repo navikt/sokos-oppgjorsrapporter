@@ -6,7 +6,6 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import javax.sql.DataSource
-import kotlinx.coroutines.runBlocking
 import kotlinx.io.bytestring.ByteString
 import kotlinx.serialization.Serializable
 import kotliquery.TransactionalSession
@@ -22,10 +21,11 @@ import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.serialization.InstantAsStringSerializer
 import no.nav.sokos.oppgjorsrapporter.serialization.VariantFormatSerializer
-import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.handleCancellationException
+import no.nav.sokos.utils.runBlockingIgnoringRogueCancellationException
 import org.threeten.extra.Interval
 import org.threeten.extra.LocalDateRange
 
@@ -42,7 +42,7 @@ abstract class DatabaseSupport(private val dataSource: DataSource) {
         //     }
         //
         // vil kjøre `query` med autocommit påskrudd, selv om man har bedt dataSource om å lage connections med autoCommit avskrudd.
-        using(sessionOf(dataSource)) { it.transaction { tx -> runBlocking { block(tx) } } }
+        using(sessionOf(dataSource)) { it.transaction { tx -> runBlockingIgnoringRogueCancellationException { block(tx) } } }
 }
 
 class RapportService(
@@ -71,7 +71,7 @@ class RapportService(
                     metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, kilde = bestilling.mottattFra, feilet = false)
                     res
                 }
-                .rethrowCancellationException()
+                .handleCancellationException()
                 .onFailure { e ->
                     logger.error { "Prosessering av '${bestilling.genererSom}'-bestilling #${bestilling.id.raw} feilet" }
                     logger.error(TEAM_LOGS_MARKER, e) { "Prosessering av $bestilling feilet: $e" }
@@ -267,7 +267,7 @@ class RapportService(
                         val bestilling = repository.finnBestilling(tx, rapport.bestillingId)!!
                         process(tx, rapport, bestilling)
                     }
-                    .rethrowCancellationException()
+                    .handleCancellationException()
                     .onFailure { e ->
                         logger.error { "Feil under backfilling av nevnt_info for $rapport" }
                         logger.error(TEAM_LOGS_MARKER, e) { "Feil under backfilling av nevnt_info for $rapport: $e" }

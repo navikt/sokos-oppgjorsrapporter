@@ -16,7 +16,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import no.nav.sokos.oppgjorsrapporter.rapport.VariantFormat
-import no.nav.sokos.oppgjorsrapporter.util.rethrowCancellationException
+import no.nav.sokos.utils.handleCancellationException
+import no.nav.sokos.utils.runBlockingIgnoringRogueCancellationException
 
 abstract class AsStringSerializer<T : Any>(serialName: String, private val parse: (String) -> T) : KSerializer<T> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
@@ -25,8 +26,9 @@ abstract class AsStringSerializer<T : Any>(serialName: String, private val parse
         encoder.encodeString(value.toString())
     }
 
-    override fun deserialize(decoder: Decoder): T =
-        decoder.decodeString().runCatching(parse).rethrowCancellationException().getOrElse { throw SerializationException(it) }
+    override fun deserialize(decoder: Decoder): T = runBlockingIgnoringRogueCancellationException {
+        decoder.decodeString().runCatching(parse).handleCancellationException().getOrElse { throw SerializationException(it) }
+    }
 }
 
 @OptIn(ExperimentalSerializationApi::class)
