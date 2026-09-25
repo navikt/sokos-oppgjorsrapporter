@@ -84,7 +84,7 @@ class BestillingMottak(
             logger.info(TEAM_LOGS_MARKER) { "Hentet rapport-bestilling: $bestilling" }
             val _ = rapportService.lagreBestilling(melding.kilde, melding.rapportType, melding.data)
             BestillingProsessor.nudge()
-            metrics.tellMottak(melding.rapportType, melding.kilde, rader)
+            metrics.tellMottak(melding.rapportType, rader)
         }
     }
 

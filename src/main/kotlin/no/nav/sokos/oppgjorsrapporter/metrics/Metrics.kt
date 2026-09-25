@@ -9,6 +9,8 @@ import io.micrometer.core.instrument.MultiGauge
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Timer
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import kotlin.collections.listOf
+import kotlin.collections.map
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.rapport.VariantFormat
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselSystem
@@ -36,17 +38,19 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .increment()
     }
 
-    // Får ikke pre-registrert kjente tag-dimensjoner på disse (slik at Prometheus-skraping ser 0-verdier før første
-    // increase()), siden vi vet ikke hvilke verdier "kilde"-taggen kan ha
     private val mottatteBestillingerTeller =
-        Counter.builder("${NAMESPACE}_bestilling_mottatt_count").description("Antall mottatte rapport-bestillinger").withRegistry(registry)
+        Counter.builder("${NAMESPACE}_bestilling_mottatt_count")
+            .description("Antall mottatte rapport-bestillinger")
+            .withRegistry(registry)
+            .apply { initializeTags("rapporttype" to RapportType.entries.map { it.name }) }
     private val mottatteBestillingRaderTeller =
         Counter.builder("${NAMESPACE}_bestilling_mottatt_rader")
             .description("Antall mottatte rapport-bestillings-rader")
             .withRegistry(registry)
+            .apply { initializeTags("rapporttype" to RapportType.entries.map { it.name }) }
 
-    fun tellMottak(rapportType: RapportType, kilde: String, rader: Int) =
-        listOf(Tag.of("kilde", kilde), Tag.of("rapporttype", rapportType.name)).let { tags ->
+    fun tellMottak(rapportType: RapportType, rader: Int) =
+        listOf(Tag.of("rapporttype", rapportType.name)).let { tags ->
             mottatteBestillingerTeller.withTags(tags).increment()
             mottatteBestillingRaderTeller.withTags(tags).increment(rader.toDouble())
         }
@@ -58,15 +62,16 @@ class Metrics(val registry: PrometheusMeterRegistry) {
 
     fun oppdaterUprosesserteBestillinger(rows: Iterable<MultiGauge.Row<Number>>) = uprosesserteBestillingerGauge.register(rows, true)
 
-    // Får ikke pre-registrert kjente tag-dimensjoner på denne (slik at Prometheus-skraping ser 0-verdier før første
-    // increase()), siden vi vet ikke hvilke verdier "kilde"-taggen kan ha
     private val prosesseringAvBestillingTeller =
         Counter.builder("${NAMESPACE}_bestilling_prosessert_count")
             .description("Antall forsøkte prosesseringer av rapport-bestillinger")
             .withRegistry(registry)
+            .apply {
+                initializeTags("rapporttype" to RapportType.entries.map { it.name }, "feilet" to listOf(true, false).map { it.toString() })
+            }
 
-    fun tellBestillingsProsessering(rapportType: RapportType, kilde: String, feilet: Boolean) =
-        prosesseringAvBestillingTeller.withTags("rapporttype", rapportType.name, "kilde", kilde, "feilet", feilet.toString()).increment()
+    fun tellBestillingsProsessering(rapportType: RapportType, feilet: Boolean) =
+        prosesseringAvBestillingTeller.withTags("rapporttype", rapportType.name, "feilet", feilet.toString()).increment()
 
     val rapportGenerertTimer =
         Timer.builder("${NAMESPACE}_rapport_generert_seconds")

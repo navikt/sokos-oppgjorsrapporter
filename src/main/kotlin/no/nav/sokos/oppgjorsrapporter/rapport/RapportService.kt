@@ -67,7 +67,7 @@ class RapportService(
                     // TODO: Er det innafor å la caller bestemme hele prosesserings-oppførselen?  Det gjør jo testing lettere, men...
                     val res = process(tx, bestilling)
                     repository.markerBestillingProsessert(tx, bestilling.id)
-                    metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, kilde = bestilling.mottattFra, feilet = false)
+                    metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, feilet = false)
                     res
                 }
                 .onFailure { e ->
@@ -76,7 +76,7 @@ class RapportService(
                     // Rull tilbake evt. database-endringer som ble gjort av `process` før ting feilet
                     tx.connection.underlying.rollback(savepoint)
 
-                    metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, kilde = bestilling.mottattFra, feilet = true)
+                    metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, feilet = true)
                     repository.markerBestillingProsesseringFeilet(tx, bestilling.id)
                 }
         }
