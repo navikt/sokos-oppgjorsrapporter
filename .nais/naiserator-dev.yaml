@@ -111,6 +111,10 @@ spec:
         - application: pengeflyt-pdfgenrs
         - application: populasjonstilgangskontroll
           namespace: tilgangsmaskin
+        - application: arbeidsgiver-altinn-tilganger
+          namespace: fager
+          cluster: dev-gcp
+
   envFrom:
     - secret: altinn-authorization-subscription
     - secret: sokos-oppgjorsrapporter-secrets
@@ -174,4 +178,8 @@ spec:
     - name: TILGANGSMASKINEN_URL
       value: http://populasjonstilgangskontroll.tilgangsmaskin
     - name: TILGANGSMASKINEN_AUDIENCE
-      value: api://dev-gcp.tilgangsmaskin.populasjonstilgangskontroll/.default
+      value: dev-gcp:tilgangsmaskin:populasjonstilgangskontroll
+    - name: ALTINN_TILGANGER_PROXY_URL
+      value: https://arbeidsgiver-altinn-tilganger.intern.dev.nav.no/altinn-tilganger
+    - name: ALTINN_TILGANGER_AUDIENCE
+      value: dev-gcp:fager:arbeidsgiver-altinn-tilganger
