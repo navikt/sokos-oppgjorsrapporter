@@ -6,6 +6,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.get
+import io.ktor.server.util.getValue
 import kotlinx.serialization.Serializable
 import no.nav.sokos.oppgjorsrapporter.auth.TokenX
 import no.nav.sokos.oppgjorsrapporter.auth.autentisertBruker
@@ -20,13 +21,9 @@ object Api {
 fun Route.altinnTilgangerApi() {
     val altinnTilgangerService: AltinnTilgangerService by application.dependencies
 
-    get("/api/organisasjoner/v1/{rapportType}") {
-        val rapportType =
-            try {
-                call.pathParameters["rapportType"]?.let { RapportType.valueOf(it) } ?: return@get call.respond(HttpStatusCode.BadRequest)
-            } catch (_: IllegalArgumentException) {
-                return@get call.respond(HttpStatusCode.BadRequest)
-            }
+    get("/api/organisasjoner/v1/{type}") {
+        val type: String by call.request.pathVariables
+        val rapportType = RapportType.valueOf(type)
 
         autentisertBruker().let { bruker ->
             when (bruker) {

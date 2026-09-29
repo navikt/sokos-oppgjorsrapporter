@@ -3,9 +3,11 @@ package no.nav.sokos.oppgjorsrapporter
 import ch.qos.logback.classic.LoggerContext
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
+import io.ktor.client.call.body
 import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.engine.apache5.Apache5EngineConfig
 import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
@@ -66,7 +68,9 @@ import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenClient
 import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.ereg.EregHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
+import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilganger
 import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerHttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerRetryableException
 import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerService
 import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerServiceImpl
 import no.nav.sokos.oppgjorsrapporter.fager.LocalhostAltinnTilgangerService
@@ -191,8 +195,30 @@ fun Application.module(appConfig: ApplicationConfig = environment.config, clock:
                 )
             }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
-            val client = httpClient("altinn-tilganger", AltinnTilgangerHttpClientSetup)
-            provide<AltinnTilgangerService> { AltinnTilgangerServiceImpl(config.security, resolve(), client) }
+            provide<AltinnTilgangerService> {
+                val client =
+                    httpClient("altinn-tilganger", AltinnTilgangerHttpClientSetup) {
+                        install(HttpRequestRetry) {
+                            maxRetries =
+                                when (config.application.profile) {
+                                    PropertiesConfig.Profile.LOCAL -> 2
+                                    else -> 5
+                                }
+                            retryOnServerErrors()
+                            retryOnExceptionIf { _, cause -> cause is AltinnTilgangerRetryableException }
+                            exponentialDelay()
+                        }
+                        HttpResponseValidator {
+                            validateResponse { response ->
+                                val body = response.body<AltinnTilganger>()
+                                if (body.isError) {
+                                    throw AltinnTilgangerRetryableException("Fikk isError=true fra altinn-tilganger")
+                                }
+                            }
+                        }
+                    }
+                AltinnTilgangerServiceImpl(config.security, resolve(), client)
+            }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
         }
 

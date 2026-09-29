@@ -11,9 +11,8 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.utils.io.CancellationException
-import kotlin.math.pow
-import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
@@ -39,7 +38,7 @@ class AltinnTilgangerServiceImpl(
 
     override suspend fun hentAltinnTilganger(rapportType: RapportType, token: String): AltinnTilganger? {
         try {
-            logger.debug("henter Altinn tilganger på URL {}", altinnTilgangerProxyUrl)
+            logger.debug("henter Altinn tilganger på URL $altinnTilgangerProxyUrl")
             val exchangedToken =
                 authClient
                     .exchange(provider = AuthClientIdentityProvider.TOKEN_X, target = altinnTilgangerAudience, userToken = token)
@@ -47,51 +46,25 @@ class AltinnTilgangerServiceImpl(
 
             val body = AltinnTilgangerRequest(filter = AltinnTilgangerFilter(altinn3Tilganger = listOf(rapportType.altinnRessurs)))
 
-            return retry {
-                val response: HttpResponse =
-                    client.post {
-                        url(altinnTilgangerProxyUrl.toURL())
-                        bearerAuth(exchangedToken)
-                        contentType(ContentType.Application.Json)
-                        accept(ContentType.Application.Json)
-                        setBody(body)
-                    }
-                val decoder = Json { ignoreUnknownKeys = true }
-                val altinnTilganger = decoder.decodeFromString<AltinnTilganger>(response.body())
-
-                if (altinnTilganger.isError) {
-                    throw AltinnTilgangerRetryableException("Fikk isError=true fra altinn-tilganger")
+            val response: HttpResponse =
+                client.post {
+                    url(altinnTilgangerProxyUrl.toURL())
+                    bearerAuth(exchangedToken)
+                    contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
+                    setBody(body)
                 }
-                altinnTilganger
-            }
-        } catch (e: CancellationException) {
-            throw e
+            val decoder = Json { ignoreUnknownKeys = true }
+            val altinnTilganger = decoder.decodeFromString<AltinnTilganger>(response.body())
+            return altinnTilganger
+        } catch (_: CancellationException) {
+            currentCoroutineContext().ensureActive()
+            throw IllegalStateException("Rogue cancellation exception") // -- TODO: Bytt til RougeCancellationException
         } catch (e: Exception) {
             logger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall til Altinn tilganger $e" }
             logger.error("Feil ved kall til Altinn tilganger. Sjekk sensitiv logg for mer info")
             return null
         }
-    }
-
-    private suspend fun retry(
-        antallForsøk: Int = 3,
-        forsinkelse: Long = 500,
-        forsinkelseFaktor: Double = 2.0,
-        block: suspend () -> AltinnTilganger,
-    ): AltinnTilganger {
-        repeat(antallForsøk - 1) { forsøk ->
-            try {
-                return block()
-            } catch (_: AltinnTilgangerRetryableException) {
-                logger.debug { "Feil i retry på forsøk $forsøk. Prøver på nytt." }
-            }
-            val multiplikator = forsinkelseFaktor.pow(forsøk).toLong()
-            val beregnetForsinkelse = forsinkelse * multiplikator
-
-            delay(beregnetForsinkelse.milliseconds)
-        }
-
-        return block()
     }
 }
 
