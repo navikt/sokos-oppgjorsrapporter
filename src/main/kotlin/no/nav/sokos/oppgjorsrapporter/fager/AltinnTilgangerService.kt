@@ -54,8 +54,7 @@ class AltinnTilgangerServiceImpl(
                     accept(ContentType.Application.Json)
                     setBody(body)
                 }
-            val decoder = Json { ignoreUnknownKeys = true }
-            val altinnTilganger = decoder.decodeFromString<AltinnTilganger>(response.body())
+            val altinnTilganger = response.body<AltinnTilganger>()
             return altinnTilganger
         } catch (_: CancellationException) {
             currentCoroutineContext().ensureActive()
@@ -105,5 +104,9 @@ object LocalhostAltinnTilgangerService : AltinnTilgangerService {
 class AltinnTilgangerRetryableException(message: String) : RuntimeException(message)
 
 object AltinnTilgangerHttpClientSetup : HttpClientSetup {
-    override val jsonConfig: Json = Json(commonJsonConfig) { prettyPrint = false }
+    override val jsonConfig: Json =
+        Json(commonJsonConfig) {
+            prettyPrint = false
+            ignoreUnknownKeys = true
+        }
 }
