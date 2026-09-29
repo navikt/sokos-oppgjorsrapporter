@@ -53,7 +53,7 @@ fun Route.eksternApi() {
                                     val feil =
                                         "Oppslag etter tilgrensende rapporter for $rapportId returnerte rapporter for andre orgnr eller rapport-typer"
                                     logger.error(feil)
-                                    logger.error(TEAM_LOGS_MARKER) { "$feil: $rapporterMedNedlastingsinfo" }
+                                    logger.error(TEAM_LOGS_MARKER, e) { "$feil: $rapporterMedNedlastingsinfo" }
                                     return@get call.respond(HttpStatusCode.InternalServerError)
                                 }
                                 else -> throw e
@@ -92,7 +92,6 @@ fun Route.eksternApi() {
                     )
                 }
                 else -> {
-                    logger.debug { "En ikke-TokenX bruker forsøkte å nå orgnr-API" }
                     return@post call.respond(HttpStatusCode.Forbidden)
                 }
             }
