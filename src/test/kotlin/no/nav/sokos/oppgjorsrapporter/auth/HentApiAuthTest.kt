@@ -26,7 +26,6 @@ import no.nav.sokos.oppgjorsrapporter.TestContainer
 import no.nav.sokos.oppgjorsrapporter.TestUtil.EntraIdGroup
 import no.nav.sokos.oppgjorsrapporter.TestUtil.Orgnrs
 import no.nav.sokos.oppgjorsrapporter.configureTestApplicationEnvironment
-import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.module
 import no.nav.sokos.oppgjorsrapporter.pdp.PdpService
 import no.nav.sokos.oppgjorsrapporter.rapport.Api
@@ -38,6 +37,7 @@ import no.nav.sokos.oppgjorsrapporter.rapport.VariantFormat
 import no.nav.sokos.oppgjorsrapporter.rapport.medId
 import no.nav.sokos.oppgjorsrapporter.rapport.medOrgNr
 import no.nav.sokos.oppgjorsrapporter.rapport.medType
+import no.nav.sokos.oppgjorsrapporter.tilgang.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.utils.TestData
 import no.nav.sokos.utils.Fnr
 import no.nav.sokos.utils.OrgNr
