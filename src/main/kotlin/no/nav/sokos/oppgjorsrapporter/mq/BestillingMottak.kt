@@ -5,7 +5,10 @@ package no.nav.sokos.oppgjorsrapporter.mq
 
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.instrumentation.annotations.WithSpan
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -99,6 +102,9 @@ class BestillingMottak(
                     block(melding)
                     consumer.commit()
                 } catch (ex: Exception) {
+                    if (ex is CancellationException) {
+                        currentCoroutineContext().ensureActive()
+                    }
                     consumer.rollback()
                     logger.error(TEAM_LOGS_MARKER, ex) {
                         "Noe gikk galt; meldingen fra $queueName er rullet tilbake (kanskje til BOQ): $ex"

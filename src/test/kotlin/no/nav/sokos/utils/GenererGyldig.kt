@@ -17,7 +17,7 @@ private fun <T> genererMedKontrollsiffer(ctor: (String) -> T, genererBase: () ->
             try {
                 return ctor(sifre.joinToString(""))
             } catch (_: Exception) {
-                //
+                // ignorer alle exceptions
             }
         }
     }
