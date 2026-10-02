@@ -2,9 +2,9 @@
   "header": {
     "orgnr": "974600019",
     "bankkonto": "02470303400",
-    "sumBelop": 8093.00,
+    "sumBelop": 6093.00,
     "valutert": "2025-10-28",
-    "linjer": 6
+    "linjer": 7
   },
   "datarec": [
     {
@@ -17,6 +17,17 @@
       "fraDato": "2025-05-01",
       "tilDato": "2025-05-31",
       "belop": -1000.00
+    },
+    {
+      "navenhet": 8020,
+      "bedriftsnummer": "974600888",
+      "kode": "A",
+      "tekst": "Trekk/Tilbakebetaling",
+      "fnr": "00974600888",
+      "navn": "Underenhet Med Trekk AS",
+      "fraDato": "2025-05-01",
+      "tilDato": "2025-05-31",
+      "belop": -2000.00
     },
     {
       "navenhet": 8020,
