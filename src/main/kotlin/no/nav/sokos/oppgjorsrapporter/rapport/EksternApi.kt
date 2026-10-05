@@ -19,6 +19,7 @@ import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.tilgang.TilgangService
 import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.handleCancellationException
 
 private val logger = KotlinLogging.logger {}
 
@@ -43,22 +44,22 @@ fun Route.eksternApi() {
                         return@get call.respond(HttpStatusCode.NotFound)
                     }
 
-                    val (orgnr, type) =
-                        try {
-                            rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single()
-                        } catch (e: Exception) {
-                            when (e) {
-                                is NoSuchElementException,
-                                is IllegalArgumentException -> {
-                                    val feil =
-                                        "Oppslag etter tilgrensende rapporter for $rapportId returnerte rapporter for andre orgnr eller rapport-typer"
-                                    logger.error(feil)
-                                    logger.error(TEAM_LOGS_MARKER, e) { "$feil: $rapporterMedNedlastingsinfo" }
-                                    return@get call.respond(HttpStatusCode.InternalServerError)
-                                }
-                                else -> throw e
+                    val res =
+                        runCatching { rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single() }
+                            .handleCancellationException()
+                    res.exceptionOrNull()?.let { e ->
+                        when (e) {
+                            is NoSuchElementException,
+                            is IllegalArgumentException -> {
+                                val feil =
+                                    "Oppslag etter tilgrensende rapporter for $rapportId returnerte rapporter for andre orgnr eller rapport-typer"
+                                logger.error(feil)
+                                logger.error(TEAM_LOGS_MARKER, e) { "$feil: $rapporterMedNedlastingsinfo" }
+                                return@get call.respond(HttpStatusCode.InternalServerError)
                             }
                         }
+                    }
+                    val (orgnr, type) = res.getOrThrow()
 
                     if (!tilgangService.harTilgangTilRessurs(bruker, type, orgnr)) {
                         return@get call.respond(HttpStatusCode.NotFound)

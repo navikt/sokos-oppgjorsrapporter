@@ -10,6 +10,7 @@ import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.handleCancellationException
 
 interface PdpService {
     suspend fun harTilgang(systembruker: Systembruker, orgnumre: Set<OrgNr>, ressurs: String): Boolean
@@ -46,7 +47,11 @@ class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, 
                     )
                 }
             }
-            .getOrDefault(false) // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
+            .handleCancellationException()
+            .getOrElse {
+                // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
+                return false
+            }
     }
 
     override suspend fun harTilgang(tokenX: TokenX, orgnumre: Set<OrgNr>, ressurs: String): Boolean {
@@ -62,7 +67,11 @@ class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, 
                     pdpClient.personHarRettighetForOrganisasjoner(fnr = tokenX.pid, orgnumre = orgnummerSet, ressurs = ressurs)
                 }
             }
-            .getOrDefault(false) // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
+            .handleCancellationException()
+            .getOrElse {
+                // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
+                return false
+            }
     }
 }
 
