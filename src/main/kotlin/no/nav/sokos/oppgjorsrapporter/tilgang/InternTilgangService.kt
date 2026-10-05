@@ -1,4 +1,4 @@
-package no.nav.sokos.oppgjorsrapporter.entraid
+package no.nav.sokos.oppgjorsrapporter.tilgang
 
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId

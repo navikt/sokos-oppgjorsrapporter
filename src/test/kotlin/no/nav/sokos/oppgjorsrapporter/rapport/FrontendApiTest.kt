@@ -34,9 +34,9 @@ import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigSystembrukerAuthToken
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigTokenXAuthToken
 import no.nav.sokos.oppgjorsrapporter.auth.tokenFromDefaultProvider
-import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.tilgang.InternTilgangService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.UnexpectedResponseException
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.kontrakter.AvvisningskodeDTO

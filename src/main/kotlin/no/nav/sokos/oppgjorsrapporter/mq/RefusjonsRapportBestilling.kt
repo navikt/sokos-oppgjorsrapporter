@@ -33,15 +33,16 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
                 ?.let { "Ikke gyldig orgnr: ${it.sorted().joinToString()}" },
             // alle fnr skal være gyldige
             datarec
-                .map { it.fnr }
+                .map { FnrOgBedriftNr(it.fnr, it.bedriftsnummer) }
                 .toSet()
                 // Korrigeringsposteringer kan bli lagt på mottakende orgnr (prefikset med nok 0-er til å se ut som et fnr) i stedet for en
-                // person; i slike tilfeller sendes rapport-mottaker pr. brev en forklaring på hvordan ting egentlig henger sammen.
+                // person; mottakende orgnr kan være hovedenhet(header.orgnr) eller underenhet(datarec[i].bedriftsnummer).
+                // I slike tilfeller sendes rapport-mottaker pr. brev en forklaring på hvordan ting egentlig henger sammen.
                 // For valideringen betyr dette at vi ikke skal forsøke å Fnr-validere posteringer der "fnr" egentlig er mottakers orgnr.
-                .filterNot { it.raw.removePrefix("00") == header.orgnr.raw }
-                .filterNot { it.erGyldig() }
+                .filterNot { (fnr, orgNr) -> fnrErMottakendeOrgnr(fnr, orgNr) }
+                .filterNot { it.fnr.erGyldig() }
                 .takeIf { it.isNotEmpty() }
-                ?.map { it.raw }
+                ?.map { it.fnr.raw }
                 ?.let { "Ikke gyldig fnr: ${it.sorted().joinToString()}" },
             // bankkonto skal kun inneholde siffer, i riktig antall
             header.bankkonto
@@ -80,11 +81,18 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
         listOf(UlagretRapport.NevntVersjon(1)) +
             datarec.flatMap { listOf(UlagretRapport.NevntFnr(it.fnr), UlagretRapport.NevntUnderenhet(it.bedriftsnummer)) }.distinct()
 
+    private fun fnrErMottakendeOrgnr(fnr: Fnr, underenhetOrgnr: OrgNr): Boolean {
+        val orgNrUtenNullPrefiks = fnr.raw.removePrefix("00")
+        return orgNrUtenNullPrefiks == header.orgnr.raw || orgNrUtenNullPrefiks == underenhetOrgnr.raw
+    }
+
     companion object {
         val json = Json { explicitNulls = false }
 
         fun decode(dokument: String): RefusjonsRapportBestilling = json.decodeFromString<RefusjonsRapportBestilling>(dokument)
     }
+
+    data class FnrOgBedriftNr(val fnr: Fnr, val bedriftsnummer: OrgNr)
 }
 
 @Serializable

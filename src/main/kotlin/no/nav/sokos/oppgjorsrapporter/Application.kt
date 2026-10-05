@@ -3,9 +3,11 @@ package no.nav.sokos.oppgjorsrapporter
 import ch.qos.logback.classic.LoggerContext
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
+import io.ktor.client.call.body
 import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.engine.apache5.Apache5EngineConfig
 import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
@@ -62,11 +64,14 @@ import no.nav.sokos.oppgjorsrapporter.config.routingConfig
 import no.nav.sokos.oppgjorsrapporter.config.securityConfig
 import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenClient
 import no.nav.sokos.oppgjorsrapporter.dialogporten.DialogportenHttpClientSetup
-import no.nav.sokos.oppgjorsrapporter.entraid.EntraIdTilgangService
-import no.nav.sokos.oppgjorsrapporter.entraid.InternTilgangService
-import no.nav.sokos.oppgjorsrapporter.entraid.LocalhostInternTilgangService
 import no.nav.sokos.oppgjorsrapporter.ereg.EregHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.ereg.EregService
+import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilganger
+import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerHttpClientSetup
+import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerRetryableException
+import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerService
+import no.nav.sokos.oppgjorsrapporter.fager.AltinnTilgangerServiceImpl
+import no.nav.sokos.oppgjorsrapporter.fager.LocalhostAltinnTilgangerService
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.mq.BestillingMottak
 import no.nav.sokos.oppgjorsrapporter.mq.MqConsumer
@@ -82,6 +87,10 @@ import no.nav.sokos.oppgjorsrapporter.rapport.generator.RapportGenerator
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselProsessor
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselRepository
 import no.nav.sokos.oppgjorsrapporter.rapport.varsel.VarselService
+import no.nav.sokos.oppgjorsrapporter.tilgang.EntraIdTilgangService
+import no.nav.sokos.oppgjorsrapporter.tilgang.InternTilgangService
+import no.nav.sokos.oppgjorsrapporter.tilgang.LocalhostInternTilgangService
+import no.nav.sokos.oppgjorsrapporter.tilgang.TilgangService
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinHttpClientSetup
 import no.nav.sokos.oppgjorsrapporter.tilgangsmaskin.TilgangsmaskinService
 import no.nav.sokos.oppgjorsrapporter.util.handleSpanException
@@ -163,8 +172,8 @@ suspend fun Application.module(appConfig: ApplicationConfig = environment.config
             val client =
                 httpClient("pdfgen", PdfgenHttpClientSetup) {
                     install(HttpTimeout) {
-                        socketTimeoutMillis = 60_000
-                        requestTimeoutMillis = 60_000
+                        socketTimeoutMillis = 10 * 60_000
+                        requestTimeoutMillis = 10 * 60_000
                     }
                 }
             RapportGenerator(pdfgenBaseUrl = config.restEndpoint.pdfgenBaseUrl, client = client, resolve(), resolve())
@@ -173,6 +182,7 @@ suspend fun Application.module(appConfig: ApplicationConfig = environment.config
         if (config.application.profile == PropertiesConfig.Profile.LOCAL) {
             provide<AuthClient> { NoOpAuthClient() }
             provide<PdpService> { LocalhostPdpService }
+            provide<AltinnTilgangerService> { LocalhostAltinnTilgangerService }
             provide<InternTilgangService> { LocalhostInternTilgangService }
         } else {
             provide<AuthClient> {
@@ -184,8 +194,35 @@ suspend fun Application.module(appConfig: ApplicationConfig = environment.config
                 )
             }
             provide<PdpService> { AltinnPdpService(config.security, resolve(), resolve()) }
+            provide<AltinnTilgangerService> {
+                val client =
+                    httpClient("altinn-tilganger", AltinnTilgangerHttpClientSetup) {
+                        install(HttpRequestRetry) {
+                            maxRetries =
+                                when (config.application.profile) {
+                                    PropertiesConfig.Profile.LOCAL -> 2
+                                    else -> 5
+                                }
+                            retryOnServerErrors()
+                            retryOnExceptionIf { _, cause -> cause is AltinnTilgangerRetryableException }
+                            exponentialDelay()
+                        }
+                        HttpResponseValidator {
+                            validateResponse { response ->
+                                val body = response.body<AltinnTilganger>()
+                                if (body.isError) {
+                                    throw AltinnTilgangerRetryableException("Fikk isError=true fra altinn-tilganger")
+                                }
+                            }
+                        }
+                    }
+                AltinnTilgangerServiceImpl(config.security, resolve(), client)
+            }
             provide<InternTilgangService> { EntraIdTilgangService(config.security.azureAd, config.application) }
         }
+
+        provide<TilgangService> { TilgangService(resolve(), resolve()) }
+
         val authClient: AuthClient by this
 
         provide<DialogportenClient> {
