@@ -24,14 +24,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-#      - uses: nais/deploy/actions/deploy@5fdd91aaf69bb0d6dd5e5118cdacb639f487b93b # v2
+#      - uses: nais/deploy/actions/deploy@7ad7c2b833e1db74a80954e3ee6bb6ac060a8ae7 # v2
 #        env:
 #          CLUSTER: ${{ matrix.cluster }}
 #          RESOURCE: .nais/alertmanager.yaml
 #          VARS: .nais/alertmanager-${{matrix.cluster}}.json
 #          PRINT_PAYLOAD: true
 
-      - uses: nais/deploy/actions/deploy@5fdd91aaf69bb0d6dd5e5118cdacb639f487b93b # v2
+      - uses: nais/deploy/actions/deploy@7ad7c2b833e1db74a80954e3ee6bb6ac060a8ae7 # v2
         env:
           CLUSTER: ${{ matrix.cluster }}
           RESOURCE: .nais/alerterator.yaml
