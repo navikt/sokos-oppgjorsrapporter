@@ -19,7 +19,6 @@ import io.ktor.server.routing.route
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
 import javax.sql.DataSource
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import no.nav.security.token.support.v3.TokenValidationContextPrincipal
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
@@ -30,6 +29,8 @@ import no.nav.sokos.oppgjorsrapporter.auth.getBruker
 import no.nav.sokos.oppgjorsrapporter.auth.getConsumerOrgnr
 import no.nav.sokos.oppgjorsrapporter.metrics.Metrics
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportService
+import no.nav.sokos.utils.handleCancellationException
+import no.nav.sokos.utils.runBlockingIgnoringRogueCancellationException
 import org.slf4j.LoggerFactory
 import org.slf4j.Marker
 import org.slf4j.MarkerFactory
@@ -56,7 +57,7 @@ fun Application.commonConfig() {
         filter { call -> call.request.path().startsWith("/api") }
         disableDefaultColors()
         mdc("user") { call ->
-            runBlocking {
+            runBlockingIgnoringRogueCancellationException {
                 runCatching {
                         val context = call.principal<TokenValidationContextPrincipal>()?.context
                         context?.getBruker()?.getOrThrow()?.let { bruker ->
@@ -73,6 +74,7 @@ fun Application.commonConfig() {
                                 }
                         }
                     }
+                    .handleCancellationException()
                     .getOrNull()
             }
         }
@@ -86,22 +88,26 @@ fun Application.commonConfig() {
         meterBinders += listOf(PostgreSQLDatabaseMetrics(dataSource, applicationConfig.postgres.databaseName))
 
         timers { call, _ ->
-            if (call.request.path().endsWith("/innhold") && call.response.status() == HttpStatusCode.OK) {
-                tag("variant", call.response.headers.get(HttpHeaders.ContentType) ?: "unknown")
+            runBlockingIgnoringRogueCancellationException {
+                if (call.request.path().endsWith("/innhold") && call.response.status() == HttpStatusCode.OK) {
+                    tag("variant", call.response.headers.get(HttpHeaders.ContentType) ?: "unknown")
+                }
+                val validationCtx = call.principal<TokenValidationContextPrincipal>()?.context
+                val bruker = validationCtx?.getBruker()?.getOrNull()
+                tag("auth_type", bruker?.authType ?: "unknown")
+                tag(
+                    "authorized_party",
+                    when (bruker) {
+                        is Systembruker -> validationCtx.getConsumerOrgnr().raw
+                        is EntraId ->
+                            (validationCtx.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name") as? String)
+                                ?: "unknown"
+
+                        is TokenX -> "person"
+                        null -> "unknown"
+                    },
+                )
             }
-            val validationCtx = call.principal<TokenValidationContextPrincipal>()?.context
-            val bruker = validationCtx?.getBruker()?.getOrNull()
-            tag("auth_type", bruker?.authType ?: "unknown")
-            tag(
-                "authorized_party",
-                when (bruker) {
-                    is Systembruker -> validationCtx.getConsumerOrgnr().raw
-                    is EntraId ->
-                        (validationCtx.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT).get("azp_name") as? String) ?: "unknown"
-                    is TokenX -> "person"
-                    null -> "unknown"
-                },
-            )
         }
     }
 }

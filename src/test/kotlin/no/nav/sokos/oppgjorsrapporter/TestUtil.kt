@@ -10,7 +10,6 @@ import java.sql.Connection.TRANSACTION_SERIALIZABLE
 import java.sql.DatabaseMetaData
 import java.util.UUID
 import javax.sql.DataSource
-import kotlinx.coroutines.test.TestResult
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.withMockOAuth2Server
@@ -30,7 +29,7 @@ object TestUtil {
         mqContainer: MQContainer? = null,
         dependencyOverrides: Application.() -> Unit = {},
         block: suspend ApplicationTestBuilder.() -> Unit,
-    ): TestResult = withMockOAuth2Server {
+    ): Unit = withMockOAuth2Server {
         withTestApplication(dbContainer = dbContainer, mqContainer = mqContainer, dependencyOverrides = dependencyOverrides, block = block)
     }
 
