@@ -2,14 +2,6 @@
 
 package no.nav.sokos.oppgjorsrapporter.rapport
 
-import java.time.Clock
-import java.time.Instant
-import java.time.LocalDate
-import java.time.temporal.TemporalAdjusters.firstDayOfYear
-import java.time.temporal.TemporalAdjusters.lastDayOfYear
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.UseSerializers
 import io.ktor.http.ContentDisposition
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -29,8 +21,15 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.util.getValue
 import io.micrometer.core.instrument.Tag
+import java.time.Clock
+import java.time.Instant
+import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters.firstDayOfYear
+import java.time.temporal.TemporalAdjusters.lastDayOfYear
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.UseSerializers
 import mu.KotlinLogging
-import org.threeten.extra.LocalDateRange
 import no.nav.sokos.oppgjorsrapporter.auth.EntraId
 import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
 import no.nav.sokos.oppgjorsrapporter.auth.TokenX
