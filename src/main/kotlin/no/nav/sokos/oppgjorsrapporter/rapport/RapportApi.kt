@@ -2,18 +2,6 @@
 
 package no.nav.sokos.oppgjorsrapporter.rapport
 
-import io.ktor.http.*
-import io.ktor.server.auth.authenticate
-import io.ktor.server.plugins.di.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.application
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.put
-import io.ktor.server.util.getValue
-import io.micrometer.core.instrument.Tag
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -22,8 +10,34 @@ import java.time.temporal.TemporalAdjusters.lastDayOfYear
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.UseSerializers
+import io.ktor.http.ContentDisposition
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.auth.authenticate
+import io.ktor.server.plugins.di.dependencies
+import io.ktor.server.request.acceptItems
+import io.ktor.server.request.receive
+import io.ktor.server.request.receiveText
+import io.ktor.server.response.header
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytes
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.application
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.put
+import io.ktor.server.util.getValue
+import io.micrometer.core.instrument.Tag
 import mu.KotlinLogging
-import no.nav.sokos.oppgjorsrapporter.auth.*
+import org.threeten.extra.LocalDateRange
+import no.nav.sokos.oppgjorsrapporter.auth.EntraId
+import no.nav.sokos.oppgjorsrapporter.auth.Systembruker
+import no.nav.sokos.oppgjorsrapporter.auth.TokenX
+import no.nav.sokos.oppgjorsrapporter.auth.autentisertBruker
+import no.nav.sokos.oppgjorsrapporter.auth.claimsFor
+import no.nav.sokos.oppgjorsrapporter.auth.getConsumerOrgnr
+import no.nav.sokos.oppgjorsrapporter.auth.tokenValidationContext
 import no.nav.sokos.oppgjorsrapporter.config.AuthenticationType
 import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
@@ -38,7 +52,6 @@ import no.nav.sokos.oppgjorsrapporter.tilgang.TilgangService
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.OrgNr
-import org.threeten.extra.LocalDateRange
 
 private val logger = KotlinLogging.logger {}
 
@@ -283,42 +296,6 @@ fun Route.rapportApi() {
         }
     }
 
-    get("/api/rapport/v1/{id}/utvidet") {
-        val id: Long by call.request.pathVariables
-        val rapportId = Rapport.Id(id)
-        autentisertBruker().let { bruker ->
-            when (bruker) {
-                is Systembruker -> return@get call.respond(HttpStatusCode.Forbidden)
-                else -> {
-
-                    val rapporterMedNedlastingsinfo = rapportService.listRapporterMedEksternNedlastingsinfo(rapportId)
-                    if (rapporterMedNedlastingsinfo.isEmpty()) {
-                        return@get call.respond(HttpStatusCode.NotFound)
-                    }
-
-                    val (orgnr, type) =
-                        runCatching { rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single() }
-                            .getOrElse {
-                                val feil =
-                                    "Oppslag etter tilgrensende rapporter for $rapportId returnerte rapporter for andre orgnr eller rapport-typer"
-                                logger.error(feil)
-                                logger.error(TEAM_LOGS_MARKER) { "$feil: $rapporterMedNedlastingsinfo" }
-                                return@get call.respond(HttpStatusCode.InternalServerError)
-                            }
-
-                    if (!tilgangService.harTilgangTilRessurs(bruker, type, orgnr)) {
-                        return@get call.respond(HttpStatusCode.NotFound)
-                    }
-
-                    metrics.rapportUtvidetReturnertAntall
-                        .withTags(listOf(Tag.of("auth_type", bruker.authType), Tag.of("rapporttype", type.name)))
-                        .record(rapporterMedNedlastingsinfo.size.toDouble())
-
-                    call.respond(Api.TilgrensendeRapporterDTO(rapportId, rapporterMedNedlastingsinfo))
-                }
-            }
-        }
-    }
     get("/api/rapport/v1/{id}/innhold") {
         val id: Long by call.request.pathVariables
         val rapportId = Rapport.Id(id)
