@@ -69,8 +69,12 @@ class BestillingMottakTest :
             }
 
             test("BestillingMottak klarer å hente en gyldig 'trekk-kred'-melding fra MQ") {
-                val service: RapportService = mockk(relaxed = true)
-                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
+                val rapportService: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    mqContainer = mqContainer,
+                    dependencyOverrides = { dependencies.provide { rapportService } },
+                ) {
                     val config = application.config()
                     val dokument = javaClass.getResource("/mq/trekk_kred_bestilling.xml")?.readText()!!
 
@@ -80,7 +84,7 @@ class BestillingMottakTest :
 
                         eventually(5.seconds) {
                             verify(exactly = 1) {
-                                val _ = service.lagreBestilling(any(), any(), any())
+                                val _ = rapportService.lagreBestilling(any(), any(), any())
                             }
                         }
                     }
@@ -88,8 +92,12 @@ class BestillingMottakTest :
             }
 
             test("BestillingMottak klarer å hente en gyldig 'trekk-hend'-melding (til kreditor) fra MQ") {
-                val service: RapportService = mockk(relaxed = true)
-                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
+                val rapportService: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    mqContainer = mqContainer,
+                    dependencyOverrides = { dependencies.provide { rapportService } },
+                ) {
                     val config = application.config()
                     val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-kreditor.xml")?.readText()!!
 
@@ -99,7 +107,7 @@ class BestillingMottakTest :
 
                         eventually(5.seconds) {
                             verify(exactly = 1) {
-                                val _ = service.lagreBestilling(any(), any(), any())
+                                val _ = rapportService.lagreBestilling(any(), any(), any())
                             }
                         }
                     }
@@ -107,8 +115,12 @@ class BestillingMottakTest :
             }
 
             test("BestillingMottak klarer å hente en 'trekk-hend'-melding (til kreditor) med manglende felter fra MQ") {
-                val service: RapportService = mockk(relaxed = true)
-                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
+                val rapportService: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    mqContainer = mqContainer,
+                    dependencyOverrides = { dependencies.provide { rapportService } },
+                ) {
                     val config = application.config()
                     val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-kreditor-med-manglende-felter.xml")?.readText()!!
 
@@ -118,7 +130,7 @@ class BestillingMottakTest :
 
                         eventually(5.seconds) {
                             verify(exactly = 1) {
-                                val _ = service.lagreBestilling(any(), any(), any())
+                                val _ = rapportService.lagreBestilling(any(), any(), any())
                             }
                         }
                     }
@@ -126,8 +138,12 @@ class BestillingMottakTest :
             }
 
             test("BestillingMottak klarer å hente en gyldig 'trekk-hend'-melding (til namsmann) fra MQ") {
-                val service: RapportService = mockk(relaxed = true)
-                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
+                val rapportService: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    mqContainer = mqContainer,
+                    dependencyOverrides = { dependencies.provide { rapportService } },
+                ) {
                     val config = application.config()
                     val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-namsmann.xml")?.readText()!!
 
@@ -137,7 +153,7 @@ class BestillingMottakTest :
 
                         eventually(5.seconds) {
                             verify(exactly = 1) {
-                                val _ = service.lagreBestilling(any(), any(), any())
+                                val _ = rapportService.lagreBestilling(any(), any(), any())
                             }
                         }
                     }
@@ -145,8 +161,12 @@ class BestillingMottakTest :
             }
 
             test("BestillingMottak klarer å hente en 'trekk-hend'-melding (til namsmann) med manglende felter fra MQ") {
-                val service: RapportService = mockk(relaxed = true)
-                TestUtil.withFullApplication(dbContainer = dbContainer, mqContainer = mqContainer, { dependencies.provide { service } }) {
+                val rapportService: RapportService = mockk(relaxed = true)
+                TestUtil.withFullApplication(
+                    dbContainer = dbContainer,
+                    mqContainer = mqContainer,
+                    dependencyOverrides = { dependencies.provide { rapportService } },
+                ) {
                     val config = application.config()
                     val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-namsmann-med-manglende-felter.xml")?.readText()!!
 
@@ -156,7 +176,7 @@ class BestillingMottakTest :
 
                         eventually(5.seconds) {
                             verify(exactly = 1) {
-                                val _ = service.lagreBestilling(any(), any(), any())
+                                val _ = rapportService.lagreBestilling(any(), any(), any())
                             }
                         }
                     }

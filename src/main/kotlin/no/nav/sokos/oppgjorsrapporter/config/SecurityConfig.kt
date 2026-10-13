@@ -14,6 +14,7 @@ import no.nav.security.token.support.v3.tokenValidationSupport
 import no.nav.sokos.oppgjorsrapporter.auth.claimsFor
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigScope
 import no.nav.sokos.oppgjorsrapporter.auth.gyldigSystembrukerOgConsumer
+import no.nav.sokos.utils.runBlockingIgnoringRogueCancellationException
 
 enum class AuthenticationType {
     INTERNE_BRUKERE_AZUREAD_JWT,
@@ -70,7 +71,10 @@ fun Application.securityConfig() {
                         )
                     ),
                 requiredClaims = RequiredClaims(issuer = systembruker, claimMap = arrayOf("authorization_details", "consumer", "scope")),
-                additionalValidation = { it.gyldigScope(config.security.maskinporten.eksponertScope) && it.gyldigSystembrukerOgConsumer() },
+                additionalValidation = {
+                    it.gyldigScope(config.security.maskinporten.eksponertScope) &&
+                        runBlockingIgnoringRogueCancellationException { it.gyldigSystembrukerOgConsumer() }
+                },
                 resourceRetriever =
                     DefaultResourceRetriever(DEFAULT_HTTP_CONNECT_TIMEOUT, DEFAULT_HTTP_READ_TIMEOUT, DEFAULT_HTTP_SIZE_LIMIT),
             )

@@ -17,10 +17,10 @@ val logstashVersion = "9.0"
 val micrometerVersion = "1.17.0-RC1"
 val mockOAuth2ServerVersion = "4.0.0"
 val mockkVersion = "1.14.9"
+val openapiRequestValidatorVersion = "3.0.0"
 val opentelemetryAnnotationsVersion = "2.27.0"
 val pdpClientVersion = "1.1.0"
 val postgresVersion = "42.7.11"
-val swaggerRequestValidatorVersion = "2.46.1"
 val testcontainersVersion = "2.0.5"
 val threetenExtraVersion = "1.8.0"
 val tokenSupportVersion = "6.0.0"
@@ -112,7 +112,7 @@ dependencies {
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
-    testImplementation("com.atlassian.oai:swagger-request-validator-restassured:${swaggerRequestValidatorVersion}")
+    testImplementation("com.atlassian.oai:openapi-request-validator-restassured:${openapiRequestValidatorVersion}")
     testImplementation("org.assertj:assertj-core:3.27.7")
     testImplementation("org.testcontainers:testcontainers-postgresql:$testcontainersVersion")
     testImplementation("com.ibm.mq:mq-java-testcontainer:2.0.4")

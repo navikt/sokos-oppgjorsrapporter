@@ -52,6 +52,8 @@ import no.nav.sokos.oppgjorsrapporter.tilgang.TilgangService
 import no.nav.sokos.oppgjorsrapporter.util.heltAarDateRange
 import no.nav.sokos.utils.Bankkonto
 import no.nav.sokos.utils.OrgNr
+import no.nav.sokos.utils.handleCancellationException
+import org.threeten.extra.LocalDateRange
 
 private val logger = KotlinLogging.logger {}
 
@@ -350,6 +352,7 @@ fun Route.rapportApi() {
                     when (val bruker = autentisertBruker()) {
                         is EntraId ->
                             runCatching { bestillingMottak.process(Melding("REST auth=${bruker.navIdent}", rType, call.receiveText())) }
+                                .handleCancellationException()
                                 .fold(
                                     onSuccess = {
                                         return@post call.respond(HttpStatusCode.NoContent)

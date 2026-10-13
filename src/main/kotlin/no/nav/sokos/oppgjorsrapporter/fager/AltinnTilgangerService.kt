@@ -10,9 +10,6 @@ import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import io.ktor.utils.io.CancellationException
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.sokos.oppgjorsrapporter.HttpClientSetup
@@ -22,6 +19,7 @@ import no.nav.sokos.oppgjorsrapporter.config.PropertiesConfig
 import no.nav.sokos.oppgjorsrapporter.config.TEAM_LOGS_MARKER
 import no.nav.sokos.oppgjorsrapporter.config.commonJsonConfig
 import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
+import no.nav.sokos.utils.handleCancellationException
 
 interface AltinnTilgangerService {
     suspend fun hentAltinnTilganger(rapportType: RapportType, token: String): AltinnTilganger?
@@ -36,35 +34,32 @@ class AltinnTilgangerServiceImpl(
     private val altinnTilgangerProxyUrl = securityProperties.altinnTilganger.altinnTilgangerProxyUrl
     private val altinnTilgangerAudience = securityProperties.altinnTilganger.altinnTilgangerAudience
 
-    override suspend fun hentAltinnTilganger(rapportType: RapportType, token: String): AltinnTilganger? {
-        try {
-            logger.debug("henter Altinn tilganger på URL $altinnTilgangerProxyUrl")
-            val exchangedToken =
-                authClient
-                    .exchange(provider = AuthClientIdentityProvider.TOKEN_X, target = altinnTilgangerAudience, userToken = token)
-                    .accessToken
+    override suspend fun hentAltinnTilganger(rapportType: RapportType, token: String): AltinnTilganger? =
+        runCatching {
+                logger.debug("henter Altinn tilganger på URL $altinnTilgangerProxyUrl")
+                val exchangedToken =
+                    authClient
+                        .exchange(provider = AuthClientIdentityProvider.TOKEN_X, target = altinnTilgangerAudience, userToken = token)
+                        .accessToken
 
-            val body = AltinnTilgangerRequest(filter = AltinnTilgangerFilter(altinn3Tilganger = listOf(rapportType.altinnRessurs)))
+                val body = AltinnTilgangerRequest(filter = AltinnTilgangerFilter(altinn3Tilganger = listOf(rapportType.altinnRessurs)))
 
-            val response: HttpResponse =
-                client.post {
-                    url(altinnTilgangerProxyUrl.toURL())
-                    bearerAuth(exchangedToken)
-                    contentType(ContentType.Application.Json)
-                    accept(ContentType.Application.Json)
-                    setBody(body)
-                }
-            val altinnTilganger = response.body<AltinnTilganger>()
-            return altinnTilganger
-        } catch (_: CancellationException) {
-            currentCoroutineContext().ensureActive()
-            throw IllegalStateException("Rogue cancellation exception") // -- TODO: Bytt til RougeCancellationException
-        } catch (e: Exception) {
-            logger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall til Altinn tilganger $e" }
-            logger.error("Feil ved kall til Altinn tilganger. Sjekk sensitiv logg for mer info")
-            return null
-        }
-    }
+                val response: HttpResponse =
+                    client.post {
+                        url(altinnTilgangerProxyUrl.toURL())
+                        bearerAuth(exchangedToken)
+                        contentType(ContentType.Application.Json)
+                        accept(ContentType.Application.Json)
+                        setBody(body)
+                    }
+                response.body<AltinnTilganger>()
+            }
+            .handleCancellationException()
+            .onFailure { e ->
+                logger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall til Altinn tilganger $e" }
+                logger.error("Feil ved kall til Altinn tilganger. Sjekk sensitiv logg for mer info")
+            }
+            .getOrNull()
 }
 
 object LocalhostAltinnTilgangerService : AltinnTilgangerService {
