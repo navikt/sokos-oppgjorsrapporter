@@ -10,8 +10,8 @@ class RefusjonsRapportBestillingTest :
         context("RefusjonsRapportBestilling") {
             test("kan lese inn json") {
                 assertThatCode {
-                        val _ = RefusjonsRapportBestilling.decode(TestUtil.readFile("mq/refusjon_bestilling_gyldig.json"))
-                    }
+                    val _ = RefusjonsRapportBestilling.decode(TestUtil.readFile("mq/refusjon_bestilling_gyldig.json"))
+                }
                     .doesNotThrowAnyException()
             }
 

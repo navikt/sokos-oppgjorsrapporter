@@ -30,13 +30,12 @@ suspend fun RoutingContext.tokenValidationContext(): TokenValidationContext {
 
 fun TokenValidationContext.claimsFor(authType: AuthenticationType): JwtTokenClaims = this.getClaims(authType.name)
 
-suspend fun TokenValidationContext.maskinportenAuthDetails() =
-    runCatching {
-            (this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("authorization_details") as? List<*>)
-                ?.filterIsInstance<Map<*, *>>()
-                ?.single { it["type"] == "urn:altinn:systemuser" } ?: throw BrukerIkkeFunnet()
-        }
-        .handleCancellationException()
+suspend fun TokenValidationContext.maskinportenAuthDetails() = runCatching {
+    (this.claimsFor(AuthenticationType.API_INTEGRASJON_ALTINN_SYSTEMBRUKER).get("authorization_details") as? List<*>)
+        ?.filterIsInstance<Map<*, *>>()
+        ?.single { it["type"] == "urn:altinn:systemuser" } ?: throw BrukerIkkeFunnet()
+}
+    .handleCancellationException()
 
 suspend fun TokenValidationContext.getSystembruker(): Result<Systembruker> =
     this.maskinportenAuthDetails()
@@ -65,23 +64,21 @@ fun TokenValidationContext.getConsumerOrgnr(): OrgNr {
 
 private fun Map<*, *>.extractOrgnummer(): OrgNr? = (get("ID") as? String)?.split(":")?.get(1)?.let(::OrgNr)
 
-suspend fun TokenValidationContext.getEntraId(): Result<EntraId> =
-    runCatching {
-            val claims = this.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)
-            val navIdent = (claims.get("NAVident") as? String) ?: throw BrukerIkkeFunnet()
-            val groups = (claims.get("groups") as? List<*>)?.filterIsInstance<String>() ?: throw BrukerIkkeFunnet()
-            EntraId(navIdent, groups.map { UUID.fromString(it) })
-        }
-        .handleCancellationException()
+suspend fun TokenValidationContext.getEntraId(): Result<EntraId> = runCatching {
+    val claims = this.claimsFor(AuthenticationType.INTERNE_BRUKERE_AZUREAD_JWT)
+    val navIdent = (claims.get("NAVident") as? String) ?: throw BrukerIkkeFunnet()
+    val groups = (claims.get("groups") as? List<*>)?.filterIsInstance<String>() ?: throw BrukerIkkeFunnet()
+    EntraId(navIdent, groups.map { UUID.fromString(it) })
+}
+    .handleCancellationException()
 
-suspend fun TokenValidationContext.getTokenX(): Result<TokenX> =
-    runCatching {
-            val claims = this.claimsFor(AuthenticationType.EKSTERNE_BRUKERE_TOKENX)
-            val pid = (claims.get("pid") as? String) ?: throw BrukerIkkeFunnet()
-            val acr = (claims.get("acr") as? String) ?: throw BrukerIkkeFunnet()
-            TokenX(pid, acr)
-        }
-        .handleCancellationException()
+suspend fun TokenValidationContext.getTokenX(): Result<TokenX> = runCatching {
+    val claims = this.claimsFor(AuthenticationType.EKSTERNE_BRUKERE_TOKENX)
+    val pid = (claims.get("pid") as? String) ?: throw BrukerIkkeFunnet()
+    val acr = (claims.get("acr") as? String) ?: throw BrukerIkkeFunnet()
+    TokenX(pid, acr)
+}
+    .handleCancellationException()
 
 suspend fun TokenValidationContext.getBruker(): Result<AutentisertBruker> =
     getSystembruker()

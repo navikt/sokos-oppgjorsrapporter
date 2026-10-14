@@ -32,7 +32,7 @@ plugins {
     application
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
-    id("com.diffplug.spotless") version "8.5.1"
+    id("com.diffplug.spotless") version "8.10.3"
     id("org.jetbrains.kotlinx.kover") version "0.9.8"
 }
 
@@ -175,7 +175,7 @@ tasks {
 spotless {
     kotlin {
         targetExclude("src/main/java/**/*")
-        targetExclude("build/generated/**/*")
+        targetExclude("build/**")
         ktfmt().kotlinlangStyle().configure {
             it.setMaxWidth(140)
             it.setRemoveUnusedImports(true)

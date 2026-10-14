@@ -390,13 +390,12 @@ class BestillingProsessorTest :
                             val after = rapportService.listRapporter(kriterier)
                             (after.size - before.size) shouldBeGreaterThanOrEqual 2
                             val nye = after.filterNot { before.contains(it) }
-                            val varianterMap =
-                                nye.associate { rapport ->
-                                    val varianter = rapportService.listVarianter(rapport.id)
-                                    varianter.size shouldBe 2
-                                    varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv, VariantFormat.Pdf)
-                                    rapport.id to varianter
-                                }
+                            val varianterMap = nye.associate { rapport ->
+                                val varianter = rapportService.listVarianter(rapport.id)
+                                varianter.size shouldBe 2
+                                varianter.map { it.format }.toSet() shouldBe setOf(VariantFormat.Csv, VariantFormat.Pdf)
+                                rapport.id to varianter
+                            }
                             varianterMap.values.flatten().map { it.filnavn }.toSet().size shouldBeGreaterThanOrEqual nye.size
                             nye.map { it.orgnr }.toSet() shouldContainExactly setOf(bestilling1.header.orgnr, bestilling2.header.orgnr)
                         }

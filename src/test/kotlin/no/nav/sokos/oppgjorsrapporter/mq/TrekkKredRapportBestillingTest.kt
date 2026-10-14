@@ -10,8 +10,8 @@ class TrekkKredRapportBestillingTest :
     FunSpec({
         test("lese inn xml") {
             assertThatCode {
-                    val _ = TrekkKredRapportBestilling.decode(TestUtil.readFile("mq/trekk_kred_bestilling.xml"))
-                }
+                val _ = TrekkKredRapportBestilling.decode(TestUtil.readFile("mq/trekk_kred_bestilling.xml"))
+            }
                 .doesNotThrowAnyException()
         }
 

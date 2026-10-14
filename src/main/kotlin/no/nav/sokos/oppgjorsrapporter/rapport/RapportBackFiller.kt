@@ -23,21 +23,20 @@ class RapportBackFiller(private val rapportService: RapportService, applicationS
         var done = false
         while (!done) {
             whenEnabled {
-                val res =
-                    rapportService.prosesserManglendeNevntInfo { tx, rapport, bestilling ->
-                        val nevntInfo =
-                            when (bestilling.genererSom) {
-                                RapportType.`ref-arbg` -> RefusjonsRapportBestilling.decode(bestilling.dokument)
-                                RapportType.`trekk-hend` -> TrekkHendBestilling.decode(bestilling.dokument)
-                                RapportType.`trekk-kred` -> TrekkKredRapportBestilling.decode(bestilling.dokument)
-                            }.nevntInfo()
-                        val oppdatert = rapportService.settNevntInfo(tx, rapport.id, nevntInfo)
-                        if (oppdatert != 0) {
-                            logger.debug {
-                                "Har fylt inn nevnt_info for rapport #${rapport.id.raw}/type=${rapport.type}: endret $oppdatert rad, lagt inn ${nevntInfo.size} info-elementer"
-                            }
+                val res = rapportService.prosesserManglendeNevntInfo { tx, rapport, bestilling ->
+                    val nevntInfo =
+                        when (bestilling.genererSom) {
+                            RapportType.`ref-arbg` -> RefusjonsRapportBestilling.decode(bestilling.dokument)
+                            RapportType.`trekk-hend` -> TrekkHendBestilling.decode(bestilling.dokument)
+                            RapportType.`trekk-kred` -> TrekkKredRapportBestilling.decode(bestilling.dokument)
+                        }.nevntInfo()
+                    val oppdatert = rapportService.settNevntInfo(tx, rapport.id, nevntInfo)
+                    if (oppdatert != 0) {
+                        logger.debug {
+                            "Har fylt inn nevnt_info for rapport #${rapport.id.raw}/type=${rapport.type}: endret $oppdatert rad, lagt inn ${nevntInfo.size} info-elementer"
                         }
                     }
+                }
                 if (res == null) {
                     logger.info("Fant ikke flere (ikke-feilede) rapporter å fylle inn nevnt_info på, avslutter denne sub-jobben")
                     done = true

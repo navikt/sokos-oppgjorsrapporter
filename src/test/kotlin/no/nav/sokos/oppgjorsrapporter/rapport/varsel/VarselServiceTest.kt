@@ -284,8 +284,9 @@ class VarselServiceTest :
         }
     })
 
-fun metrikkForVarsler(dependencies: DependencyRegistry) =
-    runBlocking { dependencies.resolve<DataSource>() to dependencies.resolve<VarselRepository>() }
-        .let { (datasource, repository) ->
-            using(sessionOf(datasource)) { it.transaction { tx -> repository.metrikkForUprosesserteVarsler(tx) } }
-        }
+fun metrikkForVarsler(dependencies: DependencyRegistry) = runBlocking {
+    dependencies.resolve<DataSource>() to dependencies.resolve<VarselRepository>()
+}
+    .let { (datasource, repository) ->
+        using(sessionOf(datasource)) { it.transaction { tx -> repository.metrikkForUprosesserteVarsler(tx) } }
+    }
