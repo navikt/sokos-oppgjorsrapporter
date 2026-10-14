@@ -59,21 +59,21 @@ fun Application.commonConfig() {
         mdc("user") { call ->
             runBlockingIgnoringRogueCancellationException {
                 runCatching {
-                        val context = call.principal<TokenValidationContextPrincipal>()?.context
-                        context?.getBruker()?.getOrThrow()?.let { bruker ->
-                            "${bruker.authType}:" +
-                                when (bruker) {
-                                    is EntraId -> "NAVident=${bruker.navIdent}"
+                    val context = call.principal<TokenValidationContextPrincipal>()?.context
+                    context?.getBruker()?.getOrThrow()?.let { bruker ->
+                        "${bruker.authType}:" +
+                            when (bruker) {
+                                is EntraId -> "NAVident=${bruker.navIdent}"
 
-                                    is Systembruker -> {
-                                        val consumerOrg = context.getConsumerOrgnr().raw
-                                        "consumer=$consumerOrg systemuser_org=${bruker.userOrg.raw} systemuser_id=${bruker.userId}"
-                                    }
-
-                                    is TokenX -> "pid=${bruker.pid}"
+                                is Systembruker -> {
+                                    val consumerOrg = context.getConsumerOrgnr().raw
+                                    "consumer=$consumerOrg systemuser_org=${bruker.userOrg.raw} systemuser_id=${bruker.userId}"
                                 }
-                        }
+
+                                is TokenX -> "pid=${bruker.pid}"
+                            }
                     }
+                }
                     .handleCancellationException()
                     .getOrNull()
             }

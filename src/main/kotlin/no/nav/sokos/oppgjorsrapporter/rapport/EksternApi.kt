@@ -44,9 +44,10 @@ fun Route.eksternApi() {
                         return@get call.respond(HttpStatusCode.NotFound)
                     }
 
-                    val res =
-                        runCatching { rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single() }
-                            .handleCancellationException()
+                    val res = runCatching {
+                        rapporterMedNedlastingsinfo.map { it.rapportInfo.orgnr to it.rapportInfo.type }.distinct().single()
+                    }
+                        .handleCancellationException()
                     res.exceptionOrNull()?.let { e ->
                         when (e) {
                             is NoSuchElementException,

@@ -65,12 +65,12 @@ class RapportService(
         val savepoint = tx.connection.underlying.setSavepoint()
         repository.finnUprosessertBestilling(tx)?.let { bestilling ->
             runCatching {
-                    // TODO: Er det innafor å la caller bestemme hele prosesserings-oppførselen?  Det gjør jo testing lettere, men...
-                    val res = process(tx, bestilling)
-                    repository.markerBestillingProsessert(tx, bestilling.id)
-                    metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, feilet = false)
-                    res
-                }
+                // TODO: Er det innafor å la caller bestemme hele prosesserings-oppførselen?  Det gjør jo testing lettere, men...
+                val res = process(tx, bestilling)
+                repository.markerBestillingProsessert(tx, bestilling.id)
+                metrics.tellBestillingsProsessering(rapportType = bestilling.genererSom, feilet = false)
+                res
+            }
                 .handleCancellationException()
                 .onFailure { e ->
                     logger.error { "Prosessering av '${bestilling.genererSom}'-bestilling #${bestilling.id.raw} feilet" }
@@ -268,9 +268,9 @@ class RapportService(
             val savepoint = tx.connection.underlying.setSavepoint()
             repository.finnRapportSomManglerNevntInfo(tx)?.let { rapport ->
                 runCatching {
-                        val bestilling = repository.finnBestilling(tx, rapport.bestillingId)!!
-                        process(tx, rapport, bestilling)
-                    }
+                    val bestilling = repository.finnBestilling(tx, rapport.bestillingId)!!
+                    process(tx, rapport, bestilling)
+                }
                     .handleCancellationException()
                     .onFailure { e ->
                         logger.error { "Feil under backfilling av nevnt_info for $rapport" }

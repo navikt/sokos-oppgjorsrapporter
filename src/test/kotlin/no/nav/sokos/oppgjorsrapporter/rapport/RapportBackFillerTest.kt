@@ -35,13 +35,12 @@ class RapportBackFillerTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val bedriftsNr = OrgNr.genererGyldig()
-                    val fnrs =
-                        buildSet {
-                                while (size < 10) {
-                                    add(Fnr.genererGyldig())
-                                }
-                            }
-                            .toList()
+                    val fnrs = buildSet {
+                        while (size < 10) {
+                            add(Fnr.genererGyldig())
+                        }
+                    }
+                        .toList()
                     val bestilling =
                         TestData.createRefusjonsRapportBestilling(
                             datarec = fnrs.map { fnr -> TestData.createDataRec(bedriftsnummer = bedriftsNr, fnr = fnr) }

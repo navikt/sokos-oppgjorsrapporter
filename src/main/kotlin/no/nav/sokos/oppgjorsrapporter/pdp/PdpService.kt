@@ -36,17 +36,17 @@ class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, 
         val decisionCount = orgnummerSet.size
         metrics.tellPdpKall(decisionCount)
         return runCatching {
-                metrics.coRecord({ result ->
-                    val countTag = decisionCount.let { if (it >= 10) "10+" else it.toString() }
-                    metrics.pdpKallTimer.withTags("decisioncount", countTag, "feilet", result.isFailure.toString())
-                }) {
-                    pdpClient.systemHarRettighetForOrganisasjoner(
-                        systembrukerId = systembruker.userId,
-                        orgnumre = orgnummerSet,
-                        ressurs = ressurs,
-                    )
-                }
+            metrics.coRecord({ result ->
+                val countTag = decisionCount.let { if (it >= 10) "10+" else it.toString() }
+                metrics.pdpKallTimer.withTags("decisioncount", countTag, "feilet", result.isFailure.toString())
+            }) {
+                pdpClient.systemHarRettighetForOrganisasjoner(
+                    systembrukerId = systembruker.userId,
+                    orgnumre = orgnummerSet,
+                    ressurs = ressurs,
+                )
             }
+        }
             .handleCancellationException()
             .getOrElse {
                 // TODO: håndter feil ved å svare status 500/502 tilbake til bruker
@@ -60,13 +60,13 @@ class AltinnPdpService(securityProperties: PropertiesConfig.SecurityProperties, 
         val decisionCount = orgnummerSet.size
         metrics.tellPdpKall(decisionCount)
         return runCatching {
-                metrics.coRecord({ result ->
-                    val countTag = decisionCount.let { if (it >= 10) "10+" else it.toString() }
-                    metrics.pdpKallTimer.withTags("decisioncount", countTag, "feilet", result.isFailure.toString())
-                }) {
-                    pdpClient.personHarRettighetForOrganisasjoner(fnr = tokenX.pid, orgnumre = orgnummerSet, ressurs = ressurs)
-                }
+            metrics.coRecord({ result ->
+                val countTag = decisionCount.let { if (it >= 10) "10+" else it.toString() }
+                metrics.pdpKallTimer.withTags("decisioncount", countTag, "feilet", result.isFailure.toString())
+            }) {
+                pdpClient.personHarRettighetForOrganisasjoner(fnr = tokenX.pid, orgnumre = orgnummerSet, ressurs = ressurs)
             }
+        }
             .handleCancellationException()
             .getOrElse {
                 // TODO: håndter feil ved å svare status 500/502 tilbake til bruker

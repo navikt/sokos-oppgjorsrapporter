@@ -44,17 +44,16 @@ class DialogportenClientTest {
         responseStatus: HttpStatusCode,
         responseBody: String,
         extraRequestChecks: (HttpRequestData, String) -> Unit = { _, _ -> },
-    ) =
-        MockEngine { req ->
-                dialogportenApiValidator.checkRequest(req, extraRequestChecks)
-                respond(content = responseBody, status = responseStatus, headers = headersOf(HttpHeaders.ContentType, "application/json"))
+    ) = MockEngine { req ->
+        dialogportenApiValidator.checkRequest(req, extraRequestChecks)
+        respond(content = responseBody, status = responseStatus, headers = headersOf(HttpHeaders.ContentType, "application/json"))
+    }
+        .let { engine ->
+            HttpClient(engine) {
+                install(ContentNegotiation) { json(DialogportenHttpClientSetup.jsonConfig) }
+                install(Auth) { bearer { loadTokens { BearerTokens("dummy-token", null) } } }
             }
-            .let { engine ->
-                HttpClient(engine) {
-                    install(ContentNegotiation) { json(DialogportenHttpClientSetup.jsonConfig) }
-                    install(Auth) { bearer { loadTokens { BearerTokens("dummy-token", null) } } }
-                }
-            }
+        }
 
     @Test
     fun `opprettDialog skal sende en velformet request`() = runTest {

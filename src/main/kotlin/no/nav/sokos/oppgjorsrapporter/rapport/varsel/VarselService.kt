@@ -60,31 +60,31 @@ class VarselService(
             var operasjon: String? = null
             var rapportType: RapportType? = null
             runCatching {
-                    val rapport =
-                        rapportRepository.finnRapport(tx, varsel.rapportId)
-                            ?: throw IllegalStateException("Fant ikke ${varsel.rapportId} for ${varsel.id}")
-                    rapportType = rapport.type
-                    when (varsel.system) {
-                        VarselSystem.dialogporten -> {
-                            if (rapport.dialogportenUuid == null) {
-                                operasjon = "opprette"
-                                opprettDialog(rapport).let { nyDialogUuid ->
-                                    varsel.audit(tx, RapportAudit.Hendelse.RAPPORT_VARSEL_SENDT, "Opprettet dialog med id $nyDialogUuid")
+                val rapport =
+                    rapportRepository.finnRapport(tx, varsel.rapportId)
+                        ?: throw IllegalStateException("Fant ikke ${varsel.rapportId} for ${varsel.id}")
+                rapportType = rapport.type
+                when (varsel.system) {
+                    VarselSystem.dialogporten -> {
+                        if (rapport.dialogportenUuid == null) {
+                            operasjon = "opprette"
+                            opprettDialog(rapport).let { nyDialogUuid ->
+                                varsel.audit(tx, RapportAudit.Hendelse.RAPPORT_VARSEL_SENDT, "Opprettet dialog med id $nyDialogUuid")
 
-                                    if (rapportRepository.settDialogUuid(tx, rapport.id, nyDialogUuid) == 0) {
-                                        logger.info { "Noe har satt dialogporten_uuid på ${rapport.id} underveis i jobben med $varsel" }
-                                    } else {
-                                        logger.debug { "Satt dialogporten_uuid på ${rapport.id} til $nyDialogUuid" }
-                                    }
+                                if (rapportRepository.settDialogUuid(tx, rapport.id, nyDialogUuid) == 0) {
+                                    logger.info { "Noe har satt dialogporten_uuid på ${rapport.id} underveis i jobben med $varsel" }
+                                } else {
+                                    logger.debug { "Satt dialogporten_uuid på ${rapport.id} til $nyDialogUuid" }
                                 }
-                            } else {
-                                operasjon = if (rapport.erArkivert) "arkiver" else "dearkiver"
-                                dialogportenClient.arkiverDialog(rapport.dialogportenUuid, rapport.erArkivert)
                             }
+                        } else {
+                            operasjon = if (rapport.erArkivert) "arkiver" else "dearkiver"
+                            dialogportenClient.arkiverDialog(rapport.dialogportenUuid, rapport.erArkivert)
                         }
                     }
-                    varsel
                 }
+                varsel
+            }
                 .handleCancellationException()
                 .onSuccess { v ->
                     metrics.tellVarselProsessering(varsel.system, rapportType, operasjon, feilet = false)

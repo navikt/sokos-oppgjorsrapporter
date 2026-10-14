@@ -46,16 +46,15 @@ class CoroutineUtilsTest :
                         parentScope.cancel()
                     }
                     launch {
-                        val result =
-                            runCatching {
-                                    // Gi den andre jobben beskjed om at den kan gjøre cancel() på foreldre-scopet som skal omfatte begge
-                                    // sub-jobbene
-                                    goAhead.send(Unit)
-                                    // ... og kall en suspend-funksjon; denne skal bli avbrutt med en CancellationException så snart den
-                                    // andre jobben har gjort cancel()
-                                    repeat(10) { delay(timeMillis = 100) }
-                                }
-                                .handleCancellationException()
+                        val result = runCatching {
+                            // Gi den andre jobben beskjed om at den kan gjøre cancel() på foreldre-scopet som skal omfatte begge
+                            // sub-jobbene
+                            goAhead.send(Unit)
+                            // ... og kall en suspend-funksjon; denne skal bli avbrutt med en CancellationException så snart den
+                            // andre jobben har gjort cancel()
+                            repeat(10) { delay(timeMillis = 100) }
+                        }
+                            .handleCancellationException()
                         fail("Forventet at handleCancellationException() kastet CancellationException; fikk i stedet result = $result")
                     }
                 }

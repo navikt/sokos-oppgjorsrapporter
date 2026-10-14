@@ -259,11 +259,10 @@ fun Route.rapportApi() {
                     .toSet()
                     .filter { (orgnr, type) -> tilgangService.harTilgangTilRessurs(bruker, type, orgnr) }
                     .toSet()
-            val filtrerteRapporter =
-                rapporter.filter { r ->
-                    val key = r.orgnr to r.type
-                    rapportTyperMedTilgang.contains(key)
-                }
+            val filtrerteRapporter = rapporter.filter { r ->
+                val key = r.orgnr to r.type
+                rapportTyperMedTilgang.contains(key)
+            }
             metrics.rapportSokReturnertAntall
                 .withTags(
                     listOf(

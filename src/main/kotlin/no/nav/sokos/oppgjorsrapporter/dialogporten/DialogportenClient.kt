@@ -30,28 +30,28 @@ class DialogportenClient(baseUrl: URI, private val httpClient: HttpClient) {
     suspend fun opprettDialog(request: CreateDialogRequest): UUID {
         val dialog = byggDialogFraRequest(request)
         return runCatching {
-                val response =
-                    httpClient
-                        .post(dialogportenUrl) {
-                            contentType(ContentType.Application.Json)
-                            accept(ContentType.Application.Json)
-                            setBody(dialog)
-                        }
-                        .body<String>()
-                UUID.fromString(response.removeSurrounding("\""))
-            }
+            val response =
+                httpClient
+                    .post(dialogportenUrl) {
+                        contentType(ContentType.Application.Json)
+                        accept(ContentType.Application.Json)
+                        setBody(dialog)
+                    }
+                    .body<String>()
+            UUID.fromString(response.removeSurrounding("\""))
+        }
             .handleCancellationException()
             .getOrElse { e -> logAndThrow("Feil ved oppretting av dialog", e) }
     }
 
     suspend fun arkiverDialog(dialogId: UUID, arkivert: Boolean = false) {
         runCatching {
-                if (arkivert) {
-                    httpClient.delete("$dialogportenUrl/$dialogId") { accept(ContentType.Application.ProblemJson) }
-                } else {
-                    httpClient.post("$dialogportenUrl/$dialogId/actions/restore") { accept(ContentType.Application.ProblemJson) }
-                }
+            if (arkivert) {
+                httpClient.delete("$dialogportenUrl/$dialogId") { accept(ContentType.Application.ProblemJson) }
+            } else {
+                httpClient.post("$dialogportenUrl/$dialogId/actions/restore") { accept(ContentType.Application.ProblemJson) }
             }
+        }
             .handleCancellationException()
             .onFailure { e ->
                 val handling = if (arkivert) "arkivering" else "dearkivering"

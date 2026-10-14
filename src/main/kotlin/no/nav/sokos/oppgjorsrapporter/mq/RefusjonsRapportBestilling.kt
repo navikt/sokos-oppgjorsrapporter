@@ -24,9 +24,9 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
         listOfNotNull(
             // alle orgnr skal være gyldige
             buildSet {
-                    add(header.orgnr)
-                    addAll(datarec.map { it.bedriftsnummer })
-                }
+                add(header.orgnr)
+                addAll(datarec.map { it.bedriftsnummer })
+            }
                 .filterNot { it.erGyldig() }
                 .takeIf { it.isNotEmpty() }
                 ?.map { it.raw }
@@ -64,9 +64,9 @@ data class RefusjonsRapportBestilling(val header: Header, val datarec: List<Data
             },
             // Alle beløp skal være angitt med nøyaktig 2 desimaler
             buildSet {
-                    add(header.sumBelop)
-                    addAll(datarec.map { it.belop })
-                }
+                add(header.sumBelop)
+                addAll(datarec.map { it.belop })
+            }
                 .filterNot { Belop(it).verdi == it }
                 .takeIf { it.isNotEmpty() }
                 ?.let { "Ikke gyldig beløp: ${it.joinToString()}" },

@@ -34,32 +34,30 @@ class AltinnTilgangerServiceImpl(
     private val altinnTilgangerProxyUrl = securityProperties.altinnTilganger.altinnTilgangerProxyUrl
     private val altinnTilgangerAudience = securityProperties.altinnTilganger.altinnTilgangerAudience
 
-    override suspend fun hentAltinnTilganger(rapportType: RapportType, token: String): AltinnTilganger? =
-        runCatching {
-                logger.debug("henter Altinn tilganger på URL $altinnTilgangerProxyUrl")
-                val exchangedToken =
-                    authClient
-                        .exchange(provider = AuthClientIdentityProvider.TOKEN_X, target = altinnTilgangerAudience, userToken = token)
-                        .accessToken
+    override suspend fun hentAltinnTilganger(rapportType: RapportType, token: String): AltinnTilganger? = runCatching {
+        logger.debug("henter Altinn tilganger på URL $altinnTilgangerProxyUrl")
+        val exchangedToken =
+            authClient
+                .exchange(provider = AuthClientIdentityProvider.TOKEN_X, target = altinnTilgangerAudience, userToken = token)
+                .accessToken
 
-                val body = AltinnTilgangerRequest(filter = AltinnTilgangerFilter(altinn3Tilganger = listOf(rapportType.altinnRessurs)))
+        val body = AltinnTilgangerRequest(filter = AltinnTilgangerFilter(altinn3Tilganger = listOf(rapportType.altinnRessurs)))
 
-                val response: HttpResponse =
-                    client.post {
-                        url(altinnTilgangerProxyUrl.toURL())
-                        bearerAuth(exchangedToken)
-                        contentType(ContentType.Application.Json)
-                        accept(ContentType.Application.Json)
-                        setBody(body)
-                    }
-                response.body<AltinnTilganger>()
-            }
-            .handleCancellationException()
-            .onFailure { e ->
-                logger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall til Altinn tilganger $e" }
-                logger.error("Feil ved kall til Altinn tilganger. Sjekk sensitiv logg for mer info")
-            }
-            .getOrNull()
+        val response: HttpResponse = client.post {
+            url(altinnTilgangerProxyUrl.toURL())
+            bearerAuth(exchangedToken)
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            setBody(body)
+        }
+        response.body<AltinnTilganger>()
+    }
+        .handleCancellationException()
+        .onFailure { e ->
+            logger.error(TEAM_LOGS_MARKER, e) { "Feil ved kall til Altinn tilganger $e" }
+            logger.error("Feil ved kall til Altinn tilganger. Sjekk sensitiv logg for mer info")
+        }
+        .getOrNull()
 }
 
 object LocalhostAltinnTilgangerService : AltinnTilgangerService {

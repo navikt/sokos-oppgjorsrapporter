@@ -126,27 +126,26 @@ class RapportServiceTest :
                     sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 1
 
                     var tilbakeRulletRapport: Rapport? = null
-                    val resultat =
-                        sut.prosesserBestilling { tx, bestilling ->
-                            tilbakeRulletRapport =
-                                sut.lagreRapport(
-                                    tx,
-                                    UlagretRapport(
-                                        bestillingId = bestilling.id,
-                                        orgnr = grunnlag.header.orgnr,
-                                        orgNavn = OrgNavn("Test Organisasjon"),
-                                        type = bestilling.genererSom,
-                                        datoValutert = grunnlag.header.valutert,
-                                        bankkonto = grunnlag.header.bankkonto,
-                                        antallRader = grunnlag.datarec.size,
-                                        antallUnderenheter = grunnlag.datarec.distinctBy { it.bedriftsnummer }.size,
-                                        antallPersoner = grunnlag.datarec.distinctBy { it.fnr }.size,
-                                        belop = grunnlag.header.sumBelop,
-                                        nevntInfo = grunnlag.nevntInfo(),
-                                    ),
-                                )
-                            throw IllegalStateException("Noe feilet")
-                        }
+                    val resultat = sut.prosesserBestilling { tx, bestilling ->
+                        tilbakeRulletRapport =
+                            sut.lagreRapport(
+                                tx,
+                                UlagretRapport(
+                                    bestillingId = bestilling.id,
+                                    orgnr = grunnlag.header.orgnr,
+                                    orgNavn = OrgNavn("Test Organisasjon"),
+                                    type = bestilling.genererSom,
+                                    datoValutert = grunnlag.header.valutert,
+                                    bankkonto = grunnlag.header.bankkonto,
+                                    antallRader = grunnlag.datarec.size,
+                                    antallUnderenheter = grunnlag.datarec.distinctBy { it.bedriftsnummer }.size,
+                                    antallPersoner = grunnlag.datarec.distinctBy { it.fnr }.size,
+                                    belop = grunnlag.header.sumBelop,
+                                    nevntInfo = grunnlag.nevntInfo(),
+                                ),
+                            )
+                        throw IllegalStateException("Noe feilet")
+                    }
 
                     resultat.shouldNotBeNull()
                     resultat shouldBeFailure { it.message shouldInclude "Noe feilet" }
@@ -248,13 +247,12 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
-                    val nevnteFnr =
-                        buildSet {
-                                while (size < 2) {
-                                    add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
-                                }
-                            }
-                            .toList()
+                    val nevnteFnr = buildSet {
+                        while (size < 2) {
+                            add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
+                        }
+                    }
+                        .toList()
                     val nevntUnderenhet = UlagretRapport.NevntUnderenhet(OrgNr.genererGyldig().somUvalidert())
                     val ulagret =
                         UlagretRapport(
@@ -286,8 +284,10 @@ class RapportServiceTest :
                                 .single()
                         treff.id shouldBe rapport.id
                     }
-                    val ukjenteFnr =
-                        generateSequence { Fnr.genererGyldig().somUvalidert() }.filterNot { fnr -> nevnteFnr.any { it.fnr == fnr } }
+                    val ukjenteFnr = generateSequence {
+                        Fnr.genererGyldig().somUvalidert()
+                    }
+                        .filterNot { fnr -> nevnteFnr.any { it.fnr == fnr } }
                     ukjenteFnr.take(1).forAll { fnr ->
                         val treff =
                             sut.rapportSoek(
@@ -306,13 +306,12 @@ class RapportServiceTest :
                     TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
 
                     val sut: RapportService = application.dependencies.resolve()
-                    val nevnteFnr =
-                        buildSet {
-                                while (size < 2) {
-                                    add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
-                                }
-                            }
-                            .toList()
+                    val nevnteFnr = buildSet {
+                        while (size < 2) {
+                            add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
+                        }
+                    }
+                        .toList()
                     val nevntUnderenhet = UlagretRapport.NevntUnderenhet(OrgNr.genererGyldig().somUvalidert())
                     val ulagret =
                         UlagretRapport(
@@ -344,8 +343,10 @@ class RapportServiceTest :
                                 .single()
                         treff.id shouldBe rapport.id
                     }
-                    val ukjenteUnderenheter =
-                        generateSequence { OrgNr.genererGyldig().somUvalidert() }.filterNot { orgnr -> nevntUnderenhet.underenhet == orgnr }
+                    val ukjenteUnderenheter = generateSequence {
+                        OrgNr.genererGyldig().somUvalidert()
+                    }
+                        .filterNot { orgnr -> nevntUnderenhet.underenhet == orgnr }
                     ukjenteUnderenheter.take(1).forAll { underenhet ->
                         val treff =
                             sut.rapportSoek(
@@ -665,13 +666,12 @@ class RapportServiceTest :
                     val sut: RapportService = application.dependencies.resolve()
                     val rapport = sut.finnRapport(Rapport.Id(1))!!
 
-                    val nevnteFnr =
-                        buildSet {
-                                while (size < 2) {
-                                    add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
-                                }
-                            }
-                            .toList()
+                    val nevnteFnr = buildSet {
+                        while (size < 2) {
+                            add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
+                        }
+                    }
+                        .toList()
                     val nevntUnderenhet = UlagretRapport.NevntUnderenhet(OrgNr.genererGyldig().somUvalidert())
 
                     nevnteFnr.forAll { nevnt ->
@@ -711,13 +711,12 @@ class RapportServiceTest :
                     val sut: RapportService = application.dependencies.resolve()
                     val rapport = sut.finnRapport(Rapport.Id(1))!!
 
-                    val nevnteFnrV1 =
-                        buildSet {
-                                while (size < 2) {
-                                    add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
-                                }
-                            }
-                            .toList()
+                    val nevnteFnrV1 = buildSet {
+                        while (size < 2) {
+                            add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
+                        }
+                    }
+                        .toList()
                     val nevntUnderenhet = UlagretRapport.NevntUnderenhet(OrgNr.genererGyldig().somUvalidert())
 
                     using(sessionOf(application.dependencies.resolve<DataSource>())) {
@@ -739,16 +738,15 @@ class RapportServiceTest :
                         treff.single() shouldBe rapport
                     }
 
-                    val nevnteFnrV2 =
-                        buildSet {
-                                while (size < 3) {
-                                    val nevnt = UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert())
-                                    if (!nevnteFnrV1.contains(nevnt)) {
-                                        add(nevnt)
-                                    }
-                                }
+                    val nevnteFnrV2 = buildSet {
+                        while (size < 3) {
+                            val nevnt = UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert())
+                            if (!nevnteFnrV1.contains(nevnt)) {
+                                add(nevnt)
                             }
-                            .toList()
+                        }
+                    }
+                        .toList()
 
                     using(sessionOf(application.dependencies.resolve<DataSource>())) {
                         it.transaction { tx ->
@@ -787,13 +785,12 @@ class RapportServiceTest :
                     val sut: RapportService = application.dependencies.resolve()
                     val rapport = sut.finnRapport(Rapport.Id(1))!!
 
-                    val nevnteFnrA =
-                        buildSet {
-                                while (size < 2) {
-                                    add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
-                                }
-                            }
-                            .toList()
+                    val nevnteFnrA = buildSet {
+                        while (size < 2) {
+                            add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
+                        }
+                    }
+                        .toList()
                     val nevntUnderenhet = UlagretRapport.NevntUnderenhet(OrgNr.genererGyldig().somUvalidert())
 
                     using(sessionOf(application.dependencies.resolve<DataSource>())) {
@@ -815,16 +812,15 @@ class RapportServiceTest :
                         treff.single() shouldBe rapport
                     }
 
-                    val nevnteFnrB =
-                        buildSet {
-                                while (size < 3) {
-                                    val nevnt = UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert())
-                                    if (!nevnteFnrA.contains(nevnt)) {
-                                        add(nevnt)
-                                    }
-                                }
+                    val nevnteFnrB = buildSet {
+                        while (size < 3) {
+                            val nevnt = UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert())
+                            if (!nevnteFnrA.contains(nevnt)) {
+                                add(nevnt)
                             }
-                            .toList()
+                        }
+                    }
+                        .toList()
 
                     using(sessionOf(application.dependencies.resolve<DataSource>())) {
                         it.transaction { tx ->
@@ -863,13 +859,12 @@ class RapportServiceTest :
                     val sut: RapportService = application.dependencies.resolve()
                     val rapport = sut.finnRapport(Rapport.Id(1))!!
 
-                    val nevnteFnrV2 =
-                        buildSet {
-                                while (size < 2) {
-                                    add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
-                                }
-                            }
-                            .toList()
+                    val nevnteFnrV2 = buildSet {
+                        while (size < 2) {
+                            add(UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert()))
+                        }
+                    }
+                        .toList()
                     val nevntUnderenhet = UlagretRapport.NevntUnderenhet(OrgNr.genererGyldig().somUvalidert())
 
                     using(sessionOf(application.dependencies.resolve<DataSource>())) {
@@ -891,16 +886,15 @@ class RapportServiceTest :
                         treff.single() shouldBe rapport
                     }
 
-                    val nevnteFnrV1 =
-                        buildSet {
-                                while (size < 3) {
-                                    val nevnt = UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert())
-                                    if (!nevnteFnrV2.contains(nevnt)) {
-                                        add(nevnt)
-                                    }
-                                }
+                    val nevnteFnrV1 = buildSet {
+                        while (size < 3) {
+                            val nevnt = UlagretRapport.NevntFnr(Fnr.genererGyldig().somUvalidert())
+                            if (!nevnteFnrV2.contains(nevnt)) {
+                                add(nevnt)
                             }
-                            .toList()
+                        }
+                    }
+                        .toList()
 
                     using(sessionOf(application.dependencies.resolve<DataSource>())) {
                         it.transaction { tx ->
@@ -934,8 +928,9 @@ class RapportServiceTest :
         }
     })
 
-fun metrikkForRapporter(dependencies: DependencyRegistry) =
-    runBlocking { dependencies.resolve<DataSource>() to dependencies.resolve<RapportRepository>() }
-        .let { (datasource, repository) -> using(sessionOf(datasource)) { it.transaction { tx -> repository.metrikkForRapporter(tx) } } }
+fun metrikkForRapporter(dependencies: DependencyRegistry) = runBlocking {
+    dependencies.resolve<DataSource>() to dependencies.resolve<RapportRepository>()
+}
+    .let { (datasource, repository) -> using(sessionOf(datasource)) { it.transaction { tx -> repository.metrikkForRapporter(tx) } } }
 
 fun Iterable<Pair<Tags, Long>>.totalForType(type: RapportType) = extract("rapporttype" to type.name, "nedlastinger" to "any").single()
