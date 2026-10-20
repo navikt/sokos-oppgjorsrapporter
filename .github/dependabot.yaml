@@ -10,10 +10,18 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      all-minor-updates:
+      all-but-ktor-minor-updates:
         update-types:
           - "minor"
           - "patch"
+        exclude-patterns:
+          - "io.ktor*"
+      ktor-minor-updates:
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "io.ktor*"
 
   -  package-ecosystem: github-actions
      directory: "/"
