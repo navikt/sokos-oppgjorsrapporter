@@ -32,7 +32,7 @@ plugins {
     application
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
-    id("com.diffplug.spotless") version "8.10.4"
+    id("com.diffplug.spotless") version "8.10.3"
     id("org.jetbrains.kotlinx.kover") version "0.9.11"
 }
 
