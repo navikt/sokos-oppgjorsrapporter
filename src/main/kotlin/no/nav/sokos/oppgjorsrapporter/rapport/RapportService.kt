@@ -54,11 +54,44 @@ class RapportService(
 ) : DatabaseSupport(dataSource) {
     private val logger = KotlinLogging.logger {}
 
-    fun lagreBestilling(kilde: String, rapportType: RapportType, dokument: String): RapportBestilling = withTransaction {
-        repository.lagreBestilling(
-            it,
-            UlagretRapportBestilling(mottatt = Instant.now(clock), mottattFra = kilde, dokument = dokument, genererSom = rapportType),
-        )
+    fun lagreBestilling(kilde: String, rapportType: RapportType, dokument: String): RapportBestilling? = withTransaction { tx ->
+        val ulagret =
+            UlagretRapportBestilling(mottatt = Instant.now(clock), mottattFra = kilde, dokument = dokument, genererSom = rapportType)
+        val lagret = repository.lagreBestilling(tx, ulagret)
+        if (lagret == null) {
+            val tidligere = repository.finnBestillingFraHash(tx, ulagret.genererSom, ulagret.dokument)
+            if (tidligere?.dokument == ulagret.dokument) {
+                val message =
+                    "Duplikat '${rapportType.name}'-bestilling mottatt; denne vil bli kastet (tidligere lagret som bestilling ${tidligere.id.raw})"
+                logger.warn { message }
+                logger.warn(TEAM_LOGS_MARKER) { message }
+                // Ingen throw her, slik at meldingen vi har fått fra MQ vil bli kvittert som lest.
+            } else {
+                // Vi har mottatt en bestilling hvis dokument har samme sjekksum som et vi hadde fra før - men selv om sjekksummen
+                // matcher, så er dokumentene forskjellige (i.e. sjekksum-matchen er en falsk positiv).
+                // Logg dette tydelig og re-throw, slik at meldingen blir flyttet til backout-kø og kan håndteres manuelt derfra.
+                val message =
+                    """
+                    Mottatt '${rapportType.name}'-bestilling som sjekksum-matcher med bestilling ${tidligere?.id?.raw} - men dokumentene er forskjellige.
+
+                    Bestillings-meldingen vil bli flyttet til fra backout-kø.  Som følge av sjekksum-matchen vil meldingen ikke kunne prosesseres som den er.
+
+                    For å gjøre den prosesserbar, må man enten endre hvordan applikasjonen sjekker for duplikater, eller endre på meldingen (f.eks. ved å
+                    legge til insignifikant whitespace) slik at den får en annen sjekksum.
+                    Etter at applikasjonen eller meldingen er endret kan man forsøke å flytte meldingen fra backout- tilbake på input-kø.
+                    """
+                        .trimIndent()
+                val e = IllegalStateException(message)
+                logger.error { message }
+                logger.error(TEAM_LOGS_MARKER, e) { message }
+                throw e
+            }
+        }
+        lagret
+    }
+
+    fun finnBestillingFraHash(rapportType: RapportType, dokument: String): RapportBestilling? = withTransaction {
+        repository.finnBestillingFraHash(it, rapportType, dokument)
     }
 
     fun <T> prosesserBestilling(process: suspend (TransactionalSession, RapportBestilling) -> T): Result<T>? = withTransaction { tx ->

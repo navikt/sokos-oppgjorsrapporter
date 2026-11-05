@@ -73,13 +73,49 @@ class RapportServiceTest :
 
                     val sut: RapportService = application.dependencies.resolve()
                     val bestilling =
-                        sut.lagreBestilling("MQ: refusjon-bestilling-queue", RapportType.`ref-arbg`, "verbatim TextMessage contents")
+                        sut.lagreBestilling("MQ: refusjon-bestilling-queue", RapportType.`ref-arbg`, "verbatim TextMessage contents")!!
                     bestilling.id shouldBe RapportBestilling.Id(2)
                     bestilling.mottatt shouldBe before(Instant.now())
                     bestilling.mottattFra shouldBe "MQ: refusjon-bestilling-queue"
                     bestilling.dokument shouldBe "verbatim TextMessage contents"
                     bestilling.genererSom shouldBe RapportType.`ref-arbg`
                     bestilling.ferdigProsessert shouldBe null
+                }
+            }
+
+            test("skal ikke kunne lagre samme rapport-bestilling flere ganger i databasen") {
+                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+
+                    val sut: RapportService = application.dependencies.resolve()
+                    val reps = 3
+                    val bestillinger = buildList {
+                        repeat(reps) {
+                            add(
+                                sut.lagreBestilling(
+                                    "MQ: refusjon-bestilling-queue",
+                                    RapportType.`ref-arbg`,
+                                    "verbatim TextMessage contents",
+                                )
+                            )
+                        }
+                    }
+                    bestillinger shouldHaveSize reps
+                    bestillinger.first() shouldNotBe null
+                    bestillinger.drop(1).forAll { it shouldBe null }
+                }
+            }
+
+            test("kan finne rapporter med samme dokument i databasen") {
+                TestUtil.withFullApplication(dbContainer = dbContainer) {
+                    TestUtil.loadDataSet("db/simple.sql", dbContainer.toDataSource())
+
+                    val sut: RapportService = application.dependencies.resolve()
+                    val dokument = "verbatim TextMessage contents"
+                    val bestilling = sut.lagreBestilling("MQ: refusjon-bestilling-queue", RapportType.`ref-arbg`, dokument)!!
+
+                    val gjenfunnet = sut.finnBestillingFraHash(RapportType.`ref-arbg`, dokument)
+                    gjenfunnet?.id shouldBe bestilling.id
                 }
             }
 
@@ -103,7 +139,7 @@ class RapportServiceTest :
 
                     val sut: RapportService = application.dependencies.resolve()
                     val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
-                    val bestilling = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
+                    val bestilling = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)!!
                     val tags = Tags.of("rapporttype", "ref-arbg", "kilde", "test", "feilet", "false")
                     sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 1
 
@@ -167,7 +203,7 @@ class RapportServiceTest :
 
                     val sut: RapportService = application.dependencies.resolve()
                     val dokument = RefusjonsRapportBestilling.json.encodeToString(TestData.createRefusjonsRapportBestilling())
-                    val bestilling = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)
+                    val bestilling = sut.lagreBestilling("test", RapportType.`ref-arbg`, dokument)!!
                     val tags = Tags.of("rapporttype", "ref-arbg", "kilde", "test", "feilet", "false")
                     sut.metrikkForUprosesserteBestillinger().find { it.first == tags }?.second shouldBe 1
 
