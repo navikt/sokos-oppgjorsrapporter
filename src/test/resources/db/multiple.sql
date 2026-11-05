@@ -1,14 +1,14 @@
 SET SEARCH_PATH TO rapport;
 
-INSERT INTO rapport_bestilling (id, mottatt, mottatt_fra, dokument, generer_som, ferdig_prosessert, prosessering_feilet)
+INSERT INTO rapport_bestilling (id, mottatt, mottatt_fra, dokument, generer_som, ferdig_prosessert, prosessering_feilet, dokument_hash)
 VALUES
-    (1, '2023-01-01T00:45:14+0100', 'MQ', 'todo', 'ref-arbg', '2023-01-01T00:45:16+0100', NULL),
-    (2, '2023-01-01T09:37:51+0100', 'MQ', 'todo', 'trekk-kred', '2023-01-01T09:37:53+0100', NULL),
-    (3, '2023-11-01T11:57:20+0100', 'MQ', 'todo', 'ref-arbg', '2023-11-01T11:57:22+0100', NULL),
-    (4, '2023-11-01T11:57:20+0100', 'MQ', 'todo', 'ref-arbg', '2023-11-01T11:57:22+0100', NULL),
-    (5, '2023-12-31T23:58:26+0100', 'MQ', 'todo', 'ref-arbg', '2023-12-31T23:58:28+0100', NULL),
-    (6, '2024-01-01T00:13:53+0100', 'MQ', 'todo', 'ref-arbg', '2024-01-01T00:13:55+0100', NULL),
-    (7, '2026-05-10T00:13:53+0200', 'MQ', 'todo', 'trekk-hend', '2026-05-10T00:13:55+0200', NULL)
+    (1, '2023-01-01T00:45:14+0100', 'MQ', 'todo', 'ref-arbg', '2023-01-01T00:45:16+0100', NULL, NULL),
+    (2, '2023-01-01T09:37:51+0100', 'MQ', 'todo', 'trekk-kred', '2023-01-01T09:37:53+0100', NULL, NULL),
+    (3, '2023-11-01T11:57:20+0100', 'MQ', 'todo', 'ref-arbg', '2023-11-01T11:57:22+0100', NULL, NULL),
+    (4, '2023-11-01T11:57:20+0100', 'MQ', 'todo', 'ref-arbg', '2023-11-01T11:57:22+0100', NULL, NULL),
+    (5, '2023-12-31T23:58:26+0100', 'MQ', 'todo', 'ref-arbg', '2023-12-31T23:58:28+0100', NULL, NULL),
+    (6, '2024-01-01T00:13:53+0100', 'MQ', 'todo', 'ref-arbg', '2024-01-01T00:13:55+0100', NULL, NULL),
+    (7, '2026-05-10T00:13:53+0200', 'MQ', 'todo', 'trekk-hend', '2026-05-10T00:13:55+0200', NULL, NULL)
 ;
 
 INSERT INTO rapport (id, bestilling_id, orgnr, org_navn, type, dato_valutert, bankkonto, antall_rader, antall_underenheter, antall_personer, belop, opprettet, arkivert, nevnt_info)

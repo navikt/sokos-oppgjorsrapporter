@@ -1,12 +1,12 @@
 SET SEARCH_PATH TO rapport;
 
 -- Tre bestillinger for samme orgnr+type (ref-arbg), én for en annen type
-INSERT INTO rapport_bestilling (id, mottatt, mottatt_fra, dokument, generer_som, ferdig_prosessert)
+INSERT INTO rapport_bestilling (id, mottatt, mottatt_fra, dokument, generer_som, ferdig_prosessert, dokument_hash)
 VALUES
-    (1, '2026-01-01T00:00:00+0100', 'MQ', 'todo', 'ref-arbg',   '2026-01-01T00:00:01+0100'),
-    (2, '2026-02-01T00:00:00+0100', 'MQ', 'todo', 'ref-arbg',   '2026-02-01T00:00:01+0100'),
-    (3, '2026-03-01T00:00:00+0100', 'MQ', 'todo', 'ref-arbg',   '2026-03-01T00:00:01+0100'),
-    (4, '2026-01-01T00:00:00+0100', 'MQ', 'todo', 'trekk-kred', '2026-01-01T00:00:01+0100')
+    (1, '2026-01-01T00:00:00+0100', 'MQ', 'todo', 'ref-arbg',   '2026-01-01T00:00:01+0100', NULL),
+    (2, '2026-02-01T00:00:00+0100', 'MQ', 'todo', 'ref-arbg',   '2026-02-01T00:00:01+0100', NULL),
+    (3, '2026-03-01T00:00:00+0100', 'MQ', 'todo', 'ref-arbg',   '2026-03-01T00:00:01+0100', NULL),
+    (4, '2026-01-01T00:00:00+0100', 'MQ', 'todo', 'trekk-kred', '2026-01-01T00:00:01+0100', NULL)
 ;
 
 -- Rapport 1: ingen nedlastinger  → sistLastetNed = null for begge varianter

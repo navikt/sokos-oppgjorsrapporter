@@ -3,12 +3,17 @@ package no.nav.sokos.oppgjorsrapporter.config
 import javax.sql.DataSource
 import mu.KotlinLogging
 import org.flywaydb.core.api.output.MigrateOutput
+import org.flywaydb.database.postgresql.PostgreSQLConfigurationExtension
 
 private val logger = KotlinLogging.logger {}
 
 fun migrateDatabase(dataSource: DataSource, applicationState: ApplicationState) {
     val migrationsResult =
         org.flywaydb.core.Flyway.configure()
+            .apply {
+                val pgConfig = getConfigurationExtension(PostgreSQLConfigurationExtension::class.java)
+                pgConfig.isTransactionalLock = false
+            }
             .initSql(DatabaseConfig.migrationInitSql)
             .dataSource(dataSource)
             .lockRetryCount(-1)
