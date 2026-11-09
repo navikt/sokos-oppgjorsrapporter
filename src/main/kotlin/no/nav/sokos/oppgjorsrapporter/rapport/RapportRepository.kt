@@ -16,11 +16,12 @@ import no.nav.sokos.utils.OrgNr
 import org.threeten.extra.LocalDateRange
 
 class RapportRepository(private val clock: Clock) {
-    fun lagreBestilling(tx: TransactionalSession, bestilling: UlagretRapportBestilling): RapportBestilling =
+    fun lagreBestilling(tx: TransactionalSession, bestilling: UlagretRapportBestilling): RapportBestilling? =
         queryOf(
                 """
-                INSERT INTO rapport.rapport_bestilling(mottatt, mottatt_fra, dokument, generer_som)
-                VALUES (:mottatt, :mottatt_fra, :dokument, CAST(:generer_som AS rapport.rapport_type))
+                INSERT INTO rapport.rapport_bestilling(mottatt, mottatt_fra, dokument, generer_som, dokument_hash)
+                VALUES (:mottatt, :mottatt_fra, :dokument, CAST(:generer_som AS rapport.rapport_type), sha256(:dokument::bytea))
+                ON CONFLICT DO NOTHING
                 RETURNING *
                 """
                     .trimIndent(),
@@ -33,11 +34,25 @@ class RapportRepository(private val clock: Clock) {
             )
             .map { row -> RapportBestilling(row) }
             .asSingle
-            .let { tx.run(it)!! }
+            .let { tx.run(it) }
 
     fun finnBestilling(tx: TransactionalSession, id: RapportBestilling.Id): RapportBestilling? =
         queryOf("SELECT * FROM rapport.rapport_bestilling WHERE id = :id", mapOf("id" to id.raw))
             .map { RapportBestilling(it) }
+            .asSingle
+            .let { tx.run(it) }
+
+    fun finnBestillingFraHash(tx: TransactionalSession, rapportType: RapportType, dokument: String): RapportBestilling? =
+        queryOf(
+                """
+                SELECT * FROM rapport.rapport_bestilling
+                WHERE generer_som = CAST(:rapportType AS rapport.rapport_type)
+                  AND dokument_hash = sha256(:dokument::bytea)
+                """
+                    .trimIndent(),
+                mapOf("rapportType" to rapportType.name, "dokument" to dokument),
+            )
+            .map { row -> RapportBestilling(row) }
             .asSingle
             .let { tx.run(it) }
 

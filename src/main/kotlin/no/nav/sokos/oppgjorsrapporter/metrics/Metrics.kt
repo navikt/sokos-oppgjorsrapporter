@@ -43,6 +43,11 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             .description("Antall mottatte rapport-bestillinger")
             .withRegistry(registry)
             .apply { initializeTags("rapporttype" to RapportType.entries.map { it.name }) }
+    private val mottatteDuplikatBestillingerTeller =
+        Counter.builder("${NAMESPACE}_bestilling_mottatt_duplikat_count")
+            .description("Antall mottatte duplikat-rapport-bestillinger")
+            .withRegistry(registry)
+            .apply { initializeTags("rapporttype" to RapportType.entries.map { it.name }) }
     private val mottatteBestillingRaderTeller =
         Counter.builder("${NAMESPACE}_bestilling_mottatt_rader")
             .description("Antall mottatte rapport-bestillings-rader")
@@ -54,6 +59,9 @@ class Metrics(val registry: PrometheusMeterRegistry) {
             mottatteBestillingerTeller.withTags(tags).increment()
             mottatteBestillingRaderTeller.withTags(tags).increment(rader.toDouble())
         }
+
+    fun tellDuplikatMottak(rapportType: RapportType) =
+        mottatteDuplikatBestillingerTeller.withTag("rapporttype", rapportType.name).increment()
 
     private val uprosesserteBestillingerGauge =
         MultiGauge.builder("${NAMESPACE}_bestilling_uprosessert_count")
