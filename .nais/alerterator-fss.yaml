@@ -1,0 +1,58 @@
+apiVersion: "monitoring.coreos.com/v1"
+kind: PrometheusRule
+metadata:
+  name: {{app}}-alerts
+  namespace: {{team}}
+  labels:
+    team: {{team}}
+spec:
+  groups:
+    # Alerts som er spesifikke for applikasjonen i dette repositoriet, men basert på metrikker som finnes i fss - med sjekking av alert-condition hvert 15. minutt
+    - name: {{app}}-alerts-fss
+      interval: 15m
+      rules:
+
+        - alert: Nye meldinger på backout-kø - {{app}}
+          expr: max by (name) (increase( queue_depth_messages{name=~"QA[.].+_OPPGJORSRAPPORTER[.].+_BOQ"}[1h] ) >= 0)
+          for: 30m
+          annotations:
+            summary: Nye meldinger på backout-kø \{{ $labels.name }}
+            description: I løpet av den siste timen har lengden på backout-køen '\{{ $labels.name }}' økt med \{{ $value }}.
+            consequence: Meldingene som nå ligger på backout-kø har potensielt ikke blitt prosessert av {{app}}.
+            action: >-
+              Sjekk <{{ teamLogsUrl }}|Team Logs> for info om hva som kan ha gått galt.
+              Forsøk evt. å flytte meldingene tilbake til input-køen.
+          labels:
+            namespace: {{team}}
+            severity: "warn"
+
+        - alert: Manglende metrikk for backout-kø-lengde - {{app}}
+          # Bruker `queue_depth_messages`-metrikk eksponert fra https://github.com/navikt/freg-mq-metrics
+          # Den bruker verdien "-1" for å indikere "denne køen har jeg sett før, men nå får jeg ikke noe data om den fra MQ lenger".
+          expr: >-
+            (
+              absent_over_time( queue_depth_messages{name="QA.{{#if isProduction}}P{{else}}Q1{{/if}}_OPPGJORSRAPPORTER.REFUSJON_ARBG_GRLAG_BOQ"}[1h] ) or
+              absent_over_time( queue_depth_messages{name="QA.{{#if isProduction}}P{{else}}Q1{{/if}}_OPPGJORSRAPPORTER.TREKK_HEND_GRLAG_BOQ"}[1h] ) or
+              absent_over_time( queue_depth_messages{name="QA.{{#if isProduction}}P{{else}}Q1{{/if}}_OPPGJORSRAPPORTER.TREKK_KRED_GRLAG_BOQ"}[1h] )
+            ) or (
+              max_over_time( queue_depth_messages{name=~"QA[.].+_OPPGJORSRAPPORTER[.].+_BOQ"}[1h] ) < 0
+            )
+          for: 3h
+          annotations:
+            summary: "Mangler info om backout-kø-lengde for '\{{ $labels.name }}'"
+            description: >-
+              Vi har valgt å bruke metrikkene som eksporteres av <https://github.com/navikt/freg-mq-metrics|freg-mq-metrics>
+              som basis for alerts om at MQ-meldinger som skulle til {{app}} i stedet har endt opp på backout-kø - men nå ser
+              disse metrikkene ut til å mangle data om backout-køen `\{{ $labels.name }}`.
+            consequence: >-
+              Vi vil ikke få alerts dersom noen av MQ-meldingene som skulle til {{app}} av en eller annen grunn
+              ender opp på backout-køen.
+            action: >-
+              Det er <https://teamkatalog.nav.no/team/f3388fcd-898e-40da-8d02-0bf1e3a79120|Team Dokumentløsninger> som eier
+              'freq-mq-metrics', så første punkt for å finne ut av dette er antakelig å spørre dem (f.eks. i Slack-kanalen
+              #team_dokumentløsninger) om det er kjente problemer med applikasjonen deres.
+              
+              Inntil metrikken virker igjen kan man se MQ-kølengdene via linkene som finnes i systemoversikten vår.
+          labels:
+            namespace: {{team}}
+            severity: "warn"
