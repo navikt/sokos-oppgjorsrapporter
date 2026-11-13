@@ -63,13 +63,8 @@ spec:
             severity: warning
 
         - alert: CrashLoopBackoff
-          expr: >-
-            sum(
-              changes(
-                kube_pod_container_status_restarts_total{namespace="{{team}}"}[5m]
-              )
-            ) by (container, namespace) > 0
-          for: 5m
+          expr: min by (container) (kube_pod_container_status_waiting_reason{namespace="{{team}}",reason="CrashLoopBackOff"}) > 0
+          for: 10m
           annotations:
             consequence: '*\{{ $labels.container }}* står i CrashLoopBackoff'
             action: 'Du må se på hvorfor appen kræsjer'
