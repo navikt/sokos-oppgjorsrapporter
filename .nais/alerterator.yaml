@@ -135,6 +135,20 @@ spec:
             severity: "warn"
         {{/if}}
 
+        - alert: Nye meldinger på backout-kø - {{app}}
+          expr: max by (name) (increase( queue_depth_messages{name=~"QA[.].+_OPPGJORSRAPPORTER[.].+_BOQ"}[1h] ) >= 0)
+          for: 30m
+          annotations:
+            summary: Nye meldinger på backout-kø \{{ $labels.name }}
+            description: I løpet av den siste timen har lengden på backout-køen '\{{ $labels.name }}' økt med \{{ $value }}.
+            consequence: Meldingene som nå ligger på backout-kø har potensielt ikke blitt prosessert av {{app}}.
+            action: >-
+              Sjekk <{{ teamLogsUrl }}|Team Logs> for info om hva som kan ha gått galt.
+              Forsøk evt. å flytte meldingene tilbake til input-køen.
+          labels:
+            namespace: {{team}}
+            severity: "warn"
+
         - alert: Manglende metrikk for backout-kø-lengde - {{app}}
           # Bruker `queue_depth_messages`-metrikk eksponert fra https://github.com/navikt/freg-mq-metrics
           # Den bruker verdien "-1" for å indikere "denne køen har jeg sett før, men nå får jeg ikke noe data om den fra MQ lenger".
@@ -162,20 +176,6 @@ spec:
               #team_dokumentløsninger) om det er kjente problemer med applikasjonen deres.
               
               Inntil metrikken virker igjen kan man se MQ-kølengdene via linkene som finnes i systemoversikten vår.
-          labels:
-            namespace: {{team}}
-            severity: "warn"
-
-        - alert: Nye meldinger på backout-kø - {{app}}
-          expr: max by (name) (increase( queue_depth_messages{name=~"QA[.].+_OPPGJORSRAPPORTER[.].+_BOQ"}[1h] ) >= 0)
-          for: 30m
-          annotations:
-            summary: Nye meldinger på backout-kø \{{ $labels.name }}
-            description: I løpet av den siste timen har lengden på backout-køen '\{{ $labels.name }}' økt med \{{ $value }}.
-            consequence: Meldingene som nå ligger på backout-kø har potensielt ikke blitt prosessert av {{app}}.
-            action: >-
-              Sjekk <{{ teamLogsUrl }}|Team Logs> for info om hva som kan ha gått galt.
-              Forsøk evt. å flytte meldingene tilbake til input-køen.
           labels:
             namespace: {{team}}
             severity: "warn"
