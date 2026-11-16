@@ -49,5 +49,5 @@ jobs:
         env:
           CLUSTER: ${{ matrix.cluster }}
           RESOURCE: .nais/alerterator-fss.yaml
-          VARS: .nais/alerterator-fss-${{ matrix.cluster }}.json
+          VARS: .nais/alerterator-fss-${{ matrix.cluster }}.yaml
           PRINT_PAYLOAD: true
