@@ -20,7 +20,7 @@ spec:
             description: I løpet av den siste timen har lengden på backout-køen '\{{ $labels.name }}' økt med \{{ $value }}.
             consequence: Meldingene som nå ligger på backout-kø har potensielt ikke blitt prosessert av {{app}}.
             action: >-
-              Sjekk <{{ teamLogsUrl }}|Team Logs> for info om hva som kan ha gått galt.
+              Sjekk <{{ teamlogsUrl }}|Team Logs> for info om hva som kan ha gått galt.
               Forsøk evt. å flytte meldingene tilbake til input-køen.
           labels:
             namespace: {{team}}
