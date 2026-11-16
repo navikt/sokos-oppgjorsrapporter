@@ -3,26 +3,26 @@ group = "no.nav.sokos"
 val flywayVersion = "12.6.1"
 val hikariVersion = "7.1.0"
 val ibmMqVersion = "9.4.5.1"
-val jacksonVersion ="3.2.3"
+val jacksonVersion ="3.3.0"
 val junitVersion = "6.1.3"
 val jsonUnitVersion = "5.1.1"
 val konfigVersion = "1.6.10.0"
-val kotestVersion = "6.2.5"
+val kotestVersion = "6.2.6"
 val kotlinLoggingVersion = "3.0.5"
-val kotlinxSerializationVersion = "1.11.0"
+val kotlinxSerializationVersion = "1.12.0"
 val kotliqueryVersion = "1.9.1"
 val ktorVersion = "3.6.0"
-val logbackVersion = "1.6.5"
+val logbackVersion = "1.6.6"
 val logstashVersion = "9.0"
 val micrometerVersion = "1.18.0-M2"
 val mockOAuth2ServerVersion = "4.0.0"
-val mockkVersion = "1.14.11"
+val mockkVersion = "1.14.12"
 val openapiRequestValidatorVersion = "3.0.0"
-val opentelemetryAnnotationsVersion = "2.32.0"
+val opentelemetryAnnotationsVersion = "2.33.1"
 val pdpClientVersion = "1.1.0"
 val postgresVersion = "42.7.14"
 val testcontainersVersion = "2.0.5"
-val threetenExtraVersion = "1.10.0"
+val threetenExtraVersion = "1.11.0"
 val tokenSupportVersion = "6.0.0"
 val utilsVersion = "0.10.1"
 
@@ -32,7 +32,7 @@ plugins {
     application
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
-    id("com.diffplug.spotless") version "8.10.3"
+    id("com.diffplug.spotless") version "8.11.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.11"
 }
 
@@ -59,7 +59,7 @@ dependencies {
     implementation("io.ktor:ktor-server-di:$ktorVersion")
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
     // TODO: Ta bort denne overstyringen når vi oppgraderer KTor til 3.5.1+
-    implementation(platform("io.netty:netty-bom:4.2.19.Final"))
+    implementation(platform("io.netty:netty-bom:4.2.20.Final"))
     implementation("io.ktor:ktor-server-swagger:$ktorVersion")
 
     // Ekstra tid/dato-klasser (utover java.time.*)
