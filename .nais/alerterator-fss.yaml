@@ -13,7 +13,7 @@ spec:
       rules:
 
         - alert: Nye meldinger på backout-kø - {{app}}
-          expr: max by (name) (increase( queue_depth_messages{name=~"QA[.].+_OPPGJORSRAPPORTER[.].+_BOQ"}[1h] ) >= 0)
+          expr: max by (name) (increase( queue_depth_messages{name=~"QA[.].+_OPPGJORSRAPPORTER[.].+_BOQ"}[1h] ) > 0)
           for: 30m
           annotations:
             summary: Nye meldinger på backout-kø \{{ $labels.name }}
