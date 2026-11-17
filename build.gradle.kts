@@ -2,7 +2,7 @@ group = "no.nav.sokos"
 
 val flywayVersion = "12.6.1"
 val hikariVersion = "7.1.0"
-val ibmMqVersion = "9.4.5.1"
+val ibmMqVersion = "10.0.1.0"
 val jacksonVersion ="3.3.0"
 val junitVersion = "6.1.3"
 val jsonUnitVersion = "5.1.1"
