@@ -6,238 +6,242 @@ import no.nav.sokos.oppgjorsrapporter.mq.TrekkHendBestilling
 import no.nav.sokos.oppgjorsrapporter.utils.xmlResourceAsString
 
 class TrekkHendPdfMapperTest :
-    FunSpec({
-        test("Generer trekk-hend/kreditor payload til pdfgen og valider felter") {
-            val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-kreditor.xml"))
+    FunSpec(
+        {
+            test("Generer trekk-hend/kreditor payload til pdfgen og valider felter") {
+                val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-kreditor.xml"))
 
-            val payload = bestilling.mapTilTrekkHendPdfPayload()
+                val payload = bestilling.mapTilTrekkHendPdfPayload()
 
-            val jsonPayload = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
+                val jsonPayload = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
 
-            assertThatJson(jsonPayload)
-                .isEqualTo(
-                    """
-                    {
-                      "dato": "21.04.2026",
-                      "mottaker": {
-                        "type": "kreditor",
-                        "orgnr": {
-                          "formattert": "859 503 241",
-                          "verdi": "859503241"
-                        },
-                        "navn": "McDuck inkasso AS",
-                        "adresse": "Postboks 313, 3158 ANDEBY"
-                      },
-                      "trekkHendelser": [
+                assertThatJson(jsonPayload)
+                    .isEqualTo(
+                        """
                         {
-                          "fnr": {
-                            "formattert": "184538 66986",
-                            "verdi": "18453866986"
+                          "dato": "21.04.2026",
+                          "mottaker": {
+                            "type": "kreditor",
+                            "orgnr": {
+                              "formattert": "859 503 241",
+                              "verdi": "859503241"
+                            },
+                            "navn": "McDuck inkasso AS",
+                            "adresse": "Postboks 313, 3158 ANDEBY"
                           },
-                          "navn": "Donald Duck",
-                          "namsmannOrgnr": {
-                            "formattert": "087 453 421",
-                            "verdi": "087453421"
-                          },
-                          "kid": "0107036257420540624",
-                          "hendelse": "Ingen ytelse"
-                        },
-                        {
-                          "fnr": {
-                            "formattert": "224685 28375",
-                            "verdi": "22468528375"
-                          },
-                          "navn": "Gulbrand Gråstein",
-                          "namsmannOrgnr": {
-                            "formattert": "141 619 942",
-                            "verdi": "141619942"
-                          },
-                          "kid": "0103064541812328464",
-                          "hendelse": "Opphør ytelse"
+                          "trekkHendelser": [
+                            {
+                              "fnr": {
+                                "formattert": "184538 66986",
+                                "verdi": "18453866986"
+                              },
+                              "navn": "Donald Duck",
+                              "namsmannOrgnr": {
+                                "formattert": "087 453 421",
+                                "verdi": "087453421"
+                              },
+                              "kid": "0107036257420540624",
+                              "hendelse": "Ingen ytelse"
+                            },
+                            {
+                              "fnr": {
+                                "formattert": "224685 28375",
+                                "verdi": "22468528375"
+                              },
+                              "navn": "Gulbrand Gråstein",
+                              "namsmannOrgnr": {
+                                "formattert": "141 619 942",
+                                "verdi": "141619942"
+                              },
+                              "kid": "0103064541812328464",
+                              "hendelse": "Opphør ytelse"
+                            }
+                          ]
                         }
-                      ]
-                    }
-                    """
-                        .trimIndent()
-                )
-        }
-        test("Generer trekk-hend/kreditor payload til pdfgen og valider felter selv når noen felter mangler") {
-            val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-kreditor-med-manglende-felter.xml"))
+                        """
+                            .trimIndent(),
+                    )
+            }
+            test("Generer trekk-hend/kreditor payload til pdfgen og valider felter selv når noen felter mangler") {
+                val bestilling =
+                    TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-kreditor-med-manglende-felter.xml"))
 
-            val payload = bestilling.mapTilTrekkHendPdfPayload()
+                val payload = bestilling.mapTilTrekkHendPdfPayload()
 
-            val jsonPayload = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
+                val jsonPayload = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
 
-            assertThatJson(jsonPayload)
-                .isEqualTo(
-                    """
-                    {
-                      "dato": "21.04.2026",
-                      "mottaker": {
-                        "type": "kreditor",
-                        "orgnr": {
-                          "formattert": "859 503 241",
-                          "verdi": "859503241"
-                        },
-                        "navn": "McDuck inkasso AS",
-                        "adresse": "Postboks 313, 3158 ANDEBY"
-                      },
-                      "trekkHendelser": [
+                assertThatJson(jsonPayload)
+                    .isEqualTo(
+                        """
                         {
-                          "fnr": {
-                            "formattert": "184538 66986",
-                            "verdi": "18453866986"
+                          "dato": "21.04.2026",
+                          "mottaker": {
+                            "type": "kreditor",
+                            "orgnr": {
+                              "formattert": "859 503 241",
+                              "verdi": "859503241"
+                            },
+                            "navn": "McDuck inkasso AS",
+                            "adresse": "Postboks 313, 3158 ANDEBY"
                           },
-                          "navn": "Donald Duck",
-                          "namsmannOrgnr": {
-                            "formattert": "087 453 421",
-                            "verdi": "087453421"
-                          },
-                          "kid": null,
-                          "hendelse": "Ingen ytelse"
-                        },
-                        {
-                          "fnr": {
-                            "formattert": "224685 28375",
-                            "verdi": "22468528375"
-                          },
-                          "navn": "Gulbrand Gråstein",
-                          "namsmannOrgnr": null,
-                          "kid": "0103064541812328464",
-                          "hendelse": "Opphør ytelse"
-                        },
-                        {
-                          "fnr": {
-                            "formattert": "284820 19570",
-                            "verdi": "28482019570"
-                          },
-                          "navn": "Petter Smart",
-                          "namsmannOrgnr": null,
-                          "kid": null,
-                          "hendelse": "Opphør ytelse"
+                          "trekkHendelser": [
+                            {
+                              "fnr": {
+                                "formattert": "184538 66986",
+                                "verdi": "18453866986"
+                              },
+                              "navn": "Donald Duck",
+                              "namsmannOrgnr": {
+                                "formattert": "087 453 421",
+                                "verdi": "087453421"
+                              },
+                              "kid": null,
+                              "hendelse": "Ingen ytelse"
+                            },
+                            {
+                              "fnr": {
+                                "formattert": "224685 28375",
+                                "verdi": "22468528375"
+                              },
+                              "navn": "Gulbrand Gråstein",
+                              "namsmannOrgnr": null,
+                              "kid": "0103064541812328464",
+                              "hendelse": "Opphør ytelse"
+                            },
+                            {
+                              "fnr": {
+                                "formattert": "284820 19570",
+                                "verdi": "28482019570"
+                              },
+                              "navn": "Petter Smart",
+                              "namsmannOrgnr": null,
+                              "kid": null,
+                              "hendelse": "Opphør ytelse"
+                            }
+                          ]
                         }
-                      ]
-                    }
-                    """
-                        .trimIndent()
-                )
-        }
+                        """
+                            .trimIndent(),
+                    )
+            }
 
-        test("Generer trekk-hend/namsmann payload til pdfgen og valider felter") {
-            val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-namsmann.xml"))
+            test("Generer trekk-hend/namsmann payload til pdfgen og valider felter") {
+                val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-namsmann.xml"))
 
-            val payload = bestilling.mapTilTrekkHendPdfPayload()
+                val payload = bestilling.mapTilTrekkHendPdfPayload()
 
-            val jsonPayload = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
+                val jsonPayload = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
 
-            assertThatJson(jsonPayload)
-                .isEqualTo(
-                    """
-                    {
-                      "dato": "21.04.2026",
-                      "mottaker": {
-                        "type": "namsmann",
-                        "orgnr": {
-                          "formattert": "087 453 421",
-                          "verdi": "087453421"
-                        },
-                        "navn": "NAMSFOGDEN I ANDEBY",
-                        "adresse": "Postboks 313, 3158"
-                      },
-                      "trekkHendelser": [
+                assertThatJson(jsonPayload)
+                    .isEqualTo(
+                        """
                         {
-                          "fnr": {
-                            "formattert": "184538 66986",
-                            "verdi": "18453866986"
+                          "dato": "21.04.2026",
+                          "mottaker": {
+                            "type": "namsmann",
+                            "orgnr": {
+                              "formattert": "087 453 421",
+                              "verdi": "087453421"
+                            },
+                            "navn": "NAMSFOGDEN I ANDEBY",
+                            "adresse": "Postboks 313, 3158"
                           },
-                          "navn": "Donald Duck",
-                          "namsmannOrgnr": null,
-                          "kid": "0107036257420540624",
-                          "hendelse": "Ingen ytelse"
-                        },
-                        {
-                          "fnr": {
-                            "formattert": "245089 24131",
-                            "verdi": "24508924131"
-                          },
-                          "navn": "Guffen Gås",
-                          "namsmannOrgnr": null,
-                          "kid": "5900562964792591",
-                          "hendelse": "Ingen ytelse"
-                        },
-                        {
-                          "fnr": {
-                            "formattert": "284820 19570",
-                            "verdi": "28482019570"
-                          },
-                          "navn": "Petter Smart",
-                          "namsmannOrgnr": null,
-                          "kid": "01626785861606857982",
-                          "hendelse": "Opphør ytelse"
+                          "trekkHendelser": [
+                            {
+                              "fnr": {
+                                "formattert": "184538 66986",
+                                "verdi": "18453866986"
+                              },
+                              "navn": "Donald Duck",
+                              "namsmannOrgnr": null,
+                              "kid": "0107036257420540624",
+                              "hendelse": "Ingen ytelse"
+                            },
+                            {
+                              "fnr": {
+                                "formattert": "245089 24131",
+                                "verdi": "24508924131"
+                              },
+                              "navn": "Guffen Gås",
+                              "namsmannOrgnr": null,
+                              "kid": "5900562964792591",
+                              "hendelse": "Ingen ytelse"
+                            },
+                            {
+                              "fnr": {
+                                "formattert": "284820 19570",
+                                "verdi": "28482019570"
+                              },
+                              "navn": "Petter Smart",
+                              "namsmannOrgnr": null,
+                              "kid": "01626785861606857982",
+                              "hendelse": "Opphør ytelse"
+                            }
+                          ]
                         }
-                      ]
-                    }
-                    """
-                        .trimIndent()
-                )
-        }
+                        """
+                            .trimIndent(),
+                    )
+            }
 
-        test("Generer trekk-hend/namsmann payload til pdfgen og valider felter selv når noen felter mangler") {
-            val bestilling = TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-namsmann-med-manglende-felter.xml"))
+            test("Generer trekk-hend/namsmann payload til pdfgen og valider felter selv når noen felter mangler") {
+                val bestilling =
+                    TrekkHendBestilling.decode(xmlResourceAsString("mq/trekk_hend_bestilling-namsmann-med-manglende-felter.xml"))
 
-            val payload = bestilling.mapTilTrekkHendPdfPayload()
+                val payload = bestilling.mapTilTrekkHendPdfPayload()
 
-            val jsonPayload = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
+                val jsonPayload = PdfgenHttpClientSetup.jsonConfig.encodeToString(payload)
 
-            assertThatJson(jsonPayload)
-                .isEqualTo(
-                    """
-                    {
-                      "dato": "21.04.2026",
-                      "mottaker": {
-                        "type": "namsmann",
-                        "orgnr": {
-                          "formattert": "087 453 421",
-                          "verdi": "087453421"
-                        },
-                        "navn": "NAMSFOGDEN I ANDEBY",
-                        "adresse": "Postboks 313, 3158"
-                      },
-                      "trekkHendelser": [
+                assertThatJson(jsonPayload)
+                    .isEqualTo(
+                        """
                         {
-                          "fnr": {
-                            "formattert": "184538 66986",
-                            "verdi": "18453866986"
+                          "dato": "21.04.2026",
+                          "mottaker": {
+                            "type": "namsmann",
+                            "orgnr": {
+                              "formattert": "087 453 421",
+                              "verdi": "087453421"
+                            },
+                            "navn": "NAMSFOGDEN I ANDEBY",
+                            "adresse": "Postboks 313, 3158"
                           },
-                          "navn": "Donald Duck",
-                          "namsmannOrgnr": null,
-                          "kid": null,
-                          "hendelse": "Ingen ytelse"
-                        },
-                        {
-                          "fnr": {
-                            "formattert": "245089 24131",
-                            "verdi": "24508924131"
-                          },
-                          "navn": "Guffen Gås",
-                          "namsmannOrgnr": null,
-                          "kid": "5900562964792591",
-                          "hendelse": "Ingen ytelse"
-                        },
-                        {
-                          "fnr": {
-                            "formattert": "284820 19570",
-                            "verdi": "28482019570"
-                          },
-                          "navn": "Petter Smart",
-                          "namsmannOrgnr": null,
-                          "kid": null,
-                          "hendelse": "Opphør ytelse"
+                          "trekkHendelser": [
+                            {
+                              "fnr": {
+                                "formattert": "184538 66986",
+                                "verdi": "18453866986"
+                              },
+                              "navn": "Donald Duck",
+                              "namsmannOrgnr": null,
+                              "kid": null,
+                              "hendelse": "Ingen ytelse"
+                            },
+                            {
+                              "fnr": {
+                                "formattert": "245089 24131",
+                                "verdi": "24508924131"
+                              },
+                              "navn": "Guffen Gås",
+                              "namsmannOrgnr": null,
+                              "kid": "5900562964792591",
+                              "hendelse": "Ingen ytelse"
+                            },
+                            {
+                              "fnr": {
+                                "formattert": "284820 19570",
+                                "verdi": "28482019570"
+                              },
+                              "navn": "Petter Smart",
+                              "namsmannOrgnr": null,
+                              "kid": null,
+                              "hendelse": "Opphør ytelse"
+                            }
+                          ]
                         }
-                      ]
-                    }
-                    """
-                        .trimIndent()
-                )
-        }
-    })
+                        """
+                            .trimIndent(),
+                    )
+            }
+        },
+    )

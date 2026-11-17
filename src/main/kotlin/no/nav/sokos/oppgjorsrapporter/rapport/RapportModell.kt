@@ -86,7 +86,7 @@ data class RapportBestilling(
     @Serializable @JvmInline value class Id(val raw: Long)
 
     constructor(
-        row: Row
+        row: Row,
     ) : this(
         id = Id(row.long("id")),
         mottatt = row.instant("mottatt"),
@@ -162,7 +162,7 @@ data class Rapport(
     @Serializable @JvmInline value class Id(val raw: Long)
 
     constructor(
-        row: Row
+        row: Row,
     ) : this(
         id = Id(row.long("id")),
         bestillingId = RapportBestilling.Id(row.long("bestilling_id")),
@@ -241,7 +241,7 @@ data class Variant(
     @JvmInline value class Id(val raw: Long)
 
     constructor(
-        row: Row
+        row: Row,
     ) : this(
         id = Id(row.long("id")),
         rapportId = Rapport.Id(row.long("rapport_id")),
@@ -263,7 +263,7 @@ data class RapportAudit(
     @JvmInline value class Id(val raw: Long)
 
     constructor(
-        row: Row
+        row: Row,
     ) : this(
         id = Id(row.long("id")),
         rapportId = Rapport.Id(row.long("rapport_id")),

@@ -90,7 +90,7 @@ fun Route.eksternApi() {
                         .record(rapporter.size.toDouble())
 
                     call.respond(
-                        Api.TilgrensendeRapporterDTO(orgnr = body.orgnr, type = body.rapportType, rapporterMedNedlastingsinfo = rapporter)
+                        Api.TilgrensendeRapporterDTO(orgnr = body.orgnr, type = body.rapportType, rapporterMedNedlastingsinfo = rapporter),
                     )
                 }
                 else -> {

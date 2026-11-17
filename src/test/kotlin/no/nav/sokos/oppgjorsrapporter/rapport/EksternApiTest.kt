@@ -33,7 +33,7 @@ class EksternApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
     fun `GET _api_ekstern_v1_$id (for feil innloggingstype) gir feilmelding`() {
         client(
                 authToken =
-                    mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.RANDOM_GROUP)))
+                    mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.RANDOM_GROUP))),
             )
             .get("/api/ekstern/v1/1")
             .then()
@@ -133,7 +133,7 @@ class EksternApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     ]
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 

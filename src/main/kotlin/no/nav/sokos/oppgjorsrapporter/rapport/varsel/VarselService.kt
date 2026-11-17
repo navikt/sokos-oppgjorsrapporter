@@ -30,7 +30,7 @@ import no.nav.sokos.oppgjorsrapporter.util.tilNorskFormat
 import no.nav.sokos.utils.handleCancellationException
 
 enum class VarselSystem {
-    dialogporten
+    dialogporten,
 }
 
 class VarselService(
@@ -190,7 +190,7 @@ class VarselService(
                             url = config.application.guiBaseUri.resolve("rapport/${rapport.id.raw}").toString(),
                             priority = GuiAction.Priority.Primary,
                             action = Action.access,
-                        )
+                        ),
                     ),
                 apiActions =
                     listOf(
@@ -204,11 +204,11 @@ class VarselService(
                                             httpMethod = ApiAction.HttpMethod.GET,
                                             documentationUrl = baseUri.resolve(SWAGGER_DOC_PATH).toString(),
                                         )
-                                    }
+                                    },
                                 ),
                             action = Action.access,
-                        )
+                        ),
                     ),
-            )
+            ),
         )
 }

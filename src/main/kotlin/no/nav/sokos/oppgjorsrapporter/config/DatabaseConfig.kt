@@ -23,5 +23,5 @@ fun createDataSource(url: String): HikariDataSource =
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_READ_COMMITTED"
             jdbcUrl = url
-        }
+        },
     )

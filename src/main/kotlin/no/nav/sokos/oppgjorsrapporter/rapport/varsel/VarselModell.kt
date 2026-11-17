@@ -18,7 +18,7 @@ data class Varsel(
     @JvmInline value class Id(val raw: Long)
 
     constructor(
-        row: Row
+        row: Row,
     ) : this(
         id = Id(row.long("id")),
         rapportId = Rapport.Id(row.long("rapport_id")),

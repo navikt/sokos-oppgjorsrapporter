@@ -81,11 +81,11 @@ object LocalhostAltinnTilgangerService : AltinnTilgangerService {
                                     underenheter = listOf(),
                                     navn = "Bedrift",
                                     organisasjonsform = "BEDR",
-                                )
+                                ),
                             ),
                         navn = "Organisasjon",
                         organisasjonsform = "ORGL",
-                    )
+                    ),
                 ),
             orgNrTilTilganger = mapOf(),
             tilgangTilOrgNr = mapOf(),

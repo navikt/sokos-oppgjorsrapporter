@@ -115,7 +115,7 @@ class DialogportenClientTest {
                           "apiActions": []
                         }
                         """
-                            .trimIndent()
+                            .trimIndent(),
                     )
             }
 
@@ -138,7 +138,7 @@ class DialogportenClientTest {
                             url = "https://example.com/gui/",
                             priority = GuiAction.Priority.Primary,
                             action = Action.access,
-                        )
+                        ),
                     ),
                 apiActions = emptyList(),
             )
@@ -198,7 +198,7 @@ fun OpenApiInteractionValidator.checkRequest(reqData: HttpRequestData, extraRequ
                         // Kopier body fra bodyAsText
                         withBody(bodyAsText)
                     }
-                    .build()
+                    .build(),
             )
         withClue(report.messages.joinToString("\n")) { report.hasErrors().shouldBeFalse() }
         extraRequestChecks(reqData, bodyAsText)

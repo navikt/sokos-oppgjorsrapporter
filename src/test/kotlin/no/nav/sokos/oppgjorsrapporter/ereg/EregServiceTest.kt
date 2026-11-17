@@ -41,7 +41,7 @@ class EregServiceTest {
                     organisasjonsnummer = "990983666",
                     navn = "NAV FAMILIE- OG PENSJONSYTELSER OSL",
                     adresse = "Sannergata 2, 0557 Oslo",
-                )
+                ),
             )
     }
 
@@ -64,7 +64,7 @@ class EregServiceTest {
                     organisasjonsnummer = "990983777",
                     navn = "NAV FAMILIE- OG PENSJONSYTELSER OSL",
                     adresse = "Fáo Bár? 2",
-                )
+                ),
             )
     }
 
@@ -82,7 +82,7 @@ class EregServiceTest {
                             }
                         }
                         """
-                            .trimIndent()
+                            .trimIndent(),
                     ),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json"),

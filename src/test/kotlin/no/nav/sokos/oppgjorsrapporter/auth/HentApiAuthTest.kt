@@ -346,7 +346,7 @@ class HentApiAuthTest : ApiTest() {
                 val respons =
                     client.get(urlString = "/api/rapport/v1/${rapport.id.raw}") {
                         bearerAuth(
-                            mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.ADMIN)))
+                            mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.ADMIN))),
                         )
                     }
 
@@ -367,7 +367,7 @@ class HentApiAuthTest : ApiTest() {
             val responsIkkeNav =
                 client.get(urlString = "/api/rapport/v1/${refArbgRapportDtoIkkeNav.id.raw}") {
                     bearerAuth(
-                        mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG)))
+                        mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG))),
                     )
                 }
 
@@ -387,7 +387,7 @@ class HentApiAuthTest : ApiTest() {
             val responsNav =
                 client.get(urlString = "/api/rapport/v1/${refArbgRapportDtoNav.id.raw}") {
                     bearerAuth(
-                        mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG)))
+                        mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG))),
                     )
                 }
 
@@ -405,7 +405,7 @@ class HentApiAuthTest : ApiTest() {
         val respons =
             client.get(urlString = "/api/rapport/v1/${trekkKredRapportDto.id.raw}") {
                 bearerAuth(
-                    mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG)))
+                    mockOAuth2Server.tokenFromDefaultProvider(mapOf("NAVident" to "user", "groups" to listOf(EntraIdGroup.REF_ARBG))),
                 )
             }
 

@@ -80,7 +80,7 @@ class BestillingMottak(
                         |${it.joinToString("\n|")}
                         """
                             .trimMargin()
-                            .trim()
+                            .trim(),
                     )
                 }
 

@@ -23,7 +23,7 @@ fun TrekkKredRapportBestilling.toCsv(): String {
                 brukerData.brevinfo.variableFelter.ur.tssId,
                 brukerData.brevinfo.variableFelter.ur.rapportFom.format(dateFormatter),
                 brukerData.brevinfo.variableFelter.ur.rapportTom.format(dateFormatter),
-            )
+            ),
         )
 
         with(brukerData.brevinfo.variableFelter.ur) {
@@ -44,7 +44,7 @@ fun TrekkKredRapportBestilling.toCsv(): String {
                                 trekkLinje.trekkTOM.format(dateFormatter),
                                 trekkLinje.belop.formater(),
                                 trekkLinje.kidStatus,
-                            )
+                            ),
                         )
                     }
                     add(csvRad("D", enhet.delsum.belop.formater()))

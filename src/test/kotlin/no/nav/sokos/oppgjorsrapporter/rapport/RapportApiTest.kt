@@ -104,7 +104,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "fraDato": "2025-01-01"
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -127,7 +127,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "tilDato": "2025-01-01"
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -150,7 +150,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "tilDato": "2025-01-01"
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -172,7 +172,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "tilDato": "2025-01-01"
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -194,7 +194,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "etterId": 5
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -217,7 +217,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "etterId": 5
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -240,7 +240,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "etterId": 5
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -262,7 +262,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "bankkonto": "12345678901"
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -285,7 +285,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "orgnr": "123456789"
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -315,7 +315,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "aar": 2024
                      }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -340,7 +340,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -356,7 +356,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "tilDato": "2023-01-01"
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -392,7 +392,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -408,7 +408,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "tilDato": "2023-12-31"
                      }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -466,7 +466,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -483,7 +483,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "inkluderArkiverte": true
                      }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -530,7 +530,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -546,7 +546,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "etterId": 5
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -571,7 +571,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -586,7 +586,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "etterId": 5
                     }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -611,7 +611,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -627,7 +627,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "orgnr": "234567890"
                      }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -652,7 +652,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -667,7 +667,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "rapportTyper": ["trekk-kred"]
                      }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -693,7 +693,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -708,7 +708,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "rapportTyper": ["T14"]
                      }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -734,7 +734,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -748,7 +748,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "bankkonto": "78912378912"
                      }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -771,7 +771,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                         "aar": 2023
                      }
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 .post("/api/rapport/v1")
                 .then()
@@ -808,7 +808,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -844,7 +844,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     "arkivert": false
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -867,7 +867,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     "arkivert": false
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -903,7 +903,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     append("CSV".encodeToByteString())
                     append(0.toByte())
                     append("2".encodeToByteString())
-                }
+                },
             )
     }
 
@@ -926,7 +926,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     append("PDF".encodeToByteString())
                     append(0.toByte())
                     append("2".encodeToByteString())
-                }
+                },
             )
     }
 
@@ -971,7 +971,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     .extract()
                     .response()!!
                     .body()
-                    .prettyPrint()
+                    .prettyPrint(),
             )
             .isEqualTo(
                 """
@@ -987,7 +987,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     "arkivert": false
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         client().put("/api/rapport/v1/2/arkiver").then().assertThat().statusCode(HttpStatusCode.NoContent.value).extract().response()!!
@@ -1001,7 +1001,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     .extract()
                     .response()!!
                     .body()
-                    .prettyPrint()
+                    .prettyPrint(),
             )
             .isEqualTo(
                 """
@@ -1017,7 +1017,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     "arkivert": true
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
 
         client()
@@ -1038,7 +1038,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     .extract()
                     .response()!!
                     .body()
-                    .prettyPrint()
+                    .prettyPrint(),
             )
             .isEqualTo(
                 """
@@ -1054,7 +1054,7 @@ class RapportApiTest : FullTestServer(MutableClock.of(Instant.parse("2025-11-22T
                     "arkivert": false
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 }
