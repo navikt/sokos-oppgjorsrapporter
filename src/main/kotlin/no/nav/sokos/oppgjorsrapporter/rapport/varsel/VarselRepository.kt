@@ -65,7 +65,7 @@ class VarselRepository {
                 WHERE v.oppgitt IS NOT NULL
                 ORDER BY r.opprettet DESC
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .map(::Varsel)
             .asList
@@ -100,7 +100,7 @@ class VarselRepository {
                          LEFT JOIN uferdig USING (rapport_type, system, har_feilet)
                 GROUP BY rapport_type, system, har_feilet
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .map {
                 Pair(

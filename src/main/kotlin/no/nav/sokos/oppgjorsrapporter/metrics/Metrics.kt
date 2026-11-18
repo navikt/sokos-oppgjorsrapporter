@@ -33,7 +33,7 @@ class Metrics(val registry: PrometheusMeterRegistry) {
                     Tag.of("endepunkt", endepunkt),
                     Tag.of("metode", response.request.method.value),
                     Tag.of("status_code", response.status.value.toString()),
-                )
+                ),
             )
             .increment()
     }

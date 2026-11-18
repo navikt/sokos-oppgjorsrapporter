@@ -17,7 +17,7 @@ data class ApiAction(val name: String, val endpoints: List<Endpoint>? = null, va
 }
 
 enum class Action {
-    access
+    access,
 }
 
 @Serializable

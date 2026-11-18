@@ -169,18 +169,20 @@ class BestillingProsessor(
             rapportService.lagreRapport(tx, ulagret).also { rapport ->
                 VariantFormat.entries
                     .mapNotNull { format ->
-                        metrics.coRecord({ result ->
-                            metrics.rapportGenerertTimer.withTags(
-                                "format",
-                                format.contentType,
-                                "rapporttype",
-                                rapport.type.name,
-                                "kilde",
-                                bestilling.mottattFra,
-                                "feilet",
-                                result.isFailure.toString(),
-                            )
-                        }) {
+                        metrics.coRecord(
+                            { result ->
+                                metrics.rapportGenerertTimer.withTags(
+                                    "format",
+                                    format.contentType,
+                                    "rapporttype",
+                                    rapport.type.name,
+                                    "kilde",
+                                    bestilling.mottattFra,
+                                    "feilet",
+                                    result.isFailure.toString(),
+                                )
+                            },
+                        ) {
                             generator.invoke(format)?.let { bytes ->
                                 rapportService.lagreVariant(
                                     tx,

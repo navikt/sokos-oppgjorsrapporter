@@ -155,7 +155,7 @@ suspend fun Application.module(appConfig: ApplicationConfig = environment.config
                                 when (config.application.profile) {
                                     PropertiesConfig.Profile.LOCAL -> 2
                                     else -> 5
-                                }
+                                },
                         )
                         exponentialDelay()
                     }

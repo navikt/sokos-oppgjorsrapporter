@@ -23,164 +23,191 @@ import no.nav.sokos.oppgjorsrapporter.rapport.RapportType
 import no.nav.sokos.oppgjorsrapporter.withEnabledBakgrunnsJobb
 
 class BestillingMottakTest :
-    FunSpec({
-        context("test-container") {
-            val dbContainer = TestContainer.postgres
-            val mqContainer = TestContainer.mq
+    FunSpec(
+        {
+            context("test-container") {
+                val dbContainer = TestContainer.postgres
+                val mqContainer = TestContainer.mq
 
-            fun sendMelding(queueName: String, dokument: String, config: PropertiesConfig.MqProperties) =
-                config.connect().use { connection ->
-                    connection.createSession(Session.SESSION_TRANSACTED).use { session ->
-                        val queue = (session.createQueue(queueName) as MQQueue).apply { targetClient = WMQConstants.WMQ_CLIENT_NONJMS_MQ }
-                        val mqProducer = session.createProducer(queue)
-                        val message = session.createTextMessage(dokument)
-                        mqProducer.send(message)
-                        session.commit()
+                fun sendMelding(queueName: String, dokument: String, config: PropertiesConfig.MqProperties) =
+                    config.connect().use { connection ->
+                        connection.createSession(Session.SESSION_TRANSACTED).use { session ->
+                            val queue =
+                                (session.createQueue(queueName) as MQQueue).apply { targetClient = WMQConstants.WMQ_CLIENT_NONJMS_MQ }
+                            val mqProducer = session.createProducer(queue)
+                            val message = session.createTextMessage(dokument)
+                            mqProducer.send(message)
+                            session.commit()
+                        }
+                    }
+
+                test("BestillingMottak klarer å hente en gyldig 'ref-arbg'-melding fra MQ") {
+                    val rapportService: RapportService = mockk(relaxed = true)
+                    val eregService: EregService = mockk()
+                    coEvery { eregService.hentNoekkelInfo(any()) } answers { Organisasjon(firstArg(), Navn("Et navn")) }
+                    TestUtil.withFullApplication(
+                        dbContainer = dbContainer,
+                        mqContainer = mqContainer,
+                        dependencyOverrides = {
+                            dependencies.provide { rapportService }
+                            dependencies.provide { eregService }
+                        },
+                    ) {
+                        // Send melding til køen BestillingMottak leser fra, og verifiser at meldingen blir borte (og kanskje noe mer?)
+                        val config = application.config()
+                        val dokument = javaClass.getResource("/mq/refusjon_bestilling_gyldig.json")?.readText()!!
+
+                        val applicationState: ApplicationState = application.dependencies.resolve()
+                        applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                            sendMelding(
+                                config.mq.queues.find { it.rapportType == RapportType.`ref-arbg` }?.queueName!!,
+                                dokument,
+                                config.mq,
+                            )
+
+                            eventually(5.seconds) {
+                                verify(exactly = 1) {
+                                    val _ = rapportService.lagreBestilling(any(), any(), any())
+                                }
+                            }
+                        }
                     }
                 }
 
-            test("BestillingMottak klarer å hente en gyldig 'ref-arbg'-melding fra MQ") {
-                val rapportService: RapportService = mockk(relaxed = true)
-                val eregService: EregService = mockk()
-                coEvery { eregService.hentNoekkelInfo(any()) } answers { Organisasjon(firstArg(), Navn("Et navn")) }
-                TestUtil.withFullApplication(
-                    dbContainer = dbContainer,
-                    mqContainer = mqContainer,
-                    dependencyOverrides = {
-                        dependencies.provide { rapportService }
-                        dependencies.provide { eregService }
-                    },
-                ) {
-                    // Send melding til køen BestillingMottak leser fra, og verifiser at meldingen blir borte (og kanskje noe mer?)
-                    val config = application.config()
-                    val dokument = javaClass.getResource("/mq/refusjon_bestilling_gyldig.json")?.readText()!!
+                test("BestillingMottak klarer å hente en gyldig 'trekk-kred'-melding fra MQ") {
+                    val rapportService: RapportService = mockk(relaxed = true)
+                    TestUtil.withFullApplication(
+                        dbContainer = dbContainer,
+                        mqContainer = mqContainer,
+                        dependencyOverrides = { dependencies.provide { rapportService } },
+                    ) {
+                        val config = application.config()
+                        val dokument = javaClass.getResource("/mq/trekk_kred_bestilling.xml")?.readText()!!
 
-                    val applicationState: ApplicationState = application.dependencies.resolve()
-                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
-                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`ref-arbg` }?.queueName!!, dokument, config.mq)
+                        val applicationState: ApplicationState = application.dependencies.resolve()
+                        applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                            sendMelding(
+                                config.mq.queues.find { it.rapportType == RapportType.`trekk-kred` }?.queueName!!,
+                                dokument,
+                                config.mq,
+                            )
 
-                        eventually(5.seconds) {
-                            verify(exactly = 1) {
-                                val _ = rapportService.lagreBestilling(any(), any(), any())
+                            eventually(5.seconds) {
+                                verify(exactly = 1) {
+                                    val _ = rapportService.lagreBestilling(any(), any(), any())
+                                }
+                            }
+                        }
+                    }
+                }
+
+                test("BestillingMottak klarer å hente en gyldig 'trekk-hend'-melding (til kreditor) fra MQ") {
+                    val rapportService: RapportService = mockk(relaxed = true)
+                    TestUtil.withFullApplication(
+                        dbContainer = dbContainer,
+                        mqContainer = mqContainer,
+                        dependencyOverrides = { dependencies.provide { rapportService } },
+                    ) {
+                        val config = application.config()
+                        val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-kreditor.xml")?.readText()!!
+
+                        val applicationState: ApplicationState = application.dependencies.resolve()
+                        applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                            sendMelding(
+                                config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!,
+                                dokument,
+                                config.mq,
+                            )
+
+                            eventually(5.seconds) {
+                                verify(exactly = 1) {
+                                    val _ = rapportService.lagreBestilling(any(), any(), any())
+                                }
+                            }
+                        }
+                    }
+                }
+
+                test("BestillingMottak klarer å hente en 'trekk-hend'-melding (til kreditor) med manglende felter fra MQ") {
+                    val rapportService: RapportService = mockk(relaxed = true)
+                    TestUtil.withFullApplication(
+                        dbContainer = dbContainer,
+                        mqContainer = mqContainer,
+                        dependencyOverrides = { dependencies.provide { rapportService } },
+                    ) {
+                        val config = application.config()
+                        val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-kreditor-med-manglende-felter.xml")?.readText()!!
+
+                        val applicationState: ApplicationState = application.dependencies.resolve()
+                        applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                            sendMelding(
+                                config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!,
+                                dokument,
+                                config.mq,
+                            )
+
+                            eventually(5.seconds) {
+                                verify(exactly = 1) {
+                                    val _ = rapportService.lagreBestilling(any(), any(), any())
+                                }
+                            }
+                        }
+                    }
+                }
+
+                test("BestillingMottak klarer å hente en gyldig 'trekk-hend'-melding (til namsmann) fra MQ") {
+                    val rapportService: RapportService = mockk(relaxed = true)
+                    TestUtil.withFullApplication(
+                        dbContainer = dbContainer,
+                        mqContainer = mqContainer,
+                        dependencyOverrides = { dependencies.provide { rapportService } },
+                    ) {
+                        val config = application.config()
+                        val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-namsmann.xml")?.readText()!!
+
+                        val applicationState: ApplicationState = application.dependencies.resolve()
+                        applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                            sendMelding(
+                                config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!,
+                                dokument,
+                                config.mq,
+                            )
+
+                            eventually(5.seconds) {
+                                verify(exactly = 1) {
+                                    val _ = rapportService.lagreBestilling(any(), any(), any())
+                                }
+                            }
+                        }
+                    }
+                }
+
+                test("BestillingMottak klarer å hente en 'trekk-hend'-melding (til namsmann) med manglende felter fra MQ") {
+                    val rapportService: RapportService = mockk(relaxed = true)
+                    TestUtil.withFullApplication(
+                        dbContainer = dbContainer,
+                        mqContainer = mqContainer,
+                        dependencyOverrides = { dependencies.provide { rapportService } },
+                    ) {
+                        val config = application.config()
+                        val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-namsmann-med-manglende-felter.xml")?.readText()!!
+
+                        val applicationState: ApplicationState = application.dependencies.resolve()
+                        applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
+                            sendMelding(
+                                config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!,
+                                dokument,
+                                config.mq,
+                            )
+
+                            eventually(5.seconds) {
+                                verify(exactly = 1) {
+                                    val _ = rapportService.lagreBestilling(any(), any(), any())
+                                }
                             }
                         }
                     }
                 }
             }
-
-            test("BestillingMottak klarer å hente en gyldig 'trekk-kred'-melding fra MQ") {
-                val rapportService: RapportService = mockk(relaxed = true)
-                TestUtil.withFullApplication(
-                    dbContainer = dbContainer,
-                    mqContainer = mqContainer,
-                    dependencyOverrides = { dependencies.provide { rapportService } },
-                ) {
-                    val config = application.config()
-                    val dokument = javaClass.getResource("/mq/trekk_kred_bestilling.xml")?.readText()!!
-
-                    val applicationState: ApplicationState = application.dependencies.resolve()
-                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
-                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`trekk-kred` }?.queueName!!, dokument, config.mq)
-
-                        eventually(5.seconds) {
-                            verify(exactly = 1) {
-                                val _ = rapportService.lagreBestilling(any(), any(), any())
-                            }
-                        }
-                    }
-                }
-            }
-
-            test("BestillingMottak klarer å hente en gyldig 'trekk-hend'-melding (til kreditor) fra MQ") {
-                val rapportService: RapportService = mockk(relaxed = true)
-                TestUtil.withFullApplication(
-                    dbContainer = dbContainer,
-                    mqContainer = mqContainer,
-                    dependencyOverrides = { dependencies.provide { rapportService } },
-                ) {
-                    val config = application.config()
-                    val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-kreditor.xml")?.readText()!!
-
-                    val applicationState: ApplicationState = application.dependencies.resolve()
-                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
-                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!, dokument, config.mq)
-
-                        eventually(5.seconds) {
-                            verify(exactly = 1) {
-                                val _ = rapportService.lagreBestilling(any(), any(), any())
-                            }
-                        }
-                    }
-                }
-            }
-
-            test("BestillingMottak klarer å hente en 'trekk-hend'-melding (til kreditor) med manglende felter fra MQ") {
-                val rapportService: RapportService = mockk(relaxed = true)
-                TestUtil.withFullApplication(
-                    dbContainer = dbContainer,
-                    mqContainer = mqContainer,
-                    dependencyOverrides = { dependencies.provide { rapportService } },
-                ) {
-                    val config = application.config()
-                    val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-kreditor-med-manglende-felter.xml")?.readText()!!
-
-                    val applicationState: ApplicationState = application.dependencies.resolve()
-                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
-                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!, dokument, config.mq)
-
-                        eventually(5.seconds) {
-                            verify(exactly = 1) {
-                                val _ = rapportService.lagreBestilling(any(), any(), any())
-                            }
-                        }
-                    }
-                }
-            }
-
-            test("BestillingMottak klarer å hente en gyldig 'trekk-hend'-melding (til namsmann) fra MQ") {
-                val rapportService: RapportService = mockk(relaxed = true)
-                TestUtil.withFullApplication(
-                    dbContainer = dbContainer,
-                    mqContainer = mqContainer,
-                    dependencyOverrides = { dependencies.provide { rapportService } },
-                ) {
-                    val config = application.config()
-                    val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-namsmann.xml")?.readText()!!
-
-                    val applicationState: ApplicationState = application.dependencies.resolve()
-                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
-                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!, dokument, config.mq)
-
-                        eventually(5.seconds) {
-                            verify(exactly = 1) {
-                                val _ = rapportService.lagreBestilling(any(), any(), any())
-                            }
-                        }
-                    }
-                }
-            }
-
-            test("BestillingMottak klarer å hente en 'trekk-hend'-melding (til namsmann) med manglende felter fra MQ") {
-                val rapportService: RapportService = mockk(relaxed = true)
-                TestUtil.withFullApplication(
-                    dbContainer = dbContainer,
-                    mqContainer = mqContainer,
-                    dependencyOverrides = { dependencies.provide { rapportService } },
-                ) {
-                    val config = application.config()
-                    val dokument = javaClass.getResource("/mq/trekk_hend_bestilling-namsmann-med-manglende-felter.xml")?.readText()!!
-
-                    val applicationState: ApplicationState = application.dependencies.resolve()
-                    applicationState.withEnabledBakgrunnsJobb<BestillingMottak> {
-                        sendMelding(config.mq.queues.find { it.rapportType == RapportType.`trekk-hend` }?.queueName!!, dokument, config.mq)
-
-                        eventually(5.seconds) {
-                            verify(exactly = 1) {
-                                val _ = rapportService.lagreBestilling(any(), any(), any())
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    })
+        },
+    )

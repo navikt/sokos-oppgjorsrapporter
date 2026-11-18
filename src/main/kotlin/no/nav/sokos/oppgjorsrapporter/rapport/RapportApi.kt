@@ -108,7 +108,7 @@ object Api {
         val arkivert: Boolean,
     ) {
         constructor(
-            rapport: Rapport
+            rapport: Rapport,
         ) : this(
             rapport.id,
             rapport.orgnr,
@@ -161,7 +161,7 @@ object Api {
             val varianterMedNedlastingsinfo: List<Variant>,
         ) {
             constructor(
-                rapport: RapportMedNedlastingsinfo
+                rapport: RapportMedNedlastingsinfo,
             ) : this(
                 id = rapport.rapportId,
                 datoValutert = rapport.rapportInfo.datoValutert,
@@ -176,7 +176,7 @@ object Api {
                 val nedlastingsinfo: RapportMedNedlastingsinfo.Variantinfo.Nedlastingsinfo?,
             ) {
                 constructor(
-                    variantinfo: RapportMedNedlastingsinfo.Variantinfo
+                    variantinfo: RapportMedNedlastingsinfo.Variantinfo,
                 ) : this(
                     format = variantinfo.format.extension(),
                     filnavn = variantinfo.filnavn,
@@ -277,7 +277,7 @@ fun Route.rapportApi() {
                                 is TokenX -> "person"
                             },
                         ),
-                    )
+                    ),
                 )
                 .record(filtrerteRapporter.size.toDouble())
             call.respond(filtrerteRapporter.map(Api::RapportDTO))

@@ -34,7 +34,7 @@ fun Application.securityConfig() {
                             name = azureAd,
                             discoveryUrl = config.security.azureAd.wellKnownUrl,
                             acceptedAudience = listOf(config.security.azureAd.clientId),
-                        )
+                        ),
                     ),
                 requiredClaims = RequiredClaims(issuer = azureAd, claimMap = arrayOf("NAVident", "groups")),
             )
@@ -49,7 +49,7 @@ fun Application.securityConfig() {
                             name = tokenX,
                             discoveryUrl = config.security.tokenX.wellKnownUrl,
                             acceptedAudience = listOf(config.security.tokenX.clientId),
-                        )
+                        ),
                     ),
                 requiredClaims = RequiredClaims(issuer = tokenX, claimMap = arrayOf("pid", "acr")),
                 additionalValidation = {
@@ -68,7 +68,7 @@ fun Application.securityConfig() {
                             discoveryUrl = config.security.maskinporten.wellKnownUrl,
                             acceptedAudience = listOf(config.security.maskinporten.eksponertScope),
                             optionalClaims = listOf("aud", "sub"),
-                        )
+                        ),
                     ),
                 requiredClaims = RequiredClaims(issuer = systembruker, claimMap = arrayOf("authorization_details", "consumer", "scope")),
                 additionalValidation = {

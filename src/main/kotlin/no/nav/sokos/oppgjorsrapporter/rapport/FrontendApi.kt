@@ -161,7 +161,7 @@ object FrontendApi {
                                     with(reqBody) { rapportService.rapportSoek(underenhet, datoRange(), inkluderArkiverte, rapportType) }
                             }
                         call.respond(
-                            rapporter.filter { internTilgangService.harTilgangTilRessurs(bruker, it.orgnr, it.type) }.map(::RapportDTO)
+                            rapporter.filter { internTilgangService.harTilgangTilRessurs(bruker, it.orgnr, it.type) }.map(::RapportDTO),
                         )
                     }
                     else -> {

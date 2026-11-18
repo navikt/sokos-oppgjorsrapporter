@@ -185,7 +185,7 @@ object TestUtil {
                                     false
                                 );
                             """
-                                .trimIndent()
+                                .trimIndent(),
                         )
                         .execute()
                 }

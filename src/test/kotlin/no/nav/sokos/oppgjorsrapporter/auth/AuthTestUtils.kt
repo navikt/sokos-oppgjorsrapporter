@@ -35,7 +35,7 @@ fun MockOAuth2Server.gyldigSystembrukerAuthToken(orgnr: OrgNr): String =
                             "systemuser_id" to listOf("a_unique_identifier_for_the_systemuser"),
                             "systemuser_org" to mapOf("authority" to "iso6523-actorid-upis", "ID" to "0192:${orgnr.raw}"),
                             "system_id" to "315339138_tigersys",
-                        )
+                        ),
                     ),
                 "scope" to "nav:utbetaling/oppgjorsrapporter", // TODO sjekk om scope faktisk blir validert av tokensupport
                 "consumer" to mapOf("authority" to "iso6523-actorid-upis", "ID" to "0192:991825827"),

@@ -51,7 +51,7 @@ class AltinnTilgangerApiTest : FullTestServer(MutableClock.of(Instant.parse("202
                   }
                 ]
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 

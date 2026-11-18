@@ -44,7 +44,7 @@ object PropertiesConfig {
         val mq: MqProperties,
     ) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(
             application = ApplicationProperties(source),
             restEndpoint = RestEndpointProperties(source),
@@ -63,7 +63,7 @@ object PropertiesConfig {
         val navOrgs: List<OrgNr>,
     ) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(
             naisAppName = source.get("application.name"),
             apiBaseUri = URI.create(source.get("application.api_base_uri")),
@@ -76,7 +76,7 @@ object PropertiesConfig {
 
     data class RestEndpointProperties(val eregBaseUrl: URI, val pdfgenBaseUrl: URI, val tilgangsmaskinUrl: URI) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(
             eregBaseUrl = URI.create(source.get("ereg.base_url")),
             pdfgenBaseUrl = URI.create(source.get("pdfgen.base_url")),
@@ -86,7 +86,7 @@ object PropertiesConfig {
 
     data class PostgresProperties(val adminJdbcUrl: String, val queryJdbcUrl: String, val databaseName: String) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(
             adminJdbcUrl = source.get("db.admin_jdbc_url"),
             queryJdbcUrl = source.get("db.query_jdbc_url"),
@@ -105,7 +105,7 @@ object PropertiesConfig {
         val password: String,
     ) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(
             enabled = source.get("mq.enabled").toBoolean(),
             host = source.get("mq.host"),
@@ -143,7 +143,7 @@ object PropertiesConfig {
         val tilgangsmaskinenAudience: String,
     ) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(
             azureAd = AzureAdProperties(source),
             tokenX = TokenXProperties(source),
@@ -166,7 +166,7 @@ object PropertiesConfig {
         val trekkKredGroup: UUID,
     ) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(
             clientId = source.get("auth.entra_id.client_id"),
             wellKnownUrl = source.get("auth.entra_id.well_known_url"),
@@ -179,13 +179,13 @@ object PropertiesConfig {
 
     class TokenXProperties(val clientId: String, val wellKnownUrl: String) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(clientId = source.get("auth.token_x.client_id"), wellKnownUrl = source.get("auth.token_x.well_known_url"))
     }
 
     class MaskinportenProperties(val wellKnownUrl: String, val eksponertScope: String) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(
             wellKnownUrl = source.get("auth.maskinporten.well_known_url"),
             eksponertScope = source.get("auth.maskinporten.eksponert_scope"),
@@ -194,7 +194,7 @@ object PropertiesConfig {
 
     class AltinnProperties(val baseUrl: URI, val subscriptionKey: String, val pdpScope: String, val dialogportenScope: String) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(
             baseUrl = URI.create(source.get("altinn.base_url")),
             subscriptionKey = source.get("altinn.subscription_key"),
@@ -205,7 +205,7 @@ object PropertiesConfig {
 
     class AltinnTilgangerProperties(val altinnTilgangerProxyUrl: URI, val altinnTilgangerAudience: String) {
         constructor(
-            source: ConfigSource
+            source: ConfigSource,
         ) : this(
             altinnTilgangerProxyUrl = URI.create(source.get("altinn_tilganger.proxy_url")),
             altinnTilgangerAudience = source.get("altinn_tilganger.audience"),

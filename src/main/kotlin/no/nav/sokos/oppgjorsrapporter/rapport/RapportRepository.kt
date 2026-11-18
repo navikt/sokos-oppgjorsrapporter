@@ -68,7 +68,7 @@ class RapportRepository(private val clock: Clock) {
                 LIMIT 1
                 FOR NO KEY UPDATE SKIP LOCKED
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .map { RapportBestilling(it) }
             .asSingle
@@ -146,7 +146,7 @@ class RapportRepository(private val clock: Clock) {
                 LIMIT 1
                 FOR NO KEY UPDATE SKIP LOCKED
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .map { Rapport(it) }
             .asSingle
@@ -290,7 +290,7 @@ class RapportRepository(private val clock: Clock) {
         ) {
 
             constructor(
-                row: Row
+                row: Row,
             ) : this(
                 rapportId = Rapport.Id(row.long("rapport_id")),
                 rapportInfo =
@@ -472,7 +472,7 @@ class RapportRepository(private val clock: Clock) {
                     "brukernavn" to data.brukernavn,
                     "tekst" to data.tekst,
                 ),
-            )
+            ),
         )
     }
 
@@ -525,7 +525,7 @@ class RapportRepository(private val clock: Clock) {
                          LEFT JOIN uferdig USING (rapport_type, kilde, har_feilet)
                 GROUP BY rapport_type, kilde, har_feilet
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
             .map {
                 Pair(

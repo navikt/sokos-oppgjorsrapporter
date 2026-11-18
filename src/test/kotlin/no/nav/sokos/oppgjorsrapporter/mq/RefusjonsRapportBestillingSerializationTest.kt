@@ -77,7 +77,7 @@ class RefusjonsRapportBestillingSerializationTest {
                     "tilDato": "2024-12-31"
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 
@@ -342,7 +342,7 @@ class RefusjonsRapportBestillingSerializationTest {
                   ]
                 }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
     }
 }

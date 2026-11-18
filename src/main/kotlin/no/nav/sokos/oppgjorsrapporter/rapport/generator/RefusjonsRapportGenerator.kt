@@ -186,7 +186,7 @@ object LocalDateSomNorskDatoSerializer :
 @ConsistentCopyVisibility
 data class OrgNummer private constructor(val verdi: String, val formattert: String) {
     constructor(
-        orgnr: OrgNr
+        orgnr: OrgNr,
     ) : this(verdi = orgnr.raw, formattert = orgnr.raw.windowedSequence(size = 3, step = 3, partialWindows = true).joinToString(" ")) {
         require(orgnr.raw.length == 9)
         require(orgnr.raw.all { it.isDigit() })
@@ -197,7 +197,7 @@ data class OrgNummer private constructor(val verdi: String, val formattert: Stri
 @ConsistentCopyVisibility
 data class Kontonummer private constructor(val verdi: String, val formattert: String) {
     constructor(
-        kontonr: Bankkonto
+        kontonr: Bankkonto,
     ) : this(verdi = kontonr.raw, formattert = with(kontonr.raw) { listOf(take(4), drop(4).take(2), drop(4 + 2)) }.joinToString(" ")) {
         require(kontonr.raw.length == 11)
         require(kontonr.raw.all { it.isDigit() })
@@ -208,7 +208,7 @@ data class Kontonummer private constructor(val verdi: String, val formattert: St
 @ConsistentCopyVisibility
 data class Belop private constructor(val verdi: BigDecimal, val formattert: String) {
     constructor(
-        belop: BigDecimal
+        belop: BigDecimal,
     ) : this(
         verdi = belop.setScale(2, RoundingMode.HALF_UP),
         formattert =
