@@ -48,6 +48,7 @@ jobs:
     with:
       team: oppgjorsrapporter
       gradle-task: './gradlew installDist'
+      java-version: '25'
 
   deploy-dev:
     needs: build

@@ -21,3 +21,4 @@ jobs:
     uses: navikt/pengeflyt-gha-workflows/.github/workflows/gradle-build-pr.yaml@main
     with:
       gradle-task: './gradlew build installDist'
+      java-version: '25'
